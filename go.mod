@@ -1,4 +1,4 @@
-module github.com/signaux-faibles/libwekan/v1
+module github.com/signaux-faibles/libwekan/v0
 
 go 1.16
 

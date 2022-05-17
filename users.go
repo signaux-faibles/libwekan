@@ -8,7 +8,6 @@ import (
 )
 
 type User struct {
-	genuine              bool
 	ID                   string       `bson:"_id"`
 	CreateAt             time.Time    `bson:"createAt"`
 	Services             UserServices `bson:"services"`
