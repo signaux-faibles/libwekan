@@ -23,7 +23,7 @@ type User struct {
 type UserServices struct {
 	OIDC struct {
 		ID           string `bson:"id"`
-		Username     string `bson:"username`
+		Username     string `bson:"username"`
 		Fullname     string `bson:"fullname"`
 		AccessToken  string `bson:"accessToken"`
 		ExpiresAt    int    `bson:"expiresAt"`

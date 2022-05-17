@@ -16,7 +16,7 @@ type Wekan struct {
 	admin        User
 }
 
-// Connect returns a Wekan context
+// Connect retourne un objet de type `Wekan`
 func Connect(ctx context.Context, server string, databaseName string, username string) (Wekan, error) {
 	uri := fmt.Sprintf("mongodb://%s/", server)
 	clientOptions := options.Client().ApplyURI(uri)
