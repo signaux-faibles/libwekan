@@ -10,34 +10,46 @@ import (
 )
 
 type Wekan struct {
-	url          string
-	databaseName string
-	db           *mongo.Database
-	admin        User
+	url           string
+	databaseName  string
+	client        *mongo.Client
+	db            *mongo.Database
+	adminUsername string
+	adminUser     *User
 }
 
 // Connect retourne un objet de type `Wekan`
-func Connect(ctx context.Context, server string, databaseName string, username string) (Wekan, error) {
-	uri := fmt.Sprintf("mongodb://%s/", server)
+func Connect(ctx context.Context, uri string, databaseName string, adminUsername string) (Wekan, error) {
 	clientOptions := options.Client().ApplyURI(uri)
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		return Wekan{}, err
 	}
 	w := Wekan{
-		url:          uri,
-		databaseName: databaseName,
-		db:           client.Database(databaseName),
+		url:           uri,
+		databaseName:  databaseName,
+		client:        client,
+		db:            client.Database(databaseName),
+		adminUsername: adminUsername,
 	}
-	w.admin, err = w.GetUser(ctx, username)
-	if err == mongo.ErrNoDocuments {
-		return Wekan{}, fmt.Errorf("%s is not in database\nmongo => %s", username, err.Error())
-	}
+
 	if err != nil {
 		return Wekan{}, err
 	}
-	if !w.admin.IsAdmin {
-		return Wekan{}, errors.New("%s is not admin")
-	}
+
 	return w, nil
+}
+
+func (w *Wekan) AdminUser(ctx context.Context) (*User, error) {
+	if w.adminUser == nil {
+		admin, err := w.GetUser(ctx, w.adminUsername)
+		if err == mongo.ErrNoDocuments {
+			return nil, fmt.Errorf("%s is not in database\nmongo => %s", w.adminUsername, err.Error())
+		}
+		if !admin.IsAdmin {
+			return nil, errors.New("%s is not admin")
+		}
+		w.adminUser = &admin
+	}
+	return w.adminUser, nil
 }

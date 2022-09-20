@@ -12,12 +12,12 @@ import (
 
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var dbClient *mongo.Client
+var wekan Wekan
+var cwd, _ = os.Getwd()
 
 func TestMain(m *testing.M) {
 
@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 				"MONGO_INITDB_ROOT_USERNAME=root",
 				"MONGO_INITDB_ROOT_PASSWORD=password",
 			},
-			// Cmd: []string{"mongod", "--logpath /dev/null", "--oplogSize 128", "--quiet", "--noauth"},
+			Mounts: []string{cwd + "/test/resources/:/dump/"},
 		},
 		func(config *docker.HostConfig) {
 			// set AutoRemove to true so that stopped container goes away by itself
@@ -57,16 +57,14 @@ func TestMain(m *testing.M) {
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	_ = pool.Retry(func() error {
 		var err error
-		dbClient, err = mongo.Connect(
-			context.TODO(),
-			options.Client().ApplyURI(
-				fmt.Sprintf("mongodb://root:password@localhost:%s", mongodb.GetPort("27017/tcp")),
-			),
-		)
+		mongoUrl := fmt.Sprintf("mongodb://root:password@localhost:%s", mongodb.GetPort("27017/tcp"))
+		wekan, err = Connect(context.Background(), mongoUrl, "wekan", "signaux.faibles")
 		if err != nil {
+			fmt.Println(err)
 			return err
 		}
-		if err := dbClient.Ping(context.TODO(), nil); err != nil {
+
+		if err := wekan.client.Ping(context.TODO(), nil); err != nil {
 			return err
 		}
 
@@ -75,9 +73,19 @@ func TestMain(m *testing.M) {
 			return err
 		}
 
-		nbUsers, err := dbClient.Database("wekan").Collection("users").CountDocuments(context.Background(), bson.M{}, nil)
-		if nbUsers == 0 {
-			panic("no dump")
+		users, err := wekan.GetUsers(context.TODO())
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+
+		if len(users) == 0 {
+			panic("pas d'utilisateurs dans la base de test ?!")
+		}
+
+		_, err = wekan.AdminUser(context.TODO())
+		if err != nil {
+			panic(fmt.Sprintf("pas d'admin dans la base de test: %s", err.Error()))
 		}
 		return err
 	})
@@ -99,21 +107,23 @@ func kill(resource *dockertest.Resource) {
 }
 
 func restoreDump(mongodb *dockertest.Resource) error {
-	dump, err := os.Open("test/resources/wekan-users.dump")
-	if err != nil {
-		panic("le dump de test n'est pas accessible")
-	}
-
 	var b bytes.Buffer
 	output := bufio.NewWriter(&b)
 
 	options := dockertest.ExecOptions{
-		StdIn:  dump,
 		StdOut: output,
 		StdErr: output,
 	}
 
-	_, err = mongodb.Exec([]string{"/bin/bash", "-c", "mongorestore mongodb://root:password@127.0.0.1/ --noIndexRestore --archive"}, options)
+	_, err := mongodb.Exec([]string{"/bin/bash", "-c", "mongorestore  --uri mongodb://root:password@localhost/ /dump"}, options)
+	// _, err = mongodb.Exec([]string{"/bin/bash", "-c", "mongo mongodb://root:password@localhost/wekan --authenticationDatabase admin --eval 'printjson(db.users.find({}).toArray())'"}, options)
+	output.Flush()
+	// fmt.Println(b.String())
 
 	return err
 }
+
+// func Test_getUser(t *testing.T) {
+// 	asserte := assert.New()
+// 	users :=
+// }

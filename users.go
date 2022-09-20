@@ -7,17 +7,19 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+type Users []User
+
 type User struct {
 	ID                   string       `bson:"_id"`
 	CreateAt             time.Time    `bson:"createAt"`
 	Services             UserServices `bson:"services"`
 	Username             string       `bson:"username"`
-	Emails               UserEmails   `bson:"emails"`
+	Emails               []UserEmail  `bson:"emails"`
 	Profile              UserProfile  `bson:"profile"`
 	AuthenticationMethod string       `bson:"authenticationMethod"`
 	ModifiedAt           time.Time    `bson:"modifiedAt"`
 	IsAdmin              bool         `bson:"isAdmin"`
-	SessionData          []interface{}
+	SessionData          bson.M       `bson:"-"`
 }
 
 type UserServices struct {
@@ -41,7 +43,7 @@ type UserServices struct {
 	}
 }
 
-type UserEmails struct {
+type UserEmail struct {
 	Address  string `json:"address"`
 	Verified bool
 }
@@ -104,4 +106,21 @@ func (w Wekan) GetUserFromID(ctx context.Context, id string) (User, error) {
 		return User{}, err
 	}
 	return user, nil
+}
+
+// GetUsers retourne tous les utilisateurs
+func (w Wekan) GetUsers(ctx context.Context) (Users, error) {
+	var users Users
+	cursor, err := w.db.Collection("users").Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	for cursor.Next(ctx) {
+		var user User
+		if err := cursor.Decode(&user); err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+	return users, nil
 }
