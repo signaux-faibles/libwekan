@@ -41,7 +41,7 @@ type Board struct {
 	AllowsEndDate              bool          `json:"allowsEndDate"`
 	AllowsDueDate              bool          `json:"allowsDueDate"`
 	PresentParentTask          string        `bson:"presentParentTask"`
-	IsOvertime                 string        `bson:"isOvertime"`
+	IsOvertime                 bool          `bson:"isOvertime"`
 	Type                       string        `bson:"type"`
 	Slug                       string        `bson:"slug"`
 	Watchers                   []interface{} `bson:"watchers"`
@@ -65,7 +65,25 @@ type BoardMember struct {
 	IsWorker      bool   `bson:"isWorker"`
 }
 
-// GetBoardFromID retourne l'objet board à partir du champ .slug
+// ListAllBoards GetBoardFromSlug GetBoardFromID retourne l'objet board à partir du champ .slug
+func (w Wekan) ListAllBoards(ctx context.Context) ([]Board, error) {
+	var boards []Board
+	cursor, err := w.db.Collection("boards").Find(ctx, bson.M{"type": "board"})
+	if err != nil {
+		return nil, err
+	}
+	for cursor.Next(ctx) {
+		var board Board
+		if err := cursor.Decode(&board); err != nil {
+			return nil, err
+		}
+		board.wekan = &w
+		boards = append(boards, board)
+	}
+	return boards, nil
+}
+
+// GetBoardFromSlug GetBoardFromID retourne l'objet board à partir du champ .slug
 func (w Wekan) GetBoardFromSlug(ctx context.Context, slug string) (Board, error) {
 	var board Board
 	err := w.db.Collection("boards").FindOne(ctx, bson.M{"slug": slug}).Decode(&board)
@@ -73,7 +91,7 @@ func (w Wekan) GetBoardFromSlug(ctx context.Context, slug string) (Board, error)
 	return board, err
 }
 
-// GetBoardFromID retourne l'objet board à partir du champ .title
+// GetBoardFromTitle GetBoardFromID retourne l'objet board à partir du champ .title
 func (w Wekan) GetBoardFromTitle(ctx context.Context, title string) (Board, error) {
 	var board Board
 	err := w.db.Collection("boards").FindOne(ctx, bson.M{"title": title}).Decode(&board)
@@ -90,7 +108,7 @@ func (w Wekan) GetBoardFromID(ctx context.Context, id string) (Board, error) {
 }
 
 // UserIsMember teste si l'utilisateur fait partie de l'array .members
-func (b Board) UserIsMember(ctx context.Context, user User) bool {
+func (b Board) UserIsMember(user User) bool {
 	for _, boardMember := range b.Members {
 		if boardMember.UserId == user.ID {
 			return true
@@ -101,7 +119,7 @@ func (b Board) UserIsMember(ctx context.Context, user User) bool {
 
 // EnsureMember ajoute l'utilisateur au
 func (b Board) EnsureMember(ctx context.Context, user User) error {
-	if !b.UserIsMember(ctx, user) {
+	if !b.UserIsMember(user) {
 		_, err := b.wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": b.ID},
 			bson.M{
 				"$push": bson.M{

@@ -5,29 +5,28 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/ory/dockertest/v3"
+	"github.com/ory/dockertest/v3/docker"
+	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/mongo"
 	"os"
 	"strconv"
 	"testing"
 	"time"
-
-	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var dbClient *mongo.Client
+// var dbClient *mongo.Client
 var wekan Wekan
 var cwd, _ = os.Getwd()
 
 func TestMain(m *testing.M) {
-
 	// uses a sensible default on windows (tcp/http) and linux/osx (socket)
 	pool, err := dockertest.NewPool("")
 	if err != nil {
 		panic("ne peut démarrer mongodb")
 	}
 	// pulls an image, creates a container based on it and runs it
-	mongodbContainerName := "keycloakUpdater-ti-" + strconv.Itoa(time.Now().Nanosecond())
+	mongodbContainerName := "mongodb-ti-" + strconv.Itoa(time.Now().Nanosecond())
 
 	mongodb, err := pool.RunWithOptions(
 		&dockertest.RunOptions{
@@ -55,41 +54,29 @@ func TestMain(m *testing.M) {
 	}
 
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
-	_ = pool.Retry(func() error {
+	if err := pool.Retry(func() error {
+		fmt.Println("Mongo n'est pas encore prêt")
 		var err error
 		mongoUrl := fmt.Sprintf("mongodb://root:password@localhost:%s", mongodb.GetPort("27017/tcp"))
 		wekan, err = Connect(context.Background(), mongoUrl, "wekan", "signaux.faibles")
 		if err != nil {
-			fmt.Println(err)
 			return err
 		}
-
 		if err := wekan.client.Ping(context.TODO(), nil); err != nil {
 			return err
 		}
 
-		err = restoreDump(mongodb)
-		if err != nil {
-			return err
-		}
+		return nil
+	}); err != nil {
+		fmt.Printf("N'arrive pas à démarrer/restaurer Mongo: %s", err)
+	}
+	fmt.Println("Mongo est prêt, on lance le restore dump")
+	err = restoreDump(mongodb)
+	if err != nil {
+		panic("Foirage du restore dump : " + err.Error())
+	}
 
-		users, err := wekan.GetUsers(context.TODO())
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
-
-		if len(users) == 0 {
-			panic("pas d'utilisateurs dans la base de test ?!")
-		}
-
-		_, err = wekan.AdminUser(context.TODO())
-		if err != nil {
-			panic(fmt.Sprintf("pas d'admin dans la base de test: %s", err.Error()))
-		}
-		return err
-	})
-
+	fmt.Println("On peut lancer les tests")
 	code := m.Run()
 	kill(mongodb)
 	// You can't defer this because os.Exit doesn't care for defer
@@ -97,12 +84,47 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func kill(resource *dockertest.Resource) {
-	if resource == nil {
+func TestEtatInitial_un_seul_utilisateur_qui_est_admin(t *testing.T) {
+	ass := assert.New(t)
+	users, err := wekan.GetUsers(context.TODO())
+	ass.Nil(err)
+	ass.Len(users, 1)
+	admin := users[0]
+
+	adminUser, err := wekan.AdminUser(context.Background())
+	ass.Nil(err)
+	ass.Equal(admin.ID, (*adminUser).ID)
+}
+
+func TestGetUser_when_user_not_exist(t *testing.T) {
+	ass := assert.New(t)
+	user, err := wekan.GetUser(context.TODO(), "unexistant user")
+	ass.NotNil(err)
+	ass.ErrorIs(err, mongo.ErrNoDocuments)
+	ass.Empty(user.ID)
+}
+
+func TestAnotherThing(t *testing.T) {
+	ass := assert.New(t)
+	boards, err := wekan.ListAllBoards(context.Background())
+	ass.Nil(err)
+	ass.Len(boards, 2)
+	//isBoard := func(b Board) bool {
+	//	return b.Type == "board"
+	//}
+	for _, current := range boards {
+		ass.Condition(func() bool {
+			return current.Type == "board"
+		})
+	}
+}
+
+func kill(mongodb *dockertest.Resource) {
+	if mongodb == nil {
 		panic("mongodb n'a pas démarré")
 	}
-	if err := resource.Close(); err != nil {
-		panic(fmt.Sprintf("Could not purge resource: %s", err))
+	if err := mongodb.Close(); err != nil {
+		panic(fmt.Sprintf("Could not purge mongodb: %s", err))
 	}
 }
 
@@ -115,15 +137,14 @@ func restoreDump(mongodb *dockertest.Resource) error {
 		StdErr: output,
 	}
 
-	_, err := mongodb.Exec([]string{"/bin/bash", "-c", "mongorestore  --uri mongodb://root:password@localhost/ /dump"}, options)
+	if _, err := mongodb.Exec([]string{"/bin/bash", "-c", "mongorestore  --uri mongodb://root:password@localhost/ /dump"}, options); err != nil {
+		return nil
+	}
 	// _, err = mongodb.Exec([]string{"/bin/bash", "-c", "mongo mongodb://root:password@localhost/wekan --authenticationDatabase admin --eval 'printjson(db.users.find({}).toArray())'"}, options)
-	output.Flush()
+	if err := output.Flush(); err != nil {
+		return nil
+	}
 	// fmt.Println(b.String())
 
-	return err
+	return nil
 }
-
-// func Test_getUser(t *testing.T) {
-// 	asserte := assert.New()
-// 	users :=
-// }
