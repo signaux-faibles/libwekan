@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type Users []User
@@ -19,28 +20,36 @@ type User struct {
 	AuthenticationMethod string       `bson:"authenticationMethod"`
 	ModifiedAt           time.Time    `bson:"modifiedAt"`
 	IsAdmin              bool         `bson:"isAdmin"`
-	SessionData          bson.M       `bson:"-"`
+	LoginDisabled        bool         `bson:"loginDisabled"`
+}
+
+type UserServicesOIDC struct {
+	ID           string `bson:"id"`
+	Username     string `bson:"username"`
+	Fullname     string `bson:"fullname"`
+	AccessToken  string `bson:"accessToken"`
+	ExpiresAt    int    `bson:"expiresAt"`
+	Email        string `bson:"email"`
+	RefreshToken string `bson:"refreshToken"`
+}
+
+type UserServicesResume struct {
+	LoginTokens []UserServicesResumeLoginToken
+}
+
+type UserServicesResumeLoginToken struct {
+	When        time.Time `bson:"when"`
+	HashedToken string    `bson:"hashedToken"`
+}
+
+type UserServicesPassword struct {
+	Bcrypt string `bson:"bcrypt"`
 }
 
 type UserServices struct {
-	OIDC struct {
-		ID           string `bson:"id"`
-		Username     string `bson:"username"`
-		Fullname     string `bson:"fullname"`
-		AccessToken  string `bson:"accessToken"`
-		ExpiresAt    int    `bson:"expiresAt"`
-		Email        string `bson:"email"`
-		RefreshToken string `bson:"refreshToken"`
-	} `bson:"oidc"`
-	Resume struct {
-		LoginTokens []struct {
-			When        time.Time `bson:"when"`
-			HashedToken string    `bson:"hashedToken"`
-		}
-	} `bson:"resume"`
-	Password struct {
-		Bcrypt string `bson:"bcrypt"`
-	}
+	OIDC     UserServicesOIDC     `bson:"oidc"`
+	Resume   UserServicesResume   `bson:"resume"`
+	Password UserServicesPassword `bson:"password"`
 }
 
 type UserEmail struct {
@@ -48,23 +57,26 @@ type UserEmail struct {
 	Verified bool
 }
 
+type UserProfileNotification struct {
+	Activity string `bson:"activity"`
+}
+
 type UserProfile struct {
-	Initials                 string   `bson:"initials"`
-	Fullname                 string   `bson:"fullname"`
-	BoardView                string   `bson:"boardView"`
-	ListSortBy               string   `bson:"-modifiedAt"`
-	TemplatesBoardId         string   `bson:"templatesBoardId"`
-	CardTemplatesSwimlaneId  string   `bson:"cardTemplatesSwimlaneId"`
-	ListTemplatesSwimlaneId  string   `bson:"listTemplatesSwimlaneId"`
-	BoardTemplatesSwimlaneId string   `bson:"boardTemplatesSwimlaneId"`
-	InvitedBoards            []string `bson:"invitedBoards"`
-	StarredBoards            []string `bson:"starredBoards"`
-	CardMaximized            bool     `bson:"cardMaximized"`
-	EmailBuffer              []string `bson:"emailBuffer"`
-	Notifications            []struct {
-		Activity string `bson:"activity"`
-	} `bson:"notifications"`
-	HiddenSystemMessages bool `bson:"hiddenSystemMessages"`
+	Initials                 string                    `bson:"initials"`
+	Fullname                 string                    `bson:"fullname"`
+	BoardView                string                    `bson:"boardView"`
+	ListSortBy               string                    `bson:"-modifiedAt"`
+	TemplatesBoardId         string                    `bson:"templatesBoardId"`
+	CardTemplatesSwimlaneId  string                    `bson:"cardTemplatesSwimlaneId"`
+	ListTemplatesSwimlaneId  string                    `bson:"listTemplatesSwimlaneId"`
+	BoardTemplatesSwimlaneId string                    `bson:"boardTemplatesSwimlaneId"`
+	InvitedBoards            []string                  `bson:"invitedBoards"`
+	StarredBoards            []string                  `bson:"starredBoards"`
+	Language                 string                    `bson:"language"`
+	CardMaximized            bool                      `bson:"cardMaximized"`
+	EmailBuffer              []string                  `bson:"emailBuffer"`
+	Notifications            []UserProfileNotification `bson:"notifications"`
+	HiddenSystemMessages     bool                      `bson:"hiddenSystemMessages"`
 }
 
 func (w Wekan) GetUser(ctx context.Context, username string) (User, error) {
@@ -123,4 +135,94 @@ func (w Wekan) GetUsers(ctx context.Context) (Users, error) {
 		users = append(users, user)
 	}
 	return users, nil
+}
+
+func (wekan Wekan) UsernameExists(ctx context.Context, username string) (bool, error) {
+	_, err := wekan.GetUser(ctx, username)
+	if err == mongo.ErrNoDocuments {
+		return false, nil
+	}
+	return err == nil, err
+}
+
+func (wekan Wekan) InsertUser(ctx context.Context, user User) (User, error) {
+	userAlreadyExists, err := wekan.UsernameExists(ctx, user.Username)
+	if err != nil || userAlreadyExists {
+		return User{}, NewUserAlreadyExistsError(user.Username)
+	}
+	templateBoard := newBoard("Template", "templates", "template-container")
+	cardTemplateSwimlane := newCardTemplateSwimlane(templateBoard.ID)
+	listTemplateSwimlane := newListTemplateSwimlane(templateBoard.ID)
+	boardTemplateSwimlane := newBoardTemplateSwimlane(templateBoard.ID)
+
+	user.Profile.TemplatesBoardId = templateBoard.ID
+	user.Profile.CardTemplatesSwimlaneId = cardTemplateSwimlane.ID
+	user.Profile.ListTemplatesSwimlaneId = listTemplateSwimlane.ID
+	user.Profile.BoardTemplatesSwimlaneId = boardTemplateSwimlane.ID
+
+	if err = wekan.InsertSwimlane(ctx, cardTemplateSwimlane); err != nil {
+		return User{}, err
+	}
+	if err = wekan.InsertSwimlane(ctx, listTemplateSwimlane); err != nil {
+		return User{}, err
+	}
+	if err = wekan.InsertSwimlane(ctx, boardTemplateSwimlane); err != nil {
+		return User{}, err
+	}
+	if err = wekan.InsertBoard(ctx, templateBoard); err != nil {
+		return User{}, err
+	}
+	wekan.EnsureUserIsBoardMember(ctx, templateBoard, user)
+
+	_, err = wekan.db.Collection("users").InsertOne(ctx, user)
+	return user, err
+}
+
+// BuildUser retourne un objet User à insérer/updater avec la fonction Wekan.UpsertUser
+func BuildUser(email, initials, fullname string) User {
+	newUser := User{
+		ID:       newId(),
+		CreateAt: time.Now(),
+
+		Services: UserServices{
+			OIDC: UserServicesOIDC{
+				ID:           email,
+				Username:     email,
+				Fullname:     fullname,
+				AccessToken:  "",
+				ExpiresAt:    int(time.Now().UnixMilli()),
+				Email:        email,
+				RefreshToken: "",
+			},
+			Resume: UserServicesResume{
+				LoginTokens: []UserServicesResumeLoginToken{},
+			},
+		},
+		Username: email,
+		Emails: []UserEmail{
+			{
+				Address:  email,
+				Verified: true,
+			},
+		},
+		Profile: UserProfile{
+			Initials:             initials,
+			Fullname:             fullname,
+			BoardView:            "board-view-swimlanes",
+			ListSortBy:           "-modifiedAt",
+			InvitedBoards:        []string{},
+			StarredBoards:        []string{},
+			EmailBuffer:          []string{},
+			HiddenSystemMessages: true,
+			Language:             "fr",
+			Notifications:        []UserProfileNotification{},
+			CardMaximized:        false,
+		},
+		AuthenticationMethod: "oauth2",
+		ModifiedAt:           time.Now(),
+		IsAdmin:              false,
+		LoginDisabled:        false,
+	}
+
+	return newUser
 }

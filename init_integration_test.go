@@ -5,14 +5,15 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
-	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/mongo"
 	"os"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/ory/dockertest/v3"
+	"github.com/ory/dockertest/v3/docker"
+	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // var dbClient *mongo.Client
@@ -102,21 +103,6 @@ func TestGetUser_when_user_not_exist(t *testing.T) {
 	ass.NotNil(err)
 	ass.ErrorIs(err, mongo.ErrNoDocuments)
 	ass.Empty(user.ID)
-}
-
-func TestAnotherThing(t *testing.T) {
-	ass := assert.New(t)
-	boards, err := wekan.ListAllBoards(context.Background())
-	ass.Nil(err)
-	ass.Len(boards, 2)
-	//isBoard := func(b Board) bool {
-	//	return b.Type == "board"
-	//}
-	for _, current := range boards {
-		ass.Condition(func() bool {
-			return current.Type == "board"
-		})
-	}
 }
 
 func kill(mongodb *dockertest.Resource) {

@@ -47,7 +47,6 @@ type Board struct {
 	Watchers                   []interface{} `bson:"watchers"`
 	AllowsCardNumber           bool          `bson:"allowsCardNumber"`
 	AllowsShowLists            bool          `bson:"allowsShowLists"`
-	wekan                      *Wekan
 }
 
 type BoardLabel struct {
@@ -77,7 +76,6 @@ func (w Wekan) ListAllBoards(ctx context.Context) ([]Board, error) {
 		if err := cursor.Decode(&board); err != nil {
 			return nil, err
 		}
-		board.wekan = &w
 		boards = append(boards, board)
 	}
 	return boards, nil
@@ -87,7 +85,6 @@ func (w Wekan) ListAllBoards(ctx context.Context) ([]Board, error) {
 func (w Wekan) GetBoardFromSlug(ctx context.Context, slug string) (Board, error) {
 	var board Board
 	err := w.db.Collection("boards").FindOne(ctx, bson.M{"slug": slug}).Decode(&board)
-	board.wekan = &w
 	return board, err
 }
 
@@ -95,7 +92,6 @@ func (w Wekan) GetBoardFromSlug(ctx context.Context, slug string) (Board, error)
 func (w Wekan) GetBoardFromTitle(ctx context.Context, title string) (Board, error) {
 	var board Board
 	err := w.db.Collection("boards").FindOne(ctx, bson.M{"title": title}).Decode(&board)
-	board.wekan = &w
 	return board, err
 }
 
@@ -103,7 +99,6 @@ func (w Wekan) GetBoardFromTitle(ctx context.Context, title string) (Board, erro
 func (w Wekan) GetBoardFromID(ctx context.Context, id string) (Board, error) {
 	var board Board
 	err := w.db.Collection("boards").FindOne(ctx, bson.M{"_id": id}).Decode(&board)
-	board.wekan = &w
 	return board, err
 }
 
@@ -117,10 +112,10 @@ func (b Board) UserIsMember(user User) bool {
 	return false
 }
 
-// EnsureMember ajoute l'utilisateur au
-func (b Board) EnsureMember(ctx context.Context, user User) error {
-	if !b.UserIsMember(user) {
-		_, err := b.wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": b.ID},
+// EnsureMember ajoute l'utilisateur à la board
+func (wekan Wekan) EnsureUserIsBoardMember(ctx context.Context, board Board, user User) error {
+	if !board.UserIsMember(user) {
+		_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": board.ID},
 			bson.M{
 				"$push": bson.M{
 					"members": BoardMember{
@@ -131,4 +126,57 @@ func (b Board) EnsureMember(ctx context.Context, user User) error {
 		return err
 	}
 	return nil
+}
+
+func newBoard(title string, slug string, boardType string) Board {
+	board := Board{
+		ID:         newId(),
+		Title:      title,
+		Permission: "private",
+		Type:       boardType,
+		Slug:       slug,
+		Archived:   false,
+		CreatedAt:  time.Now(),
+		ModifiedAt: time.Now(),
+		Stars:      0,
+		Labels: []BoardLabel{
+			{"green", "n4eJyZ", ""},
+			{"yellow", "x57Yyo", ""},
+			{"orange", "Axx4ce", ""},
+			{"red", "9dSf3v", ""},
+			{"purple", "4GgshQ", ""},
+			{"blue", "uZwNq7", ""},
+		},
+		Members:                []BoardMember{},
+		Color:                  "belize",
+		AllowsSubtasks:         true,
+		AllowsAttachments:      true,
+		AllowsChecklists:       true,
+		AllowsComments:         true,
+		AllowsDescriptionTitle: true,
+		AllowsDescriptionText:  true,
+		AllowsActivities:       true,
+		AllowsLabels:           true,
+		AllowsAssignee:         true,
+		AllowsMembers:          true,
+		AllowsRequestedBy:      true,
+		AllowsAssignedBy:       true,
+		AllowsReceivedDate:     true,
+		AllowsStartDate:        true,
+		AllowsEndDate:          true,
+		AllowsDueDate:          true,
+		PresentParentTask:      "no-parent",
+		IsOvertime:             false,
+		Sort:                   0,
+		AllowsCardNumber:       false,
+		AllowsShowLists:        true,
+	}
+
+	return board
+
+}
+
+func (wekan Wekan) InsertBoard(ctx context.Context, board Board) error {
+	_, err := wekan.db.Collection("boards").InsertOne(ctx, board)
+	return err
 }
