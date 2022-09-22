@@ -85,12 +85,19 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestEtatInitial_un_seul_utilisateur_qui_est_admin(t *testing.T) {
+func Test_OnlyOneAdminInDB(t *testing.T) {
 	ass := assert.New(t)
 	users, err := wekan.GetUsers(context.TODO())
+	var admin User
+	var admins int
+	for _, u := range users {
+		if u.IsAdmin {
+			admin = u
+			admins += 1
+		}
+	}
 	ass.Nil(err)
-	ass.Len(users, 1)
-	admin := users[0]
+	ass.Equal(1, admins)
 
 	adminUser, err := wekan.AdminUser(context.Background())
 	ass.Nil(err)
@@ -99,7 +106,7 @@ func TestEtatInitial_un_seul_utilisateur_qui_est_admin(t *testing.T) {
 
 func TestGetUser_when_user_not_exist(t *testing.T) {
 	ass := assert.New(t)
-	user, err := wekan.GetUser(context.TODO(), "unexistant user")
+	user, err := wekan.GetUserFromUsername(context.TODO(), Username("unexistant user"))
 	ass.NotNil(err)
 	ass.ErrorIs(err, mongo.ErrNoDocuments)
 	ass.Empty(user.ID)

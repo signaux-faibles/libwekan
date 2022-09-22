@@ -14,12 +14,12 @@ type Wekan struct {
 	databaseName  string
 	client        *mongo.Client
 	db            *mongo.Database
-	adminUsername string
+	adminUsername Username
 	adminUser     *User
 }
 
 // Connect retourne un objet de type `Wekan`
-func Connect(ctx context.Context, uri string, databaseName string, adminUsername string) (Wekan, error) {
+func Connect(ctx context.Context, uri string, databaseName string, adminUsername Username) (Wekan, error) {
 	clientOptions := options.Client().ApplyURI(uri)
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
@@ -42,7 +42,7 @@ func Connect(ctx context.Context, uri string, databaseName string, adminUsername
 
 func (w *Wekan) AdminUser(ctx context.Context) (*User, error) {
 	if w.adminUser == nil {
-		admin, err := w.GetUser(ctx, w.adminUsername)
+		admin, err := w.GetUserFromUsername(ctx, w.adminUsername)
 		if err == mongo.ErrNoDocuments {
 			return nil, fmt.Errorf("%s is not in database\nmongo => %s", w.adminUsername, err.Error())
 		}

@@ -15,11 +15,11 @@ type UserAlreadyExistsError struct {
 	Err
 }
 
-func NewUserAlreadyExistsError(id string) UserAlreadyExistsError {
+func NewUserAlreadyExistsError(id Username) UserAlreadyExistsError {
 	return UserAlreadyExistsError{
 		Err{
 			err: "l'utilisateur existe déjà",
-			id:  id,
+			id:  string(id),
 		},
 	}
 }

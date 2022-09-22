@@ -9,7 +9,7 @@ import (
 
 func Test_usernameExists(t *testing.T) {
 	ass := assert.New(t)
-	username := "signaux.faibles"
+	username := Username("signaux.faibles")
 
 	exists, err := wekan.UsernameExists(context.Background(), username)
 	ass.Nil(err)
@@ -18,20 +18,20 @@ func Test_usernameExists(t *testing.T) {
 
 func Test_createUser(t *testing.T) {
 	ass := assert.New(t)
-	username := "toto@grand.velo.com"
+	username := Username("toto@grand.velo.com")
 	initials := "TGV"
 	fullname := "Toto Grand-Vélo"
 
-	user := BuildUser(username, initials, fullname)
+	user := BuildUser(string(username), initials, fullname)
 	insertedUser, err := wekan.InsertUser(context.Background(), user)
 	ass.Nil(err)
 
-	foundUser, err := wekan.GetUser(context.Background(), username)
+	foundUser, err := wekan.GetUserFromUsername(context.Background(), username)
 	ass.Nil(err)
-	ass.Equal(foundUser.Username, username)
-	ass.Equal(foundUser.Profile.Initials, initials)
-	ass.Equal(foundUser.Profile.Fullname, fullname)
-	ass.Equal(foundUser.Emails[0].Address, username)
+	ass.Equal(username, foundUser.Username)
+	ass.Equal(initials, foundUser.Profile.Initials)
+	ass.Equal(fullname, foundUser.Profile.Fullname)
+	ass.Equal(string(username), foundUser.Emails[0].Address)
 
 	templateBoard, err := wekan.GetBoardFromID(context.Background(), insertedUser.Profile.TemplatesBoardId)
 	ass.Nil(err)

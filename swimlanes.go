@@ -8,7 +8,7 @@ import (
 type Swimlane struct {
 	ID         string    `bson:"_id"`
 	Title      string    `bson:"title"`
-	BoardID    string    `bson:"boardId"`
+	BoardID    BoardID   `bson:"boardId"`
 	Sort       int       `bson:"sort"`
 	Type       string    `bson:"type"`
 	Archived   bool      `bson:"archived"`
@@ -17,7 +17,7 @@ type Swimlane struct {
 	ModifiedAt time.Time `bson:"modifiedAt"`
 }
 
-func newTemplateSwimlaneContainer(boardId string, title string, sort int) Swimlane {
+func newTemplateSwimlaneContainer(boardId BoardID, title string, sort int) Swimlane {
 	newSwimlane := Swimlane{
 		ID:         newId(),
 		Title:      "Card Templates",
@@ -32,13 +32,13 @@ func newTemplateSwimlaneContainer(boardId string, title string, sort int) Swimla
 	return newSwimlane
 }
 
-func newCardTemplateSwimlane(boardId string) Swimlane {
+func newCardTemplateSwimlane(boardId BoardID) Swimlane {
 	return newTemplateSwimlaneContainer(boardId, "Card Templates", 1)
 }
-func newListTemplateSwimlane(boardId string) Swimlane {
+func newListTemplateSwimlane(boardId BoardID) Swimlane {
 	return newTemplateSwimlaneContainer(boardId, "List Templates", 2)
 }
-func newBoardTemplateSwimlane(boardId string) Swimlane {
+func newBoardTemplateSwimlane(boardId BoardID) Swimlane {
 	return newTemplateSwimlaneContainer(boardId, "Board Templates", 3)
 }
 

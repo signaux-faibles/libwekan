@@ -15,7 +15,7 @@ func Test_createBoard(t *testing.T) {
 }
 
 func Test_getBoardFromID(t *testing.T) {
-	id := "kSPsxQZGLKR9tknEt"
+	id := BoardID("kSPsxQZGLKR9tknEt")
 	title := "Tableau CRP BFC"
 	slug := "tableau-crp-bfc"
 
@@ -57,4 +57,16 @@ func Test_getBoardFromTitle(t *testing.T) {
 	ass.Equal(title, board.Title)
 	ass.Equal(slug, board.Slug)
 	ass.Equal(id, board.ID)
+}
+
+func Test_AddUserToBoard(t *testing.T) {
+	ass := assert.New(t)
+	board, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
+	ass.Nil(err)
+	user := BuildUser("bernard.de.la.villardière@m6.com", "BLV", "Bernard de La Villardière")
+	foundUser, err := wekan.InsertUser(context.Background(), user)
+	ass.Nil(err)
+	foundBoard, err := wekan.AddUserToBoard(context.Background(), board.ID, foundUser.ID)
+	ass.Nil(err)
+	ass.True(foundBoard.UserIsMember(foundUser))
 }

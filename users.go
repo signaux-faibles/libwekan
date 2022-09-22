@@ -11,10 +11,10 @@ import (
 type Users []User
 
 type User struct {
-	ID                   string       `bson:"_id"`
+	ID                   UserID       `bson:"_id"`
 	CreateAt             time.Time    `bson:"createAt"`
 	Services             UserServices `bson:"services"`
-	Username             string       `bson:"username"`
+	Username             Username     `bson:"username"`
 	Emails               []UserEmail  `bson:"emails"`
 	Profile              UserProfile  `bson:"profile"`
 	AuthenticationMethod string       `bson:"authenticationMethod"`
@@ -24,13 +24,13 @@ type User struct {
 }
 
 type UserServicesOIDC struct {
-	ID           string `bson:"id"`
-	Username     string `bson:"username"`
-	Fullname     string `bson:"fullname"`
-	AccessToken  string `bson:"accessToken"`
-	ExpiresAt    int    `bson:"expiresAt"`
-	Email        string `bson:"email"`
-	RefreshToken string `bson:"refreshToken"`
+	ID           string   `bson:"id"`
+	Username     Username `bson:"username"`
+	Fullname     string   `bson:"fullname"`
+	AccessToken  string   `bson:"accessToken"`
+	ExpiresAt    int      `bson:"expiresAt"`
+	Email        string   `bson:"email"`
+	RefreshToken string   `bson:"refreshToken"`
 }
 
 type UserServicesResume struct {
@@ -66,7 +66,7 @@ type UserProfile struct {
 	Fullname                 string                    `bson:"fullname"`
 	BoardView                string                    `bson:"boardView"`
 	ListSortBy               string                    `bson:"-modifiedAt"`
-	TemplatesBoardId         string                    `bson:"templatesBoardId"`
+	TemplatesBoardId         BoardID                   `bson:"templatesBoardId"`
 	CardTemplatesSwimlaneId  string                    `bson:"cardTemplatesSwimlaneId"`
 	ListTemplatesSwimlaneId  string                    `bson:"listTemplatesSwimlaneId"`
 	BoardTemplatesSwimlaneId string                    `bson:"boardTemplatesSwimlaneId"`
@@ -79,11 +79,14 @@ type UserProfile struct {
 	HiddenSystemMessages     bool                      `bson:"hiddenSystemMessages"`
 }
 
-func (w Wekan) GetUser(ctx context.Context, username string) (User, error) {
-	var u User
-	err := w.db.Collection("users").FindOne(ctx, bson.M{"username": username}).Decode(&u)
-	return u, err
-}
+type Username string
+type UserID string
+
+// func (w Wekan) GetUser(ctx context.Context, username string) (User, error) {
+// 	var u User
+// 	err := w.db.Collection("users").FindOne(ctx, bson.M{"username": username}).Decode(&u)
+// 	return u, err
+// }
 
 // ListUsers returns all wekan users
 func (w Wekan) ListUsers(ctx context.Context) ([]User, error) {
@@ -97,7 +100,7 @@ func (w Wekan) ListUsers(ctx context.Context) ([]User, error) {
 }
 
 // GetUserFromUsername retourne l'objet utilisateur correspond au champ .username
-func (w Wekan) GetUserFromUsername(ctx context.Context, username string) (User, error) {
+func (w Wekan) GetUserFromUsername(ctx context.Context, username Username) (User, error) {
 	var user User
 	err := w.db.Collection("users").FindOne(ctx, bson.M{
 		"username": username,
@@ -109,7 +112,7 @@ func (w Wekan) GetUserFromUsername(ctx context.Context, username string) (User, 
 }
 
 // GetUserFromID retourne l'objet utilisateur correspond au champ ._id
-func (w Wekan) GetUserFromID(ctx context.Context, id string) (User, error) {
+func (w Wekan) GetUserFromID(ctx context.Context, id UserID) (User, error) {
 	var user User
 	err := w.db.Collection("users").FindOne(ctx, bson.M{
 		"_id": id,
@@ -137,8 +140,8 @@ func (w Wekan) GetUsers(ctx context.Context) (Users, error) {
 	return users, nil
 }
 
-func (wekan Wekan) UsernameExists(ctx context.Context, username string) (bool, error) {
-	_, err := wekan.GetUser(ctx, username)
+func (wekan Wekan) UsernameExists(ctx context.Context, username Username) (bool, error) {
+	_, err := wekan.GetUserFromUsername(ctx, username)
 	if err == mongo.ErrNoDocuments {
 		return false, nil
 	}
@@ -172,22 +175,23 @@ func (wekan Wekan) InsertUser(ctx context.Context, user User) (User, error) {
 	if err = wekan.InsertBoard(ctx, templateBoard); err != nil {
 		return User{}, err
 	}
-	wekan.EnsureUserIsBoardMember(ctx, templateBoard, user)
-
-	_, err = wekan.db.Collection("users").InsertOne(ctx, user)
+	if _, err = wekan.db.Collection("users").InsertOne(ctx, user); err != nil {
+		return User{}, err
+	}
+	_, err = wekan.AddUserToBoard(ctx, templateBoard.ID, user.ID)
 	return user, err
 }
 
 // BuildUser retourne un objet User à insérer/updater avec la fonction Wekan.UpsertUser
 func BuildUser(email, initials, fullname string) User {
 	newUser := User{
-		ID:       newId(),
+		ID:       UserID(newId()),
 		CreateAt: time.Now(),
 
 		Services: UserServices{
 			OIDC: UserServicesOIDC{
 				ID:           email,
-				Username:     email,
+				Username:     Username(email),
 				Fullname:     fullname,
 				AccessToken:  "",
 				ExpiresAt:    int(time.Now().UnixMilli()),
@@ -198,7 +202,7 @@ func BuildUser(email, initials, fullname string) User {
 				LoginTokens: []UserServicesResumeLoginToken{},
 			},
 		},
-		Username: email,
+		Username: Username(email),
 		Emails: []UserEmail{
 			{
 				Address:  email,

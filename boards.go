@@ -9,7 +9,7 @@ import (
 
 // Board représente un objet de la collection `boards`
 type Board struct {
-	ID                         string        `bson:"_id"`
+	ID                         BoardID       `bson:"_id"`
 	Title                      string        `bson:"title"`
 	Permission                 string        `bson:"permission"`
 	Sort                       float64       `bson:"sort"`
@@ -56,13 +56,15 @@ type BoardLabel struct {
 }
 
 type BoardMember struct {
-	UserId        string `bson:"userId"`
+	UserId        UserID `bson:"userId"`
 	IsAdmin       bool   `bson:"isAdmin"`
 	IsActive      bool   `bson:"isActive"`
 	IsNoComments  bool   `bson:"isNoComments"`
 	IsCommentOnly bool   `bson:"isCommentOnly"`
 	IsWorker      bool   `bson:"isWorker"`
 }
+
+type BoardID string
 
 // ListAllBoards GetBoardFromSlug GetBoardFromID retourne l'objet board à partir du champ .slug
 func (w Wekan) ListAllBoards(ctx context.Context) ([]Board, error) {
@@ -96,7 +98,7 @@ func (w Wekan) GetBoardFromTitle(ctx context.Context, title string) (Board, erro
 }
 
 // GetBoardFromID retourne l'objet board à partir du champ ._id
-func (w Wekan) GetBoardFromID(ctx context.Context, id string) (Board, error) {
+func (w Wekan) GetBoardFromID(ctx context.Context, id BoardID) (Board, error) {
 	var board Board
 	err := w.db.Collection("boards").FindOne(ctx, bson.M{"_id": id}).Decode(&board)
 	return board, err
@@ -112,8 +114,17 @@ func (b Board) UserIsMember(user User) bool {
 	return false
 }
 
-// EnsureMember ajoute l'utilisateur à la board
-func (wekan Wekan) EnsureUserIsBoardMember(ctx context.Context, board Board, user User) error {
+// AddUserToBoard ajoute l'utilisateur à la board
+func (wekan Wekan) AddUserToBoard(ctx context.Context, boardID BoardID, userID UserID) (Board, error) {
+	board, err := wekan.GetBoardFromID(ctx, boardID)
+	if err != nil {
+		return Board{}, err
+	}
+	user, err := wekan.GetUserFromID(ctx, userID)
+	if err != nil {
+		return board, err
+	}
+
 	if !board.UserIsMember(user) {
 		_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": board.ID},
 			bson.M{
@@ -123,14 +134,33 @@ func (wekan Wekan) EnsureUserIsBoardMember(ctx context.Context, board Board, use
 					},
 				},
 			})
-		return err
+		if err != nil {
+			return Board{}, err
+		}
+		return wekan.GetBoardFromID(ctx, boardID)
 	}
-	return nil
+	return board, nil
 }
+
+// // AddUserToBoard ajoute l'utilisateur à la board
+// func (wekan Wekan) RemoveUserFromBoard(ctx context.Context, board Board, user User) (Board, error) {
+// 	if !board.UserIsMember(user) {
+// 		_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": board.ID},
+// 			bson.M{
+// 				"$push": bson.M{
+// 					"members": BoardMember{
+// 						user.ID, false, true, false, false, false,
+// 					},
+// 				},
+// 			})
+// 		return board, err
+// 	}
+// 	return wekan.GetBoardFromID(ctx, board.ID)
+// }
 
 func newBoard(title string, slug string, boardType string) Board {
 	board := Board{
-		ID:         newId(),
+		ID:         BoardID(newId()),
 		Title:      title,
 		Permission: "private",
 		Type:       boardType,
