@@ -122,9 +122,8 @@ func (wekan Wekan) AddUserToBoard(ctx context.Context, boardID BoardID, userID U
 	}
 	user, err := wekan.GetUserFromID(ctx, userID)
 	if err != nil {
-		return board, err
+		return Board{}, err
 	}
-
 	if !board.UserIsMember(user) {
 		_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": board.ID},
 			bson.M{
@@ -142,21 +141,31 @@ func (wekan Wekan) AddUserToBoard(ctx context.Context, boardID BoardID, userID U
 	return board, nil
 }
 
-// // AddUserToBoard ajoute l'utilisateur à la board
-// func (wekan Wekan) RemoveUserFromBoard(ctx context.Context, board Board, user User) (Board, error) {
-// 	if !board.UserIsMember(user) {
-// 		_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": board.ID},
-// 			bson.M{
-// 				"$push": bson.M{
-// 					"members": BoardMember{
-// 						user.ID, false, true, false, false, false,
-// 					},
-// 				},
-// 			})
-// 		return board, err
-// 	}
-// 	return wekan.GetBoardFromID(ctx, board.ID)
-// }
+// RemoveUserFromBoard ajoute l'utilisateur à la board
+func (wekan Wekan) RemoveUserFromBoard(ctx context.Context, boardID BoardID, userID UserID) (Board, error) {
+	board, err := wekan.GetBoardFromID(ctx, boardID)
+	if err != nil {
+		return Board{}, err
+	}
+
+	user, err := wekan.GetUserFromID(ctx, userID)
+	if err != nil {
+		return Board{}, err
+	}
+
+	_, err = wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": board.ID},
+		bson.M{
+			"$pull": bson.M{
+				"members": bson.M{
+					"userId": user.ID,
+				},
+			},
+		})
+	if err != nil {
+		return Board{}, err
+	}
+	return wekan.GetBoardFromID(ctx, board.ID)
+}
 
 func newBoard(title string, slug string, boardType string) Board {
 	board := Board{
