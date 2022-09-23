@@ -23,6 +23,12 @@ type User struct {
 	LoginDisabled        bool         `bson:"loginDisabled"`
 }
 
+type UserTemplates struct {
+	TemplateBoard         Board
+	CardTemplateSwimlane  Swimlane
+	ListTemplateSwimlane  Swimlane
+	BoardTemplateSwimlane Swimlane
+}
 type UserServicesOIDC struct {
 	ID           string   `bson:"id"`
 	Username     Username `bson:"username"`
@@ -153,6 +159,33 @@ func (wekan Wekan) InsertUser(ctx context.Context, user User) (User, error) {
 	if err != nil || userAlreadyExists {
 		return User{}, NewUserAlreadyExistsError(user.Username)
 	}
+	if err = wekan.InsertTemplates(ctx, user.BuildTemplates()); err != nil {
+		return User{}, err
+	}
+	if _, err = wekan.db.Collection("users").InsertOne(ctx, user); err != nil {
+		return User{}, err
+	}
+	err = wekan.EnsureUserIsActiveBoardMember(ctx, user.Profile.TemplatesBoardId, user.ID)
+	return user, err
+}
+
+func (wekan Wekan) InsertTemplates(ctx context.Context, templates UserTemplates) error {
+	if err := wekan.InsertSwimlane(ctx, templates.CardTemplateSwimlane); err != nil {
+		return err
+	}
+	if err := wekan.InsertSwimlane(ctx, templates.ListTemplateSwimlane); err != nil {
+		return err
+	}
+	if err := wekan.InsertSwimlane(ctx, templates.BoardTemplateSwimlane); err != nil {
+		return err
+	}
+	if err := wekan.InsertBoard(ctx, templates.TemplateBoard); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (user *User) BuildTemplates() UserTemplates {
 	templateBoard := newBoard("Template", "templates", "template-container")
 	cardTemplateSwimlane := newCardTemplateSwimlane(templateBoard.ID)
 	listTemplateSwimlane := newListTemplateSwimlane(templateBoard.ID)
@@ -163,23 +196,12 @@ func (wekan Wekan) InsertUser(ctx context.Context, user User) (User, error) {
 	user.Profile.ListTemplatesSwimlaneId = listTemplateSwimlane.ID
 	user.Profile.BoardTemplatesSwimlaneId = boardTemplateSwimlane.ID
 
-	if err = wekan.InsertSwimlane(ctx, cardTemplateSwimlane); err != nil {
-		return User{}, err
+	return UserTemplates{
+		TemplateBoard:         templateBoard,
+		CardTemplateSwimlane:  cardTemplateSwimlane,
+		ListTemplateSwimlane:  listTemplateSwimlane,
+		BoardTemplateSwimlane: boardTemplateSwimlane,
 	}
-	if err = wekan.InsertSwimlane(ctx, listTemplateSwimlane); err != nil {
-		return User{}, err
-	}
-	if err = wekan.InsertSwimlane(ctx, boardTemplateSwimlane); err != nil {
-		return User{}, err
-	}
-	if err = wekan.InsertBoard(ctx, templateBoard); err != nil {
-		return User{}, err
-	}
-	if _, err = wekan.db.Collection("users").InsertOne(ctx, user); err != nil {
-		return User{}, err
-	}
-	err = wekan.EnsureUserIsActiveBoardMember(ctx, templateBoard.ID, user.ID)
-	return user, err
 }
 
 // BuildUser retourne un objet User à insérer/updater avec la fonction Wekan.UpsertUser
