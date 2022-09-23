@@ -178,7 +178,7 @@ func (wekan Wekan) InsertUser(ctx context.Context, user User) (User, error) {
 	if _, err = wekan.db.Collection("users").InsertOne(ctx, user); err != nil {
 		return User{}, err
 	}
-	_, err = wekan.AddUserToBoard(ctx, templateBoard.ID, user.ID)
+	err = wekan.EnsureUserIsActiveBoardMember(ctx, templateBoard.ID, user.ID)
 	return user, err
 }
 

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Board représente un objet de la collection `boards`
@@ -104,67 +105,125 @@ func (w Wekan) GetBoardFromID(ctx context.Context, id BoardID) (Board, error) {
 	return board, err
 }
 
-// UserIsMember teste si l'utilisateur fait partie de l'array .members
-func (b Board) UserIsMember(user User) bool {
+// getMember teste si l'utilisateur fait partie de l'array .members
+func (b Board) getMember(userID UserID) BoardMember {
 	for _, boardMember := range b.Members {
-		if boardMember.UserId == user.ID {
-			return true
+		if boardMember.UserId == userID {
+			return boardMember
 		}
 	}
-	return false
+	return BoardMember{}
 }
 
-// AddUserToBoard ajoute l'utilisateur à la board
-func (wekan Wekan) AddUserToBoard(ctx context.Context, boardID BoardID, userID UserID) (Board, error) {
+// UserIsMember teste si l'utilisateur est membre de la board, activé ou non
+func (b Board) UserIsMember(user User) bool {
+	return b.getMember(user.ID) != BoardMember{}
+}
+
+// UserIsActiveMember teste si l'utilisateur est activé sur la board, s'il est absent il est alors considéré comme inactif
+func (b Board) UserIsActiveMember(user User) bool {
+	return b.getMember(user.ID).IsActive
+}
+
+// AddUserToBoard ajoute un objet BoardMember sur la board
+func (wekan Wekan) AddMemberToBoard(ctx context.Context, boardID BoardID, boardMember BoardMember) error {
+	_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": boardID},
+		bson.M{
+			"$push": bson.M{
+				"members": boardMember,
+			},
+		})
+	return err
+}
+
+// EnableUserInBoard active l'utilisateur dans la propriété `member` d'une board
+func (wekan Wekan) EnableBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
+	_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": boardID},
+		bson.M{
+			"$set": bson.M{"members.$[member].isActive": true},
+		},
+		&options.UpdateOptions{
+			ArrayFilters: &options.ArrayFilters{
+				Filters: bson.A{bson.M{"member.userId": userID}}},
+		},
+	)
+	return err
+}
+
+// DisableBoardMember desactive l'utilisateur dans la propriété `member` d'une board
+func (wekan Wekan) DisableBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
+	_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": boardID},
+		bson.M{
+			"$set": bson.M{"members.$[member].isActive": false},
+		},
+		&options.UpdateOptions{
+			ArrayFilters: &options.ArrayFilters{
+				Filters: bson.A{bson.M{"member.userId": userID}}},
+		},
+	)
+	return err
+}
+
+// EnsureActiveUserInBoard fait en sorte de rendre l'utilisateur participant et actif à une board
+func (wekan Wekan) EnsureUserIsActiveBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
 	board, err := wekan.GetBoardFromID(ctx, boardID)
 	if err != nil {
-		return Board{}, err
+		return err
 	}
 	user, err := wekan.GetUserFromID(ctx, userID)
 	if err != nil {
-		return Board{}, err
+		return err
 	}
-	if !board.UserIsMember(user) {
-		_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": board.ID},
-			bson.M{
-				"$push": bson.M{
-					"members": BoardMember{
-						user.ID, false, true, false, false, false,
-					},
-				},
-			})
-		if err != nil {
-			return Board{}, err
-		}
-		return wekan.GetBoardFromID(ctx, boardID)
+	if board.UserIsActiveMember(user) {
+		return nil // l'utilisateur est déjà membre actif pas d'action requise
 	}
-	return board, nil
+	if board.UserIsMember(user) {
+		return wekan.EnableBoardMember(ctx, board.ID, user.ID)
+	}
+	return wekan.AddMemberToBoard(ctx, board.ID, BoardMember{user.ID, false, true, false, false, false})
+}
+
+// EnsureUserIsInactiveBoardMember fait en sorte de désactiver un utilisateur sur une board lorsqu'il est participant
+func (wekan Wekan) EnsureUserIsInactiveBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
+	board, err := wekan.GetBoardFromID(ctx, boardID)
+	if err != nil {
+		return err
+	}
+	user, err := wekan.GetUserFromID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if board.UserIsActiveMember(user) {
+		return wekan.DisableBoardMember(ctx, board.ID, user.ID)
+	}
+	return nil
 }
 
 // RemoveUserFromBoard ajoute l'utilisateur à la board
-func (wekan Wekan) RemoveUserFromBoard(ctx context.Context, boardID BoardID, userID UserID) (Board, error) {
-	board, err := wekan.GetBoardFromID(ctx, boardID)
-	if err != nil {
-		return Board{}, err
-	}
+func (wekan Wekan) EnsureUsersOnBoard(ctx context.Context, boardID BoardID, userID []UserID) (Board, error) {
+	// board, err := wekan.GetBoardFromID(ctx, boardID)
+	// if err != nil {
+	// 	return Board{}, err
+	// }
 
-	user, err := wekan.GetUserFromID(ctx, userID)
-	if err != nil {
-		return Board{}, err
-	}
+	// user, err := wekan.GetUserFromID(ctx, userID)
+	// if err != nil {
+	// 	return Board{}, err
+	// }
 
-	_, err = wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": board.ID},
-		bson.M{
-			"$pull": bson.M{
-				"members": bson.M{
-					"userId": user.ID,
-				},
-			},
-		})
-	if err != nil {
-		return Board{}, err
-	}
-	return wekan.GetBoardFromID(ctx, board.ID)
+	// _, err = wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": board.ID},
+	// 	bson.M{
+	// 		"$pull": bson.M{
+	// 			"members": bson.M{
+	// 				"userId": user.ID,
+	// 			},
+	// 		},
+	// 	})
+	// if err != nil {
+	// 	return Board{}, err
+	// }
+	// return wekan.GetBoardFromID(ctx, board.ID)
+	return Board{}, nil
 }
 
 func newBoard(title string, slug string, boardType string) Board {
