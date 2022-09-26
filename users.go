@@ -6,6 +6,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Users []User
@@ -247,22 +248,53 @@ func BuildUser(email, initials, fullname string) User {
 	return newUser
 }
 
-// EnableUser: NotImplemented
+// EnableUser: active un utilisateur dans la base `users` et active la participation à son tableau templates
 func (wekan *Wekan) EnableUser(ctx context.Context, user User) error {
 	_, err := wekan.db.Collection("users").UpdateOne(ctx, bson.M{"_id": user.ID}, bson.M{
 		"$set": bson.M{
 			"loginDisabled": false,
 		},
 	})
+
+	if err != nil {
+		return err
+	}
+
+	// enable BoardMember on template board
+	_, err = wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": user.Profile.TemplatesBoardId},
+		bson.M{
+			"$set": bson.M{"members.$[member].isActive": true},
+		},
+		&options.UpdateOptions{
+			ArrayFilters: &options.ArrayFilters{
+				Filters: bson.A{bson.M{"member.userId": user.ID}}},
+		},
+	)
 	return err
 }
 
-// DisableUser: NotImplemented
+// DisableUser désactive l'utilisateur dans la base `users` et désactive la participation à tous les tableaux
 func (wekan *Wekan) DisableUser(ctx context.Context, user User) error {
 	_, err := wekan.db.Collection("users").UpdateOne(ctx, bson.M{"_id": user.ID}, bson.M{
 		"$set": bson.M{
 			"loginDisabled": true,
 		},
 	})
+
+	if err != nil {
+		return err
+	}
+
+	// disable BoardMember on every boards
+	_, err = wekan.db.Collection("boards").UpdateOne(ctx, bson.M{},
+		bson.M{
+			"$set": bson.M{"members.$[member].isActive": true},
+		},
+		&options.UpdateOptions{
+			ArrayFilters: &options.ArrayFilters{
+				Filters: bson.A{bson.M{"member.userId": user.ID}}},
+		},
+	)
+
 	return err
 }
