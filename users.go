@@ -246,3 +246,23 @@ func BuildUser(email, initials, fullname string) User {
 
 	return newUser
 }
+
+// EnableUser: NotImplemented
+func (wekan *Wekan) EnableUser(ctx context.Context, user User) error {
+	_, err := wekan.db.Collection("users").UpdateOne(ctx, bson.M{"_id": user.ID}, bson.M{
+		"$set": bson.M{
+			"loginDisabled": false,
+		},
+	})
+	return err
+}
+
+// DisableUser: NotImplemented
+func (wekan *Wekan) DisableUser(ctx context.Context, user User) error {
+	_, err := wekan.db.Collection("users").UpdateOne(ctx, bson.M{"_id": user.ID}, bson.M{
+		"$set": bson.M{
+			"loginDisabled": true,
+		},
+	})
+	return err
+}

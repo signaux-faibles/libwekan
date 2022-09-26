@@ -24,7 +24,7 @@ type InsertEmptyRuleError struct {
 }
 
 func (e InsertEmptyRuleError) Error() string {
-	return fmt.Sprintf("l'insertion d'un objet Rule vide est impossible")
+	return "l'insertion d'un objet Rule vide est impossible"
 }
 
 type BoardLabelAlreadyExistsError struct {

@@ -55,6 +55,7 @@ func TestWekan_InsertRule_whenEverythingsFine(t *testing.T) {
 	err = wekan.InsertBoardLabel(context.Background(), board, testBoardLabel)
 	ass.Nil(err)
 	updatedBoard, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
+	ass.Nil(err)
 	rule := updatedBoard.BuildRule(insertedUser, BoardLabelName(t.Name()))
 	ass.NotEmpty(rule)
 
