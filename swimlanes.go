@@ -42,7 +42,7 @@ func newBoardTemplateSwimlane(boardId BoardID) Swimlane {
 	return newTemplateSwimlaneContainer(boardId, "Board Templates", 3)
 }
 
-func (wekan Wekan) InsertSwimlane(ctx context.Context, swimlane Swimlane) error {
+func (wekan *Wekan) InsertSwimlane(ctx context.Context, swimlane Swimlane) error {
 	_, err := wekan.db.Collection("swimlanes").InsertOne(ctx, swimlane)
 	return err
 }

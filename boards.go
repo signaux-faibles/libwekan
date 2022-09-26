@@ -89,19 +89,10 @@ func (board Board) GetLabelByID(id BoardLabelID) BoardLabel {
 	return BoardLabel{}
 }
 
-// func (board Board) GetMember(user User) BoardMember {
-// 	for _, member := range board.Members {
-// 		if member.UserId == user.ID {
-// 			return member
-// 		}
-// 	}
-// 	return BoardMember{}
-// }
-
 // ListAllBoards GetBoardFromSlug GetBoardFromID retourne l'objet board à partir du champ .slug
-func (w Wekan) ListAllBoards(ctx context.Context) ([]Board, error) {
+func (wekan *Wekan) ListAllBoards(ctx context.Context) ([]Board, error) {
 	var boards []Board
-	cursor, err := w.db.Collection("boards").Find(ctx, bson.M{"type": "board"})
+	cursor, err := wekan.db.Collection("boards").Find(ctx, bson.M{"type": "board"})
 	if err != nil {
 		return nil, err
 	}
@@ -116,29 +107,29 @@ func (w Wekan) ListAllBoards(ctx context.Context) ([]Board, error) {
 }
 
 // GetBoardFromSlug GetBoardFromID retourne l'objet board à partir du champ .slug
-func (w Wekan) GetBoardFromSlug(ctx context.Context, slug string) (Board, error) {
+func (wekan *Wekan) GetBoardFromSlug(ctx context.Context, slug string) (Board, error) {
 	var board Board
-	err := w.db.Collection("boards").FindOne(ctx, bson.M{"slug": slug}).Decode(&board)
+	err := wekan.db.Collection("boards").FindOne(ctx, bson.M{"slug": slug}).Decode(&board)
 	return board, err
 }
 
 // GetBoardFromTitle GetBoardFromID retourne l'objet board à partir du champ .title
-func (w Wekan) GetBoardFromTitle(ctx context.Context, title string) (Board, error) {
+func (wekan *Wekan) GetBoardFromTitle(ctx context.Context, title string) (Board, error) {
 	var board Board
-	err := w.db.Collection("boards").FindOne(ctx, bson.M{"title": title}).Decode(&board)
+	err := wekan.db.Collection("boards").FindOne(ctx, bson.M{"title": title}).Decode(&board)
 	return board, err
 }
 
 // GetBoardFromID retourne l'objet board à partir du champ ._id
-func (w Wekan) GetBoardFromID(ctx context.Context, id BoardID) (Board, error) {
+func (wekan *Wekan) GetBoardFromID(ctx context.Context, id BoardID) (Board, error) {
 	var board Board
-	err := w.db.Collection("boards").FindOne(ctx, bson.M{"_id": id}).Decode(&board)
+	err := wekan.db.Collection("boards").FindOne(ctx, bson.M{"_id": id}).Decode(&board)
 	return board, err
 }
 
 // getMember teste si l'utilisateur fait partie de l'array .members
-func (b Board) getMember(userID UserID) BoardMember {
-	for _, boardMember := range b.Members {
+func (board Board) getMember(userID UserID) BoardMember {
+	for _, boardMember := range board.Members {
 		if boardMember.UserId == userID {
 			return boardMember
 		}
@@ -147,17 +138,17 @@ func (b Board) getMember(userID UserID) BoardMember {
 }
 
 // UserIsMember teste si l'utilisateur est membre de la board, activé ou non
-func (b Board) UserIsMember(user User) bool {
-	return b.getMember(user.ID) != BoardMember{}
+func (board Board) UserIsMember(user User) bool {
+	return board.getMember(user.ID) != BoardMember{}
 }
 
 // UserIsActiveMember teste si l'utilisateur est activé sur la board, s'il est absent il est alors considéré comme inactif
-func (b Board) UserIsActiveMember(user User) bool {
-	return b.getMember(user.ID).IsActive
+func (board Board) UserIsActiveMember(user User) bool {
+	return board.getMember(user.ID).IsActive
 }
 
-// AddUserToBoard ajoute un objet BoardMember sur la board
-func (wekan Wekan) AddMemberToBoard(ctx context.Context, boardID BoardID, boardMember BoardMember) error {
+// AddMemberToBoard ajoute un objet BoardMember sur la board
+func (wekan *Wekan) AddMemberToBoard(ctx context.Context, boardID BoardID, boardMember BoardMember) error {
 	_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": boardID},
 		bson.M{
 			"$push": bson.M{
@@ -167,8 +158,8 @@ func (wekan Wekan) AddMemberToBoard(ctx context.Context, boardID BoardID, boardM
 	return err
 }
 
-// EnableUserInBoard active l'utilisateur dans la propriété `member` d'une board
-func (wekan Wekan) EnableBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
+// EnableBoardMember active l'utilisateur dans la propriété `member` d'une board
+func (wekan *Wekan) EnableBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
 	_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": boardID},
 		bson.M{
 			"$set": bson.M{"members.$[member].isActive": true},
@@ -182,7 +173,7 @@ func (wekan Wekan) EnableBoardMember(ctx context.Context, boardID BoardID, userI
 }
 
 // DisableBoardMember desactive l'utilisateur dans la propriété `member` d'une board
-func (wekan Wekan) DisableBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
+func (wekan *Wekan) DisableBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
 	_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": boardID},
 		bson.M{
 			"$set": bson.M{"members.$[member].isActive": false},
@@ -195,8 +186,8 @@ func (wekan Wekan) DisableBoardMember(ctx context.Context, boardID BoardID, user
 	return err
 }
 
-// EnsureActiveUserInBoard fait en sorte de rendre l'utilisateur participant et actif à une board
-func (wekan Wekan) EnsureUserIsActiveBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
+// EnsureUserIsActiveBoardMember fait en sorte de rendre l'utilisateur participant et actif à une board
+func (wekan *Wekan) EnsureUserIsActiveBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
 	board, err := wekan.GetBoardFromID(ctx, boardID)
 	if err != nil {
 		return err
@@ -215,7 +206,7 @@ func (wekan Wekan) EnsureUserIsActiveBoardMember(ctx context.Context, boardID Bo
 }
 
 // EnsureUserIsInactiveBoardMember fait en sorte de désactiver un utilisateur sur une board lorsqu'il est participant
-func (wekan Wekan) EnsureUserIsInactiveBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
+func (wekan *Wekan) EnsureUserIsInactiveBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
 	board, err := wekan.GetBoardFromID(ctx, boardID)
 	if err != nil {
 		return err
@@ -276,7 +267,20 @@ func newBoard(title string, slug string, boardType string) Board {
 	return board
 }
 
-func (wekan Wekan) InsertBoard(ctx context.Context, board Board) error {
+func (wekan *Wekan) InsertBoard(ctx context.Context, board Board) error {
 	_, err := wekan.db.Collection("boards").InsertOne(ctx, board)
+	return err
+}
+
+func (wekan *Wekan) InsertBoardLabel(ctx context.Context, board Board, boardLabel BoardLabel) error {
+	if board.GetLabelByName(boardLabel.Name) != (BoardLabel{}) {
+		return BoardLabelAlreadyExistsError{boardLabel, board}
+	}
+	_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": board.ID},
+		bson.M{
+			"$push": bson.M{
+				"labels": boardLabel,
+			},
+		})
 	return err
 }

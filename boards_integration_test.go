@@ -169,3 +169,37 @@ func Test_EnsureUserIsActiveBoardMember(t *testing.T) {
 	ass.True(updatedBoard.UserIsMember(insertedUser))
 	ass.True(updatedBoard.UserIsActiveMember(insertedUser))
 }
+
+func Test_InsertBoardLabel_whenBoardLabelDontExists(t *testing.T) {
+	ass := assert.New(t)
+	board, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
+	ass.Nil(err)
+	boardLabel := BoardLabel{
+		ID:    BoardLabelID(newId6()),
+		Name:  "test label",
+		Color: "orange",
+	}
+	err = wekan.InsertBoardLabel(context.Background(), board, boardLabel)
+	ass.Nil(err)
+	updatedBoard, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
+	ass.Nil(err)
+	insertedLabel := updatedBoard.GetLabelByID(boardLabel.ID)
+	ass.NotEmpty(insertedLabel)
+}
+
+func Test_InsertBoardLabel_whenBoardLabelAlreadyExists(t *testing.T) {
+	ass := assert.New(t)
+	board, err := wekan.GetBoardFromSlug(context.Background(), "tableau-codefi-nord")
+	ass.Nil(err)
+	boardLabel := BoardLabel{
+		ID:    BoardLabelID(newId6()),
+		Name:  "test label",
+		Color: "orange",
+	}
+	err = wekan.InsertBoardLabel(context.Background(), board, boardLabel)
+	ass.Nil(err)
+	updatedBoard, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
+	ass.Nil(err)
+	err = wekan.InsertBoardLabel(context.Background(), updatedBoard, boardLabel)
+	ass.IsType(BoardLabelAlreadyExistsError{}, err)
+}

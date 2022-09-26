@@ -92,22 +92,30 @@ func (board Board) BuildRule(user User, labelName BoardLabelName) Rule {
 	return rule
 }
 
-func (wekan Wekan) InsertRule(ctx context.Context, rule Rule) error {
+func (wekan *Wekan) InsertRule(ctx context.Context, rule Rule) error {
 	if rule == (Rule{}) {
-		return NewInsertEmptyRuleError()
+		return InsertEmptyRuleError{}
 	}
-	wekan.InsertAction(ctx, rule.Action)
-	wekan.InsertTrigger(ctx, rule.Trigger)
-	_, err := wekan.db.Collection("rules").InsertOne(ctx, rule)
+	err := wekan.InsertAction(ctx, rule.Action)
+	if err != nil {
+		return err
+	}
+
+	err = wekan.InsertTrigger(ctx, rule.Trigger)
+	if err != nil {
+		return err
+	}
+
+	_, err = wekan.db.Collection("rules").InsertOne(ctx, rule)
 	return err
 }
 
-func (wekan Wekan) InsertAction(ctx context.Context, action Action) error {
+func (wekan *Wekan) InsertAction(ctx context.Context, action Action) error {
 	_, err := wekan.db.Collection("actions").InsertOne(ctx, action)
 	return err
 }
 
-func (wekan Wekan) InsertTrigger(ctx context.Context, trigger Trigger) error {
+func (wekan *Wekan) InsertTrigger(ctx context.Context, trigger Trigger) error {
 	_, err := wekan.db.Collection("triggers").InsertOne(ctx, trigger)
 	return err
 }

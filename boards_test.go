@@ -84,3 +84,50 @@ func Test_UserIsActiveMember(t *testing.T) {
 	isActive = boardWithUserTotoAndTata.UserIsActiveMember(userToto)
 	ass.False(isActive)
 }
+
+func Test_GetLabelByName_whenBoardLabelExists(t *testing.T) {
+	ass := assert.New(t)
+	testId := BoardLabelID(newId6())
+	labelName := BoardLabelName("existing label")
+	board := Board{
+		Labels: []BoardLabel{
+			{
+				ID:    testId,
+				Name:  labelName,
+				Color: "orange",
+			},
+		},
+	}
+	label := board.GetLabelByName(labelName)
+	ass.NotEmpty(label)
+}
+
+func Test_GetLabelByName_whenBoardLabelDoesntExists(t *testing.T) {
+	ass := assert.New(t)
+	board := Board{}
+	label := board.GetLabelByName("anotherName")
+	ass.Empty(label)
+}
+
+func Test_GetLabelByID_whenBoardLabelExists(t *testing.T) {
+	ass := assert.New(t)
+	testId := BoardLabelID(newId6())
+	board := Board{
+		Labels: []BoardLabel{
+			{
+				ID:    testId,
+				Name:  "existing label",
+				Color: "orange",
+			},
+		},
+	}
+	label := board.GetLabelByID(testId)
+	ass.NotEmpty(label)
+}
+
+func Test_GetLabelByID_whenBoardLabelDoesntExists(t *testing.T) {
+	ass := assert.New(t)
+	board := Board{}
+	label := board.GetLabelByID("anotherID")
+	ass.Empty(label)
+}

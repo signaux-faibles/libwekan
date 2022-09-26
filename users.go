@@ -88,15 +88,9 @@ type UserProfile struct {
 type Username string
 type UserID string
 
-// func (w Wekan) GetUser(ctx context.Context, username string) (User, error) {
-// 	var u User
-// 	err := w.db.Collection("users").FindOne(ctx, bson.M{"username": username}).Decode(&u)
-// 	return u, err
-// }
-
 // ListUsers returns all wekan users
-func (w Wekan) ListUsers(ctx context.Context) ([]User, error) {
-	cursor, err := w.db.Collection("users").Find(ctx, bson.M{})
+func (wekan *Wekan) ListUsers(ctx context.Context) ([]User, error) {
+	cursor, err := wekan.db.Collection("users").Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
 	}
@@ -106,9 +100,9 @@ func (w Wekan) ListUsers(ctx context.Context) ([]User, error) {
 }
 
 // GetUserFromUsername retourne l'objet utilisateur correspond au champ .username
-func (w Wekan) GetUserFromUsername(ctx context.Context, username Username) (User, error) {
+func (wekan *Wekan) GetUserFromUsername(ctx context.Context, username Username) (User, error) {
 	var user User
-	err := w.db.Collection("users").FindOne(ctx, bson.M{
+	err := wekan.db.Collection("users").FindOne(ctx, bson.M{
 		"username": username,
 	}).Decode(&user)
 	if err != nil {
@@ -118,9 +112,9 @@ func (w Wekan) GetUserFromUsername(ctx context.Context, username Username) (User
 }
 
 // GetUserFromID retourne l'objet utilisateur correspond au champ ._id
-func (w Wekan) GetUserFromID(ctx context.Context, id UserID) (User, error) {
+func (wekan *Wekan) GetUserFromID(ctx context.Context, id UserID) (User, error) {
 	var user User
-	err := w.db.Collection("users").FindOne(ctx, bson.M{
+	err := wekan.db.Collection("users").FindOne(ctx, bson.M{
 		"_id": id,
 	}).Decode(&user)
 	if err != nil {
@@ -130,9 +124,9 @@ func (w Wekan) GetUserFromID(ctx context.Context, id UserID) (User, error) {
 }
 
 // GetUsers retourne tous les utilisateurs
-func (w Wekan) GetUsers(ctx context.Context) (Users, error) {
+func (wekan *Wekan) GetUsers(ctx context.Context) (Users, error) {
 	var users Users
-	cursor, err := w.db.Collection("users").Find(ctx, bson.M{})
+	cursor, err := wekan.db.Collection("users").Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +140,7 @@ func (w Wekan) GetUsers(ctx context.Context) (Users, error) {
 	return users, nil
 }
 
-func (wekan Wekan) UsernameExists(ctx context.Context, username Username) (bool, error) {
+func (wekan *Wekan) UsernameExists(ctx context.Context, username Username) (bool, error) {
 	_, err := wekan.GetUserFromUsername(ctx, username)
 	if err == mongo.ErrNoDocuments {
 		return false, nil
@@ -154,10 +148,10 @@ func (wekan Wekan) UsernameExists(ctx context.Context, username Username) (bool,
 	return err == nil, err
 }
 
-func (wekan Wekan) InsertUser(ctx context.Context, user User) (User, error) {
+func (wekan *Wekan) InsertUser(ctx context.Context, user User) (User, error) {
 	userAlreadyExists, err := wekan.UsernameExists(ctx, user.Username)
 	if err != nil || userAlreadyExists {
-		return User{}, NewUserAlreadyExistsError(user)
+		return User{}, UserAlreadyExistsError{user}
 	}
 	if err = wekan.InsertTemplates(ctx, user.BuildTemplates()); err != nil {
 		return User{}, err
@@ -169,7 +163,7 @@ func (wekan Wekan) InsertUser(ctx context.Context, user User) (User, error) {
 	return user, err
 }
 
-func (wekan Wekan) InsertTemplates(ctx context.Context, templates UserTemplates) error {
+func (wekan *Wekan) InsertTemplates(ctx context.Context, templates UserTemplates) error {
 	if err := wekan.InsertSwimlane(ctx, templates.CardTemplateSwimlane); err != nil {
 		return err
 	}

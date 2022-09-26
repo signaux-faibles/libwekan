@@ -40,16 +40,16 @@ func Connect(ctx context.Context, uri string, databaseName string, adminUsername
 	return w, nil
 }
 
-func (w *Wekan) AdminUser(ctx context.Context) (*User, error) {
-	if w.adminUser == nil {
-		admin, err := w.GetUserFromUsername(ctx, w.adminUsername)
+func (wekan *Wekan) AdminUser(ctx context.Context) (*User, error) {
+	if wekan.adminUser == nil {
+		admin, err := wekan.GetUserFromUsername(ctx, wekan.adminUsername)
 		if err == mongo.ErrNoDocuments {
-			return nil, fmt.Errorf("%s is not in database\nmongo => %s", w.adminUsername, err.Error())
+			return nil, fmt.Errorf("%s is not in database\nmongo => %s", wekan.adminUsername, err.Error())
 		}
 		if !admin.IsAdmin {
 			return nil, errors.New("%s is not admin")
 		}
-		w.adminUser = &admin
+		wekan.adminUser = &admin
 	}
-	return w.adminUser, nil
+	return wekan.adminUser, nil
 }
