@@ -20,7 +20,7 @@ type Swimlane struct {
 func newTemplateSwimlaneContainer(boardId BoardID, title string, sort int) Swimlane {
 	newSwimlane := Swimlane{
 		ID:         newId(),
-		Title:      "Card Templates",
+		Title:      title,
 		BoardID:    boardId,
 		Sort:       sort,
 		Type:       "template-container",

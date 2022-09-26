@@ -90,24 +90,27 @@ func Test_EnableBoardMember(t *testing.T) {
 	user := BuildUser("test_enable_board_member", "tebm", "Test Enable Board Member")
 	insertedUser, err := wekan.InsertUser(context.Background(), user)
 	ass.Nil(err)
-
 	ass.False(board.UserIsMember(insertedUser))
+	notEnabledUser := BuildUser("test_not_enable_board_member", "tnebm", "Test Not Enable Board Member")
+	insertedNotEnabledUser, err := wekan.InsertUser(context.Background(), notEnabledUser)
+	ass.Nil(err)
+	ass.False(board.UserIsMember(insertedNotEnabledUser))
 
 	err = wekan.AddMemberToBoard(context.Background(), board.ID, BoardMember{insertedUser.ID, false, false, false, false, false})
 	ass.Nil(err)
-
+	err = wekan.AddMemberToBoard(context.Background(), board.ID, BoardMember{insertedNotEnabledUser.ID, false, false, false, false, false})
+	ass.Nil(err)
 	insertedMemberBoard, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
 	ass.Nil(err)
-
 	ass.False(insertedMemberBoard.UserIsActiveMember(insertedUser))
+	ass.False(insertedMemberBoard.UserIsActiveMember(insertedNotEnabledUser))
 
 	err = wekan.EnableBoardMember(context.Background(), insertedMemberBoard.ID, user.ID)
 	ass.Nil(err)
-
 	enabledMemberBoard, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
 	ass.Nil(err)
-
 	ass.True(enabledMemberBoard.UserIsActiveMember(user))
+	ass.False(enabledMemberBoard.UserIsActiveMember(notEnabledUser))
 }
 
 func Test_DisableBoardMember(t *testing.T) {
@@ -117,17 +120,24 @@ func Test_DisableBoardMember(t *testing.T) {
 	ass.Nil(err)
 
 	user := BuildUser("test_disable_board_member", "tdbm", "Test Disable Board Member")
+	enabledUser := BuildUser("test_not_disable_board_member", "tndbm", "Test Not Disable Board Member")
+
 	insertedUser, err := wekan.InsertUser(context.Background(), user)
 	ass.Nil(err)
-
+	insertedEnabledUser, err := wekan.InsertUser(context.Background(), enabledUser)
+	ass.Nil(err)
 	ass.False(board.UserIsMember(insertedUser))
+	ass.False(board.UserIsMember(insertedEnabledUser))
 
 	err = wekan.AddMemberToBoard(context.Background(), board.ID, BoardMember{insertedUser.ID, false, true, false, false, false})
+	ass.Nil(err)
+	err = wekan.AddMemberToBoard(context.Background(), board.ID, BoardMember{insertedEnabledUser.ID, false, true, false, false, false})
 	ass.Nil(err)
 
 	insertedMemberBoard, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
 	ass.Nil(err)
 	ass.True(insertedMemberBoard.UserIsActiveMember(user))
+	ass.True(insertedMemberBoard.UserIsActiveMember(enabledUser))
 
 	err = wekan.DisableBoardMember(context.Background(), insertedMemberBoard.ID, user.ID)
 	ass.Nil(err)
@@ -136,6 +146,7 @@ func Test_DisableBoardMember(t *testing.T) {
 	ass.Nil(err)
 
 	ass.False(disabledMemberBoard.UserIsActiveMember(user))
+	ass.True(disabledMemberBoard.UserIsActiveMember(enabledUser))
 }
 
 func Test_EnsureUserIsActiveBoardMember(t *testing.T) {
@@ -146,17 +157,15 @@ func Test_EnsureUserIsActiveBoardMember(t *testing.T) {
 	user := BuildUser("test_ensure_user_is_active_board_member", "teuiabm", "Test Ensure User Is Active Board Member")
 	insertedUser, err := wekan.InsertUser(context.Background(), user)
 	ass.Nil(err)
-	
+
 	ass.False(board.UserIsMember(insertedUser))
 	ass.False(board.UserIsActiveMember(insertedUser))
 
 	err = wekan.EnsureUserIsActiveBoardMember(context.Background(), board.ID, user.ID)
 	ass.Nil(err)
 
-	updatedBoard, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc") 
+	updatedBoard, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
 	ass.Nil(err)
 	ass.True(updatedBoard.UserIsMember(insertedUser))
 	ass.True(updatedBoard.UserIsActiveMember(insertedUser))
 }
-
-

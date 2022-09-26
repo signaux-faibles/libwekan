@@ -50,10 +50,12 @@ type Board struct {
 	AllowsShowLists            bool          `bson:"allowsShowLists"`
 }
 
+type BoardLabelID string
+type BoardLabelName string
 type BoardLabel struct {
-	ID    string `bson:"_id"`
-	Name  string `bson:"name"`
-	Color string `bson:"color"`
+	ID    BoardLabelID   `bson:"_id"`
+	Name  BoardLabelName `bson:"name"`
+	Color string         `bson:"color"`
 }
 
 type BoardMember struct {
@@ -66,6 +68,35 @@ type BoardMember struct {
 }
 
 type BoardID string
+
+// GetLabelByName retourne l'objet BoardLabel correspondant au nom, vide si absent
+func (board Board) GetLabelByName(name BoardLabelName) BoardLabel {
+	for _, label := range board.Labels {
+		if label.Name == name {
+			return label
+		}
+	}
+	return BoardLabel{}
+}
+
+// GetLabelByID retourne l'objet BoardLabel correspondant à l'ID, vide si absent
+func (board Board) GetLabelByID(id BoardLabelID) BoardLabel {
+	for _, label := range board.Labels {
+		if label.ID == id {
+			return label
+		}
+	}
+	return BoardLabel{}
+}
+
+// func (board Board) GetMember(user User) BoardMember {
+// 	for _, member := range board.Members {
+// 		if member.UserId == user.ID {
+// 			return member
+// 		}
+// 	}
+// 	return BoardMember{}
+// }
 
 // ListAllBoards GetBoardFromSlug GetBoardFromID retourne l'objet board à partir du champ .slug
 func (w Wekan) ListAllBoards(ctx context.Context) ([]Board, error) {
@@ -199,33 +230,6 @@ func (wekan Wekan) EnsureUserIsInactiveBoardMember(ctx context.Context, boardID 
 	return nil
 }
 
-// RemoveUserFromBoard ajoute l'utilisateur à la board
-func (wekan Wekan) EnsureUsersOnBoard(ctx context.Context, boardID BoardID, userID []UserID) (Board, error) {
-	// board, err := wekan.GetBoardFromID(ctx, boardID)
-	// if err != nil {
-	// 	return Board{}, err
-	// }
-
-	// user, err := wekan.GetUserFromID(ctx, userID)
-	// if err != nil {
-	// 	return Board{}, err
-	// }
-
-	// _, err = wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": board.ID},
-	// 	bson.M{
-	// 		"$pull": bson.M{
-	// 			"members": bson.M{
-	// 				"userId": user.ID,
-	// 			},
-	// 		},
-	// 	})
-	// if err != nil {
-	// 	return Board{}, err
-	// }
-	// return wekan.GetBoardFromID(ctx, board.ID)
-	return Board{}, nil
-}
-
 func newBoard(title string, slug string, boardType string) Board {
 	board := Board{
 		ID:         BoardID(newId()),
@@ -269,9 +273,7 @@ func newBoard(title string, slug string, boardType string) Board {
 		AllowsCardNumber:       false,
 		AllowsShowLists:        true,
 	}
-
 	return board
-
 }
 
 func (wekan Wekan) InsertBoard(ctx context.Context, board Board) error {

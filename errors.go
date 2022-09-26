@@ -2,24 +2,15 @@ package libwekan
 
 import "fmt"
 
-type Err struct {
-	err string
-	id  string
+type UserAlreadyExistsError error
+
+func NewUserAlreadyExistsError(user User) UserAlreadyExistsError {
+	return fmt.Errorf("l'utilisateur existe déjà (UserID: %s, Username: %s)", user.ID, user.Username)
+
 }
 
-func (e Err) Error() string {
-	return fmt.Sprintf("une erreur est survenue: %s, l'id incriminé est: %s", e.err, e.id)
-}
+type UnknownBoardError error
 
-type UserAlreadyExistsError struct {
-	Err
-}
-
-func NewUserAlreadyExistsError(id Username) UserAlreadyExistsError {
-	return UserAlreadyExistsError{
-		Err{
-			err: "l'utilisateur existe déjà",
-			id:  string(id),
-		},
-	}
+func NewUnknownBoardError(board Board) UnknownBoardError {
+	return fmt.Errorf("la board est inconnue (BoardID: %s, Title: %s, Slug: %s", board.ID, board.Title, board.Slug)
 }

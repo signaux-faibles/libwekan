@@ -157,7 +157,7 @@ func (wekan Wekan) UsernameExists(ctx context.Context, username Username) (bool,
 func (wekan Wekan) InsertUser(ctx context.Context, user User) (User, error) {
 	userAlreadyExists, err := wekan.UsernameExists(ctx, user.Username)
 	if err != nil || userAlreadyExists {
-		return User{}, NewUserAlreadyExistsError(user.Username)
+		return User{}, NewUserAlreadyExistsError(user)
 	}
 	if err = wekan.InsertTemplates(ctx, user.BuildTemplates()); err != nil {
 		return User{}, err
