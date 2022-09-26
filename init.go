@@ -53,3 +53,7 @@ func (wekan *Wekan) AdminUser(ctx context.Context) (*User, error) {
 	}
 	return wekan.adminUser, nil
 }
+
+func (wekan *Wekan) Ping() error {
+	return wekan.client.Ping(context.Background(), nil)
+}
