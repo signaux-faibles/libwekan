@@ -8,15 +8,15 @@ import (
 
 type RuleID string
 type Rule struct {
-	ID         RuleID    `bson:"_id"`
-	Title      string    `bson:"title"`
-	TriggerID  TriggerID `bson:"triggerId"`
-	ActionID   ActionID  `bson:"actionId"`
-	BoardID    BoardID   `bson:"boardId"`
-	CreatedAt  time.Time `bson:"createdAt"`
-	ModifiedAt time.Time `bson:"modifiedAt"`
-	Action     Action    `bson:"-"`
-	Trigger    Trigger   `bson:"-"`
+	ID         RuleID     `bson:"_id"`
+	Title      string     `bson:"title"`
+	TriggerID  *TriggerID `bson:"triggerId"`
+	ActionID   *ActionID  `bson:"actionId"`
+	BoardID    BoardID    `bson:"boardId"`
+	CreatedAt  time.Time  `bson:"createdAt"`
+	ModifiedAt time.Time  `bson:"modifiedAt"`
+	Action     Action     `bson:"-"`
+	Trigger    Trigger    `bson:"-"`
 }
 
 type TriggerID string
@@ -67,7 +67,7 @@ func (board Board) BuildAction(username Username) Action {
 	}
 }
 
-func (board Board) BuildRule(actionID Action, user User, labelName BoardLabelName) Rule {
+func (board Board) BuildRule(user User, labelName BoardLabelName) Rule {
 	label := board.GetLabelByName(labelName)
 	if label == (BoardLabel{}) {
 		return Rule{}
@@ -81,8 +81,8 @@ func (board Board) BuildRule(actionID Action, user User, labelName BoardLabelNam
 	rule := Rule{
 		ID:         RuleID(newId()),
 		Title:      fmt.Sprintf("Ajout %s (étiquette %s) ", user.Username, label.Name),
-		TriggerID:  trigger.ID,
-		ActionID:   action.ID,
+		TriggerID:  &trigger.ID,
+		ActionID:   &action.ID,
 		BoardID:    board.ID,
 		CreatedAt:  time.Now(),
 		ModifiedAt: time.Now(),
@@ -93,7 +93,9 @@ func (board Board) BuildRule(actionID Action, user User, labelName BoardLabelNam
 }
 
 func (wekan Wekan) InsertRule(ctx context.Context, rule Rule) error {
-	
+	if rule == (Rule{}) {
+		return NewInsertEmptyRuleError()
+	}
 	wekan.InsertAction(ctx, rule.Action)
 	wekan.InsertTrigger(ctx, rule.Trigger)
 	_, err := wekan.db.Collection("rules").InsertOne(ctx, rule)
