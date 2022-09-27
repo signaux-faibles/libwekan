@@ -273,6 +273,16 @@ func (wekan *Wekan) EnableUser(ctx context.Context, user User) error {
 	return err
 }
 
+func (wekan *Wekan) EnableUsers(ctx context.Context, users Users) error {
+	for _, user := range users {
+		err := wekan.EnableUser(context.Background(), user)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // DisableUser désactive l'utilisateur dans la base `users` et désactive la participation à tous les tableaux
 func (wekan *Wekan) DisableUser(ctx context.Context, user User) error {
 	_, err := wekan.db.Collection("users").UpdateOne(ctx, bson.M{"_id": user.ID}, bson.M{
@@ -285,10 +295,10 @@ func (wekan *Wekan) DisableUser(ctx context.Context, user User) error {
 		return err
 	}
 
-	// disable BoardMember on every boards
-	_, err = wekan.db.Collection("boards").UpdateOne(ctx, bson.M{},
+	// disable BoardMember on every boards at once
+	_, err = wekan.db.Collection("boards").UpdateMany(ctx, bson.M{},
 		bson.M{
-			"$set": bson.M{"members.$[member].isActive": true},
+			"$set": bson.M{"members.$[member].isActive": false},
 		},
 		&options.UpdateOptions{
 			ArrayFilters: &options.ArrayFilters{
@@ -297,4 +307,14 @@ func (wekan *Wekan) DisableUser(ctx context.Context, user User) error {
 	)
 
 	return err
+}
+
+func (wekan *Wekan) DisableUsers(ctx context.Context, users Users) error {
+	for _, user := range users {
+		err := wekan.DisableUser(context.Background(), user)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
