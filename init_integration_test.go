@@ -27,7 +27,7 @@ func TestMain(m *testing.M) {
 		panic("ne peut démarrer mongodb")
 	}
 	// pulls an image, creates a container based on it and runs it
-	mongodbContainerName := "mongodb-ti-" + strconv.Itoa(time.Now().Nanosecond())
+	mongodbContainerName := "wekandb-ti-" + strconv.Itoa(time.Now().Nanosecond())
 
 	mongodb, err := pool.RunWithOptions(
 		&dockertest.RunOptions{
@@ -63,11 +63,7 @@ func TestMain(m *testing.M) {
 		if err != nil {
 			return err
 		}
-		if err := wekan.client.Ping(context.TODO(), nil); err != nil {
-			return err
-		}
-
-		return nil
+		return wekan.client.Ping(context.TODO(), nil)
 	}); err != nil {
 		fmt.Printf("N'arrive pas à démarrer/restaurer Mongo: %s", err)
 	}
@@ -133,11 +129,5 @@ func restoreDump(mongodb *dockertest.Resource) error {
 	if _, err := mongodb.Exec([]string{"/bin/bash", "-c", "mongorestore  --uri mongodb://root:password@localhost/ /dump"}, options); err != nil {
 		return nil
 	}
-	// _, err = mongodb.Exec([]string{"/bin/bash", "-c", "mongo mongodb://root:password@localhost/wekan --authenticationDatabase admin --eval 'printjson(db.users.find({}).toArray())'"}, options)
-	if err := output.Flush(); err != nil {
-		return nil
-	}
-	// fmt.Println(b.String())
-
-	return nil
+	return output.Flush()
 }
