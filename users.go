@@ -273,9 +273,22 @@ func (wekan *Wekan) EnableUser(ctx context.Context, user User) error {
 	return err
 }
 
+func (wekan *Wekan) CreateUsers(ctx context.Context, users Users) error {
+	for _, user := range users {
+		_, err := wekan.InsertUser(ctx, user)
+		if _, ok := err.(UserAlreadyExistsError); ok {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (wekan *Wekan) EnableUsers(ctx context.Context, users Users) error {
 	for _, user := range users {
-		err := wekan.EnableUser(context.Background(), user)
+		err := wekan.EnableUser(ctx, user)
 		if err != nil {
 			return err
 		}
@@ -311,7 +324,7 @@ func (wekan *Wekan) DisableUser(ctx context.Context, user User) error {
 
 func (wekan *Wekan) DisableUsers(ctx context.Context, users Users) error {
 	for _, user := range users {
-		err := wekan.DisableUser(context.Background(), user)
+		err := wekan.DisableUser(ctx, user)
 		if err != nil {
 			return err
 		}
