@@ -35,7 +35,7 @@ func Test_getBoardFromSlug(t *testing.T) {
 	slug := "tableau-crp-bfc"
 
 	ass := assert.New(t)
-	board, err := wekan.GetBoardFromSlug(context.Background(), slug)
+	board, err := wekan.GetBoardFromSlug(context.Background(), BoardSlug(slug))
 
 	ass.Nil(err)
 	ass.NotEmpty(board)

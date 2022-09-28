@@ -107,7 +107,10 @@ func (wekan *Wekan) GetUserFromUsername(ctx context.Context, username Username) 
 		"username": username,
 	}).Decode(&user)
 	if err != nil {
-		return User{}, err
+		if err == mongo.ErrNoDocuments {
+			return User{}, UnknownUserError{key: string("username = " + username)}
+		}
+		return User{}, UnexpectedMongoError{err}
 	}
 	return user, nil
 }
@@ -119,9 +122,52 @@ func (wekan *Wekan) GetUserFromID(ctx context.Context, id UserID) (User, error) 
 		"_id": id,
 	}).Decode(&user)
 	if err != nil {
-		return User{}, err
+		if err == mongo.ErrNoDocuments {
+			return User{}, UnknownUserError{key: string("id = " + id)}
+		}
+		return User{}, UnexpectedMongoError{err}
 	}
 	return user, nil
+}
+
+// GetUsersFromUsernames retourne les objets users correspondant aux usernames en une seule requête
+func (wekan *Wekan) GetUsersFromUsernames(ctx context.Context, usernames []Username) ([]User, error) {
+	cur, err := wekan.db.Collection("users").Find(ctx, bson.M{
+		"username": bson.M{"$in": usernames},
+	})
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return Users{}, UnknownUserError{key: "TODO: implement better error check"}
+		}
+		return Users{}, UnexpectedMongoError{err}
+	}
+	var users []User
+	for cur.Next(ctx) {
+		var user User
+		cur.Decode(&user)
+		users = append(users, user)
+	}
+	return users, nil
+}
+
+// GetUsersFromUsernames retourne les objets users correspondant aux usernames en une seule requête
+func (wekan *Wekan) GetUsersFromIDs(ctx context.Context, userIDs []UserID) ([]User, error) {
+	cur, err := wekan.db.Collection("users").Find(ctx, bson.M{
+		"_id": bson.M{"$in": userIDs},
+	})
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return Users{}, UnknownUserError{key: "TODO: implement better error check"}
+		}
+		return Users{}, UnexpectedMongoError{err}
+	}
+	var users []User
+	for cur.Next(ctx) {
+		var user User
+		cur.Decode(&user)
+		users = append(users, user)
+	}
+	return users, nil
 }
 
 // GetUsers retourne tous les utilisateurs
@@ -143,7 +189,7 @@ func (wekan *Wekan) GetUsers(ctx context.Context) (Users, error) {
 
 func (wekan *Wekan) UsernameExists(ctx context.Context, username Username) (bool, error) {
 	_, err := wekan.GetUserFromUsername(ctx, username)
-	if err == mongo.ErrNoDocuments {
+	if _, ok := err.(UnknownUserError); ok {
 		return false, nil
 	}
 	return err == nil, err
@@ -276,9 +322,6 @@ func (wekan *Wekan) EnableUser(ctx context.Context, user User) error {
 func (wekan *Wekan) CreateUsers(ctx context.Context, users Users) error {
 	for _, user := range users {
 		_, err := wekan.InsertUser(ctx, user)
-		if _, ok := err.(UserAlreadyExistsError); ok {
-			continue
-		}
 		if err != nil {
 			return err
 		}

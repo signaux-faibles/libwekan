@@ -2,8 +2,6 @@ package libwekan
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -15,7 +13,6 @@ type Wekan struct {
 	client        *mongo.Client
 	db            *mongo.Database
 	adminUsername Username
-	adminUser     *User
 }
 
 // Connect retourne un objet de type `Wekan`
@@ -40,18 +37,15 @@ func Connect(ctx context.Context, uri string, databaseName string, adminUsername
 	return w, nil
 }
 
-func (wekan *Wekan) AdminUser(ctx context.Context) (*User, error) {
-	if wekan.adminUser == nil {
-		admin, err := wekan.GetUserFromUsername(ctx, wekan.adminUsername)
-		if err == mongo.ErrNoDocuments {
-			return nil, fmt.Errorf("%s is not in database\nmongo => %s", wekan.adminUsername, err.Error())
-		}
-		if !admin.IsAdmin {
-			return nil, errors.New("%s is not admin")
-		}
-		wekan.adminUser = &admin
+func (wekan *Wekan) AdminUser(ctx context.Context) (User, error) {
+	admin, err := wekan.GetUserFromUsername(ctx, wekan.adminUsername)
+	if _, ok := err.(UnknownUserError); ok {
+		return User{}, err
 	}
-	return wekan.adminUser, nil
+	if !admin.IsAdmin {
+		return User{}, UserIsNotAdminError{admin.ID}
+	}
+	return admin, nil
 }
 
 func (wekan *Wekan) Ping() error {

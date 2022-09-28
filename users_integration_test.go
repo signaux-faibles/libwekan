@@ -79,8 +79,16 @@ func TestUsers_EnableUser(t *testing.T) {
 	wekan.DisableUser(context.Background(), insertedUser)
 	err := wekan.EnableUser(context.Background(), insertedUser)
 	ass.Nil(err)
-	updatedUser, err := wekan.GetUserFromID(context.Background(), insertedUser.ID)
-	templateBoard, err := wekan.GetBoardFromID(context.Background(), updatedUser.Profile.TemplatesBoardId)
+	updatedUser, _ := wekan.GetUserFromID(context.Background(), insertedUser.ID)
+	templateBoard, _ := wekan.GetBoardFromID(context.Background(), updatedUser.Profile.TemplatesBoardId)
 	ass.False(updatedUser.LoginDisabled)
 	ass.True(templateBoard.UserIsActiveMember(updatedUser))
+}
+
+func TestUsers_GetUsersFromUsernames(t *testing.T) {
+	t.Fatal("test not implemented")
+}
+
+func TestUsers_GetUsersFromIDs(t *testing.T) {
+	t.Fatal("test not implemented")
 }

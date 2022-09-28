@@ -11,7 +11,7 @@ import (
 // Board représente un objet de la collection `boards`
 type Board struct {
 	ID                         BoardID       `bson:"_id"`
-	Title                      string        `bson:"title"`
+	Title                      BoardTitle    `bson:"title"`
 	Permission                 string        `bson:"permission"`
 	Sort                       float64       `bson:"sort"`
 	Archived                   bool          `bson:"archived"`
@@ -44,7 +44,7 @@ type Board struct {
 	PresentParentTask          string        `bson:"presentParentTask"`
 	IsOvertime                 bool          `bson:"isOvertime"`
 	Type                       string        `bson:"type"`
-	Slug                       string        `bson:"slug"`
+	Slug                       BoardSlug     `bson:"slug"`
 	Watchers                   []interface{} `bson:"watchers"`
 	AllowsCardNumber           bool          `bson:"allowsCardNumber"`
 	AllowsShowLists            bool          `bson:"allowsShowLists"`
@@ -68,6 +68,8 @@ type BoardMember struct {
 }
 
 type BoardID string
+type BoardSlug string
+type BoardTitle string
 
 // GetLabelByName retourne l'objet BoardLabel correspondant au nom, vide si absent
 func (board Board) GetLabelByName(name BoardLabelName) BoardLabel {
@@ -89,7 +91,7 @@ func (board Board) GetLabelByID(id BoardLabelID) BoardLabel {
 	return BoardLabel{}
 }
 
-// ListAllBoards GetBoardFromSlug GetBoardFromID retourne l'objet board à partir du champ .slug
+// ListAllBoards retourne toutes les boards
 func (wekan *Wekan) ListAllBoards(ctx context.Context) ([]Board, error) {
 	var boards []Board
 	cursor, err := wekan.db.Collection("boards").Find(ctx, bson.M{"type": "board"})
@@ -106,8 +108,8 @@ func (wekan *Wekan) ListAllBoards(ctx context.Context) ([]Board, error) {
 	return boards, nil
 }
 
-// GetBoardFromSlug GetBoardFromID retourne l'objet board à partir du champ .slug
-func (wekan *Wekan) GetBoardFromSlug(ctx context.Context, slug string) (Board, error) {
+// GetBoardFromSlug retourne l'objet board à partir du champ .slug
+func (wekan *Wekan) GetBoardFromSlug(ctx context.Context, slug BoardSlug) (Board, error) {
 	var board Board
 	err := wekan.db.Collection("boards").FindOne(ctx, bson.M{"slug": slug}).Decode(&board)
 	return board, err
@@ -221,13 +223,33 @@ func (wekan *Wekan) EnsureUserIsInactiveBoardMember(ctx context.Context, boardID
 	return nil
 }
 
+func (wekan *Wekan) EnsureUserIsBoardAdmin(ctx context.Context, boardID BoardID, userID UserID) error {
+	err := wekan.EnsureUserIsActiveBoardMember(ctx, boardID, userID)
+	if err != nil {
+		return err
+	}
+	_, err = wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": boardID},
+		bson.M{
+			"$set": bson.M{"members.$[member].isAdmin": true},
+		},
+		&options.UpdateOptions{
+			ArrayFilters: &options.ArrayFilters{
+				Filters: bson.A{bson.M{"member.userId": userID}}},
+		},
+	)
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	return nil
+}
+
 func newBoard(title string, slug string, boardType string) Board {
 	board := Board{
 		ID:         BoardID(newId()),
-		Title:      title,
+		Title:      BoardTitle(title),
 		Permission: "private",
 		Type:       boardType,
-		Slug:       slug,
+		Slug:       BoardSlug(slug),
 		Archived:   false,
 		CreatedAt:  time.Now(),
 		ModifiedAt: time.Now(),
