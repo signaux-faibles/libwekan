@@ -385,7 +385,6 @@ func (wekan *Wekan) DisableUser(ctx context.Context, user User) error {
 		return err
 	}
 
-	// disable BoardMember on every boards at once
 	_, err = wekan.db.Collection("boards").UpdateMany(ctx, bson.M{},
 		bson.M{
 			"$set": bson.M{"members.$[member].isActive": false},
