@@ -2,6 +2,9 @@ package libwekan
 
 import (
 	"context"
+	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -89,6 +92,22 @@ type UserProfile struct {
 type Username string
 type UserID string
 
+func (u Username) toString() string {
+	return string(u)
+}
+
+func (u UserID) toString() string {
+	return string(u)
+}
+
+func (u User) getUsername() Username {
+	return u.Username
+}
+
+func (u User) getID() UserID {
+	return u.ID
+}
+
 // ListUsers returns all wekan users
 func (wekan *Wekan) ListUsers(ctx context.Context) ([]User, error) {
 	cursor, err := wekan.db.Collection("users").Find(ctx, bson.M{})
@@ -132,13 +151,11 @@ func (wekan *Wekan) GetUserFromID(ctx context.Context, id UserID) (User, error) 
 
 // GetUsersFromUsernames retourne les objets users correspondant aux usernames en une seule requête
 func (wekan *Wekan) GetUsersFromUsernames(ctx context.Context, usernames []Username) ([]User, error) {
+	usernameSet := uniq(usernames)
 	cur, err := wekan.db.Collection("users").Find(ctx, bson.M{
-		"username": bson.M{"$in": usernames},
+		"username": bson.M{"$in": usernameSet},
 	})
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return Users{}, UnknownUserError{key: "TODO: implement better error check"}
-		}
 		return Users{}, UnexpectedMongoError{err}
 	}
 	var users []User
@@ -146,19 +163,24 @@ func (wekan *Wekan) GetUsersFromUsernames(ctx context.Context, usernames []Usern
 		var user User
 		cur.Decode(&user)
 		users = append(users, user)
+	}
+	if len(users) != len(usernameSet) {
+		selectedUsernamesString := mapSlice(mapSlice(users, User.getUsername), Username.toString)
+		usernameSetString := mapSlice(usernameSet, Username.toString)
+		_, missing, _ := intersect(usernameSetString, selectedUsernamesString)
+		sort.Strings(missing)
+		return Users{}, UnknownUserError{key: fmt.Sprintf("usernames in (%s)", strings.Join(missing, ", "))}
 	}
 	return users, nil
 }
 
 // GetUsersFromUsernames retourne les objets users correspondant aux usernames en une seule requête
 func (wekan *Wekan) GetUsersFromIDs(ctx context.Context, userIDs []UserID) ([]User, error) {
+	userIDSet := uniq(userIDs)
 	cur, err := wekan.db.Collection("users").Find(ctx, bson.M{
-		"_id": bson.M{"$in": userIDs},
+		"_id": bson.M{"$in": userIDSet},
 	})
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return Users{}, UnknownUserError{key: "TODO: implement better error check"}
-		}
 		return Users{}, UnexpectedMongoError{err}
 	}
 	var users []User
@@ -166,6 +188,18 @@ func (wekan *Wekan) GetUsersFromIDs(ctx context.Context, userIDs []UserID) ([]Us
 		var user User
 		cur.Decode(&user)
 		users = append(users, user)
+	}
+	for cur.Next(ctx) {
+		var user User
+		cur.Decode(&user)
+		users = append(users, user)
+	}
+	if len(users) != len(userIDSet) {
+		selectedUsernamesString := mapSlice(mapSlice(users, User.getID), UserID.toString)
+		userIDSetString := mapSlice(userIDSet, UserID.toString)
+		_, missing, _ := intersect(userIDSetString, selectedUsernamesString)
+		sort.Strings(missing)
+		return Users{}, UnknownUserError{key: fmt.Sprintf("ids in (%s)", strings.Join(missing, ", "))}
 	}
 	return users, nil
 }

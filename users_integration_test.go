@@ -86,9 +86,56 @@ func TestUsers_EnableUser(t *testing.T) {
 }
 
 func TestUsers_GetUsersFromUsernames(t *testing.T) {
-	t.Fatal("test not implemented")
+	ass := assert.New(t)
+	for _, i := range []string{"a", "b", "c", "d", "e"} {
+		username := t.Name() + i
+		user := BuildUser(username, username, username)
+		wekan.InsertUser(context.Background(), user)
+	}
+
+	existingUsernames := []Username{Username(t.Name() + "a"), Username(t.Name() + "b"), Username(t.Name() + "c")}
+	selectedExistingUsers, err := wekan.GetUsersFromUsernames(context.Background(), existingUsernames)
+	ass.Nil(err)
+	ass.Len(selectedExistingUsers, 3)
+
+	notExistingUsernames := []Username{Username(t.Name() + "m"), Username(t.Name() + "n"), Username(t.Name() + "l")}
+	selectedNotExistingUsers, err := wekan.GetUsersFromUsernames(context.Background(), notExistingUsernames)
+	ass.IsType(UnknownUserError{}, err)
+	ass.Equal("l'utilisateur n'est pas connu (usernames in (TestUsers_GetUsersFromUsernamesl, TestUsers_GetUsersFromUsernamesm, TestUsers_GetUsersFromUsernamesn))", err.Error())
+	ass.Len(selectedNotExistingUsers, 0)
+
+	someExistingUsernames := []Username{Username(t.Name() + "a"), Username(t.Name() + "b"), Username(t.Name() + "l")}
+	selectedSomeExistingUsers, err := wekan.GetUsersFromUsernames(context.Background(), someExistingUsernames)
+	ass.IsType(UnknownUserError{}, err)
+	ass.Equal("l'utilisateur n'est pas connu (usernames in (TestUsers_GetUsersFromUsernamesl))", err.Error())
+	ass.Len(selectedSomeExistingUsers, 0)
 }
 
 func TestUsers_GetUsersFromIDs(t *testing.T) {
-	t.Fatal("test not implemented")
+	ass := assert.New(t)
+
+	var actualUserIDS []UserID
+	for _, i := range []string{"a", "b", "c", "d", "e"} {
+		username := t.Name() + i
+		user := BuildUser(username, username, username)
+		wekan.InsertUser(context.Background(), user)
+		actualUserIDS = append(actualUserIDS, user.ID)
+	}
+
+	existingUserIDs := actualUserIDS[0:3]
+	selectedExistingUsers, err := wekan.GetUsersFromIDs(context.Background(), existingUserIDs)
+	ass.Nil(err)
+	ass.Len(selectedExistingUsers, 3)
+
+	notExistingUserIDs := []UserID{"notAnID", "notAnotherID", "pinchMeIfItsAnID"}
+	selectedNotExistingUsers, err := wekan.GetUsersFromIDs(context.Background(), notExistingUserIDs)
+	ass.IsType(UnknownUserError{}, err)
+	ass.Equal("l'utilisateur n'est pas connu (ids in (notAnID, notAnotherID, pinchMeIfItsAnID))", err.Error())
+	ass.Len(selectedNotExistingUsers, 0)
+
+	someExistingUserIDs := append(actualUserIDS[0:2], "notAnID")
+	selectedSomeExistingUsers, err := wekan.GetUsersFromIDs(context.Background(), someExistingUserIDs)
+	ass.IsType(UnknownUserError{}, err)
+	ass.Equal("l'utilisateur n'est pas connu (ids in (notAnID))", err.Error())
+	ass.Len(selectedSomeExistingUsers, 0)
 }
