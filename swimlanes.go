@@ -5,21 +5,22 @@ import (
 	"time"
 )
 
+type SwimlaneID string
 type Swimlane struct {
-	ID         string    `bson:"_id"`
-	Title      string    `bson:"title"`
-	BoardID    BoardID   `bson:"boardId"`
-	Sort       int       `bson:"sort"`
-	Type       string    `bson:"type"`
-	Archived   bool      `bson:"archived"`
-	CreatedAt  time.Time `bson:"createdAt"`
-	UpdatedAt  time.Time `bson:"updateAt"`
-	ModifiedAt time.Time `bson:"modifiedAt"`
+	ID         SwimlaneID `bson:"_id"`
+	Title      string     `bson:"title"`
+	BoardID    BoardID    `bson:"boardId"`
+	Sort       int        `bson:"sort"`
+	Type       string     `bson:"type"`
+	Archived   bool       `bson:"archived"`
+	CreatedAt  time.Time  `bson:"createdAt"`
+	UpdatedAt  time.Time  `bson:"updateAt"`
+	ModifiedAt time.Time  `bson:"modifiedAt"`
 }
 
 func newTemplateSwimlaneContainer(boardId BoardID, title string, sort int) Swimlane {
 	newSwimlane := Swimlane{
-		ID:         newId(),
+		ID:         SwimlaneID(newId()),
 		Title:      title,
 		BoardID:    boardId,
 		Sort:       sort,
@@ -43,6 +44,11 @@ func newBoardTemplateSwimlane(boardId BoardID) Swimlane {
 }
 
 func (wekan *Wekan) InsertSwimlane(ctx context.Context, swimlane Swimlane) error {
+	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+		return err
+	}
+
 	_, err := wekan.db.Collection("swimlanes").InsertOne(ctx, swimlane)
+	wekan.insertActivity(ctx, newActivityCreateSwimlane(wekan.adminUserID, swimlane.BoardID, swimlane.ID))
 	return err
 }

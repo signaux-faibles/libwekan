@@ -151,6 +151,10 @@ func (board Board) UserIsActiveMember(user User) bool {
 
 // AddMemberToBoard ajoute un objet BoardMember sur la board
 func (wekan *Wekan) AddMemberToBoard(ctx context.Context, boardID BoardID, boardMember BoardMember) error {
+	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+		return err
+	}
+
 	_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": boardID},
 		bson.M{
 			"$push": bson.M{
@@ -162,6 +166,10 @@ func (wekan *Wekan) AddMemberToBoard(ctx context.Context, boardID BoardID, board
 
 // EnableBoardMember active l'utilisateur dans la propriété `member` d'une board
 func (wekan *Wekan) EnableBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
+	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+		return err
+	}
+
 	_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": boardID},
 		bson.M{
 			"$set": bson.M{"members.$[member].isActive": true},
@@ -176,6 +184,10 @@ func (wekan *Wekan) EnableBoardMember(ctx context.Context, boardID BoardID, user
 
 // DisableBoardMember desactive l'utilisateur dans la propriété `member` d'une board
 func (wekan *Wekan) DisableBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
+	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+		return err
+	}
+
 	_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": boardID},
 		bson.M{
 			"$set": bson.M{"members.$[member].isActive": false},
@@ -209,6 +221,10 @@ func (wekan *Wekan) EnsureUserIsActiveBoardMember(ctx context.Context, boardID B
 
 // EnsureUserIsInactiveBoardMember fait en sorte de désactiver un utilisateur sur une board lorsqu'il est participant
 func (wekan *Wekan) EnsureUserIsInactiveBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
+	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+		return err
+	}
+
 	board, err := wekan.GetBoardFromID(ctx, boardID)
 	if err != nil {
 		return err
@@ -224,6 +240,10 @@ func (wekan *Wekan) EnsureUserIsInactiveBoardMember(ctx context.Context, boardID
 }
 
 func (wekan *Wekan) EnsureUserIsBoardAdmin(ctx context.Context, boardID BoardID, userID UserID) error {
+	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+		return err
+	}
+
 	err := wekan.EnsureUserIsActiveBoardMember(ctx, boardID, userID)
 	if err != nil {
 		return err
@@ -290,11 +310,19 @@ func newBoard(title string, slug string, boardType string) Board {
 }
 
 func (wekan *Wekan) InsertBoard(ctx context.Context, board Board) error {
+	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+		return err
+	}
+
 	_, err := wekan.db.Collection("boards").InsertOne(ctx, board)
 	return err
 }
 
 func (wekan *Wekan) InsertBoardLabel(ctx context.Context, board Board, boardLabel BoardLabel) error {
+	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+		return err
+	}
+
 	if board.GetLabelByName(boardLabel.Name) != (BoardLabel{}) {
 		return BoardLabelAlreadyExistsError{boardLabel, board}
 	}

@@ -13,6 +13,7 @@ type Wekan struct {
 	client        *mongo.Client
 	db            *mongo.Database
 	adminUsername Username
+	adminUserID   UserID
 }
 
 // Connect retourne un objet de type `Wekan`
@@ -46,6 +47,18 @@ func (wekan *Wekan) AdminUser(ctx context.Context) (User, error) {
 		return User{}, UserIsNotAdminError{admin.ID}
 	}
 	return admin, nil
+}
+
+func (wekan *Wekan) EnsureAdminUserIsAdmin(ctx context.Context) error {
+	if wekan.adminUserID != "" {
+		return nil
+	}
+	adminUser, err := wekan.AdminUser(ctx)
+	if err != nil {
+		return err
+	}
+	wekan.adminUserID = adminUser.ID
+	return nil
 }
 
 func (wekan *Wekan) Ping() error {

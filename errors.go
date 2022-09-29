@@ -36,6 +36,14 @@ func (e UserIsNotAdminError) Error() string {
 	return fmt.Sprintf("l'utilisateur n'est pas admin: id = %s", e.id)
 }
 
+type AdminUserIsNotAdminError struct {
+	username Username
+}
+
+func (e AdminUserIsNotAdminError) Error() string {
+	return fmt.Sprintf("l'utilisateur n'est pas admin: username = %s", e.username)
+}
+
 type InsertEmptyRuleError struct {
 }
 
@@ -58,4 +66,12 @@ type UnexpectedMongoError struct {
 
 func (e UnexpectedMongoError) Error() string {
 	return e.err.Error()
+}
+
+type AlreadySetActivity struct {
+	activityType string
+}
+
+func (e AlreadySetActivity) Error() string {
+	return fmt.Sprintf("l'activité est déjà définie: activityType = %s", e.activityType)
 }

@@ -77,9 +77,9 @@ type UserProfile struct {
 	BoardView                string                    `bson:"boardView"`
 	ListSortBy               string                    `bson:"-modifiedAt"`
 	TemplatesBoardId         BoardID                   `bson:"templatesBoardId"`
-	CardTemplatesSwimlaneId  string                    `bson:"cardTemplatesSwimlaneId"`
-	ListTemplatesSwimlaneId  string                    `bson:"listTemplatesSwimlaneId"`
-	BoardTemplatesSwimlaneId string                    `bson:"boardTemplatesSwimlaneId"`
+	CardTemplatesSwimlaneId  SwimlaneID                `bson:"cardTemplatesSwimlaneId"`
+	ListTemplatesSwimlaneId  SwimlaneID                `bson:"listTemplatesSwimlaneId"`
+	BoardTemplatesSwimlaneId SwimlaneID                `bson:"boardTemplatesSwimlaneId"`
 	InvitedBoards            []string                  `bson:"invitedBoards"`
 	StarredBoards            []string                  `bson:"starredBoards"`
 	Language                 string                    `bson:"language"`
@@ -230,6 +230,10 @@ func (wekan *Wekan) UsernameExists(ctx context.Context, username Username) (bool
 }
 
 func (wekan *Wekan) InsertUser(ctx context.Context, user User) (User, error) {
+	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+		return User{}, err
+	}
+
 	userAlreadyExists, err := wekan.UsernameExists(ctx, user.Username)
 	if err != nil || userAlreadyExists {
 		return User{}, UserAlreadyExistsError{user}
@@ -330,6 +334,10 @@ func BuildUser(email, initials, fullname string) User {
 
 // EnableUser: active un utilisateur dans la base `users` et active la participation à son tableau templates
 func (wekan *Wekan) EnableUser(ctx context.Context, user User) error {
+	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+		return err
+	}
+
 	_, err := wekan.db.Collection("users").UpdateOne(ctx, bson.M{"_id": user.ID}, bson.M{
 		"$set": bson.M{
 			"loginDisabled": false,
@@ -354,6 +362,10 @@ func (wekan *Wekan) EnableUser(ctx context.Context, user User) error {
 }
 
 func (wekan *Wekan) CreateUsers(ctx context.Context, users Users) error {
+	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+		return err
+	}
+
 	for _, user := range users {
 		_, err := wekan.InsertUser(ctx, user)
 		if err != nil {
@@ -364,6 +376,10 @@ func (wekan *Wekan) CreateUsers(ctx context.Context, users Users) error {
 }
 
 func (wekan *Wekan) EnableUsers(ctx context.Context, users Users) error {
+	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+		return err
+	}
+
 	for _, user := range users {
 		err := wekan.EnableUser(ctx, user)
 		if err != nil {
@@ -375,6 +391,10 @@ func (wekan *Wekan) EnableUsers(ctx context.Context, users Users) error {
 
 // DisableUser désactive l'utilisateur dans la base `users` et désactive la participation à tous les tableaux
 func (wekan *Wekan) DisableUser(ctx context.Context, user User) error {
+	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+		return err
+	}
+
 	_, err := wekan.db.Collection("users").UpdateOne(ctx, bson.M{"_id": user.ID}, bson.M{
 		"$set": bson.M{
 			"loginDisabled": true,
@@ -394,6 +414,9 @@ func (wekan *Wekan) DisableUser(ctx context.Context, user User) error {
 				Filters: bson.A{bson.M{"member.userId": user.ID}}},
 		},
 	)
+	if err != nil {
+		return err
+	}
 
 	return err
 }
