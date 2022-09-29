@@ -3,8 +3,6 @@ package libwekan
 import (
 	"context"
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 type ActivityID string
@@ -26,9 +24,9 @@ type Activity struct {
 	ModifiedAt     time.Time    `bson:"modifiedAt"`
 }
 
-func (activity Activity) withID(t time.Time) (Activity, error) {
+func (activity Activity) withIDandDates(t time.Time) (Activity, error) {
 	if activity.ID != "" {
-		return activity, AlreadySetActivity{}
+		return activity, AlreadySetActivityError{}
 	}
 	activity.ID = ActivityID(newId())
 	activity.CreatedAt = t.In(time.UTC).Truncate(time.Millisecond)
@@ -66,7 +64,17 @@ func newActivityAddBoardMember(userID UserID, memberID UserID, boardID BoardID) 
 	}
 }
 
-func newActivityJoinMember(userID UserID, username Username, memberID UserID, boardID BoardID, listID ListID, cardID CardID, swimlaneID SwimlaneID) Activity {
+func newActivityRemoveBoardMember(userID UserID, memberID UserID, boardID BoardID) Activity {
+	return Activity{
+		UserID:       userID,
+		MemberID:     memberID,
+		BoardID:      boardID,
+		ActivityType: "removeBoardMember",
+		Type:         "member",
+	}
+}
+
+func newActivityCardJoinMember(userID UserID, username Username, memberID UserID, boardID BoardID, listID ListID, cardID CardID, swimlaneID SwimlaneID) Activity {
 	return Activity{
 		UserID:       userID,
 		Username:     username,
@@ -102,7 +110,7 @@ func newActivityAddedLabel(userID UserID, boardLabelID BoardLabelID, boardID Boa
 }
 
 func (wekan *Wekan) insertActivity(ctx context.Context, activity Activity) (Activity, error) {
-	insertable, err := activity.withID(time.Now())
+	insertable, err := activity.withIDandDates(time.Now())
 	if err != nil {
 		return Activity{}, err
 	}
@@ -111,13 +119,4 @@ func (wekan *Wekan) insertActivity(ctx context.Context, activity Activity) (Acti
 		return Activity{}, UnexpectedMongoError{err}
 	}
 	return insertable, nil
-}
-
-func (wekan *Wekan) selectActivityFromID(ctx context.Context, activityID ActivityID) (Activity, error) {
-	var activity Activity
-	err := wekan.db.Collection("activities").FindOne(ctx, bson.M{"_id": activityID}).Decode(&activity)
-	if err != nil {
-		return Activity{}, UnexpectedMongoError{err}
-	}
-	return activity, nil
 }

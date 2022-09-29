@@ -68,11 +68,11 @@ func (e UnexpectedMongoError) Error() string {
 	return e.err.Error()
 }
 
-type AlreadySetActivity struct {
+type AlreadySetActivityError struct {
 	activityType string
 }
 
-func (e AlreadySetActivity) Error() string {
+func (e AlreadySetActivityError) Error() string {
 	return fmt.Sprintf("l'activité est déjà définie: activityType = %s", e.activityType)
 }
 
@@ -90,4 +90,12 @@ type InvalidMongoConfigurationError struct {
 
 func (e InvalidMongoConfigurationError) Error() string {
 	return e.err.Error()
+}
+
+type ForbiddenOperationError struct {
+	message string
+}
+
+func (e ForbiddenOperationError) Error() string {
+	return e.message
 }

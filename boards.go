@@ -161,7 +161,10 @@ func (wekan *Wekan) AddMemberToBoard(ctx context.Context, boardID BoardID, board
 				"members": boardMember,
 			},
 		})
-	return err
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	return nil
 }
 
 // EnableBoardMember active l'utilisateur dans la propriété `member` d'une board
@@ -179,11 +182,19 @@ func (wekan *Wekan) EnableBoardMember(ctx context.Context, boardID BoardID, user
 				Filters: bson.A{bson.M{"member.userId": userID}}},
 		},
 	)
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	activity := newActivityAddBoardMember(wekan.adminUserID, userID, boardID)
+	_, err = wekan.insertActivity(context.Background(), activity)
 	return err
 }
 
 // DisableBoardMember desactive l'utilisateur dans la propriété `member` d'une board
 func (wekan *Wekan) DisableBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
+	if wekan.adminUserID == userID {
+		return ForbiddenOperationError{"On ne désactive pas l'admin !!!"}
+	}
 	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
 		return err
 	}
@@ -197,7 +208,12 @@ func (wekan *Wekan) DisableBoardMember(ctx context.Context, boardID BoardID, use
 				Filters: bson.A{bson.M{"member.userId": userID}}},
 		},
 	)
-	return err
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	activity := newActivityAddBoardMember(wekan.adminUserID, userID, boardID)
+	_, err = wekan.insertActivity(context.Background(), activity)
+	return nil
 }
 
 // EnsureUserIsActiveBoardMember fait en sorte de rendre l'utilisateur participant et actif à une board
@@ -319,7 +335,10 @@ func (wekan *Wekan) InsertBoard(ctx context.Context, board Board) error {
 		return UnexpectedMongoError{err}
 	}
 	_, err = wekan.db.Collection("boards").InsertOne(ctx, board)
-	return UnexpectedMongoError{err}
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	return nil
 }
 
 func (wekan *Wekan) InsertBoardLabel(ctx context.Context, board Board, boardLabel BoardLabel) error {

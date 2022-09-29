@@ -1,12 +1,13 @@
 package libwekan
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_UserIsMember(t *testing.T) {
+func TestBoards_UserIsMember(t *testing.T) {
 	ass := assert.New(t)
 
 	userToto := User{
@@ -41,7 +42,7 @@ func Test_UserIsMember(t *testing.T) {
 	ass.True(member)
 }
 
-func Test_UserIsActiveMember(t *testing.T) {
+func TestBoards_UserIsActiveMember(t *testing.T) {
 	ass := assert.New(t)
 
 	userToto := User{
@@ -85,7 +86,7 @@ func Test_UserIsActiveMember(t *testing.T) {
 	ass.False(isActive)
 }
 
-func Test_GetLabelByName_whenBoardLabelExists(t *testing.T) {
+func TestBoards_GetLabelByName_whenBoardLabelExists(t *testing.T) {
 	ass := assert.New(t)
 	testId := BoardLabelID(newId6())
 	labelName := BoardLabelName("existing label")
@@ -102,14 +103,14 @@ func Test_GetLabelByName_whenBoardLabelExists(t *testing.T) {
 	ass.NotEmpty(label)
 }
 
-func Test_GetLabelByName_whenBoardLabelDoesntExists(t *testing.T) {
+func TestBoards_GetLabelByName_whenBoardLabelDoesntExists(t *testing.T) {
 	ass := assert.New(t)
 	board := Board{}
 	label := board.GetLabelByName("anotherName")
 	ass.Empty(label)
 }
 
-func Test_GetLabelByID_whenBoardLabelExists(t *testing.T) {
+func TestBoards_GetLabelByID_whenBoardLabelExists(t *testing.T) {
 	ass := assert.New(t)
 	testId := BoardLabelID(newId6())
 	board := Board{
@@ -125,9 +126,18 @@ func Test_GetLabelByID_whenBoardLabelExists(t *testing.T) {
 	ass.NotEmpty(label)
 }
 
-func Test_GetLabelByID_whenBoardLabelDoesntExists(t *testing.T) {
+func TestBoards_GetLabelByID_whenBoardLabelDoesntExists(t *testing.T) {
 	ass := assert.New(t)
 	board := Board{}
 	label := board.GetLabelByID("anotherID")
 	ass.Empty(label)
+}
+
+func TestBoards_DisableBoardMember_cant_disable_admin(t *testing.T) {
+	ass := assert.New(t)
+	dummyWekan := Wekan{
+		adminUserID: "zero+zero",
+	}
+	err := dummyWekan.DisableBoardMember(context.Background(), "fakeBoardId", dummyWekan.adminUserID)
+	ass.ErrorIs(err, err.(ForbiddenOperationError))
 }
