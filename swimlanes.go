@@ -48,6 +48,10 @@ func (wekan *Wekan) InsertSwimlane(ctx context.Context, swimlane Swimlane) error
 		return err
 	}
 
+	if _, err := wekan.insertActivity(ctx, newActivityCreateSwimlane(wekan.adminUserID, swimlane.BoardID, swimlane.ID)); err != nil {
+		return err
+	}
+
 	_, err := wekan.db.Collection("swimlanes").InsertOne(ctx, swimlane)
 	wekan.insertActivity(ctx, newActivityCreateSwimlane(wekan.adminUserID, swimlane.BoardID, swimlane.ID))
 	return err

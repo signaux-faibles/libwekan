@@ -9,20 +9,21 @@ import (
 
 type ActivityID string
 type Activity struct {
-	ID             ActivityID `bson:"_id"`
-	UserID         UserID     `bson:"userId,omitempty"`
-	Username       Username   `bson:"username"`
-	Type           string     `bson:"type"`
-	MemberID       UserID     `bson:"memberId,omitempty"`
-	ActivityType   string     `bson:"activityType"`
-	ActivityTypeID string     `bson:"activityTypeID"`
-	BoardID        BoardID    `bson:"boardId,omitempty"`
-	ListID         ListID     `bson:"listId,omitempty"`
-	CardID         CardID     `bson:"cardId,omitempty"`
-	CommentID      CommentID  `bson:"commentId, omitempty"`
-	SwimlaneID     SwimlaneID `bson:"swimlaneID,omitempty"`
-	CreatedAt      time.Time  `bson:"createdAt"`
-	ModifiedAt     time.Time  `bson:"modifiedAt"`
+	ID             ActivityID   `bson:"_id"`
+	UserID         UserID       `bson:"userId,omitempty"`
+	Username       Username     `bson:"username"`
+	Type           string       `bson:"type"`
+	MemberID       UserID       `bson:"memberId,omitempty"`
+	ActivityType   string       `bson:"activityType"`
+	ActivityTypeID string       `bson:"activityTypeID"`
+	BoardID        BoardID      `bson:"boardId,omitempty"`
+	BoardLabelID   BoardLabelID `bson:"labelId"`
+	ListID         ListID       `bson:"listId,omitempty"`
+	CardID         CardID       `bson:"cardId,omitempty"`
+	CommentID      CommentID    `bson:"commentId, omitempty"`
+	SwimlaneID     SwimlaneID   `bson:"swimlaneID,omitempty"`
+	CreatedAt      time.Time    `bson:"createdAt"`
+	ModifiedAt     time.Time    `bson:"modifiedAt"`
 }
 
 func (activity Activity) withID(t time.Time) (Activity, error) {
@@ -78,7 +79,7 @@ func newActivityJoinMember(userID UserID, username Username, memberID UserID, bo
 	}
 }
 
-func newAddComment(userID UserID, boardID BoardID, cardID CardID, commentID CommentID, listID ListID, swimlaneID SwimlaneID) Activity {
+func newActivityAddComment(userID UserID, boardID BoardID, cardID CardID, commentID CommentID, listID ListID, swimlaneID SwimlaneID) Activity {
 	return Activity{
 		UserID:       userID,
 		BoardID:      boardID,
@@ -87,6 +88,16 @@ func newAddComment(userID UserID, boardID BoardID, cardID CardID, commentID Comm
 		ListID:       listID,
 		SwimlaneID:   swimlaneID,
 		ActivityType: "addComment",
+	}
+}
+
+func newActivityAddedLabel(userID UserID, boardLabelID BoardLabelID, boardID BoardID, swimlaneID SwimlaneID) Activity {
+	return Activity{
+		UserID:       userID,
+		BoardLabelID: boardLabelID,
+		ActivityType: "addedLabel",
+		BoardID:      boardID,
+		SwimlaneID:   swimlaneID,
 	}
 }
 

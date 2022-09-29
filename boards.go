@@ -314,6 +314,7 @@ func (wekan *Wekan) InsertBoard(ctx context.Context, board Board) error {
 		return err
 	}
 
+	wekan.insertActivity(ctx, newActivityCreateBoard(wekan.adminUserID, board.ID))
 	_, err := wekan.db.Collection("boards").InsertOne(ctx, board)
 	return err
 }

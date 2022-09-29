@@ -64,7 +64,7 @@ func TestActivities_newActivityJoinMember(t *testing.T) {
 	ass.Equal(expected, activity)
 }
 
-func TestActivities_newAddComment(t *testing.T) {
+func TestActivities_newActivityAddComment(t *testing.T) {
 	ass := assert.New(t)
 	expected := Activity{
 		UserID:       "userID",
@@ -75,9 +75,22 @@ func TestActivities_newAddComment(t *testing.T) {
 		SwimlaneID:   "swimlaneID",
 		ActivityType: "addComment",
 	}
-	activity := newAddComment(
+	activity := newActivityAddComment(
 		"userID", "boardID", "cardID",
 		"commentID", "listID", "swimlaneID",
 	)
+	ass.Equal(expected, activity)
+}
+
+func TestActivitie_newActivityAddedLabel(t *testing.T) {
+	ass := assert.New(t)
+	expected := Activity{
+		UserID:       "userID",
+		BoardLabelID: "boardLabelID",
+		ActivityType: "addedLabel",
+		BoardID:      "boardID",
+		SwimlaneID:   "swimlaneID",
+	}
+	activity := newActivityAddedLabel("userID", "boardLabelID", "boardID", "swimlaneID")
 	ass.Equal(expected, activity)
 }

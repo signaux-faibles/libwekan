@@ -58,7 +58,6 @@ func TestWekan_InsertRule_whenEverythingsFine(t *testing.T) {
 	ass.Nil(err)
 	rule := updatedBoard.BuildRule(insertedUser, BoardLabelName(t.Name()))
 	ass.NotEmpty(rule)
-
 	err = wekan.InsertRule(context.Background(), rule)
 	ass.Nil(err)
 }
