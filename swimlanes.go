@@ -44,7 +44,7 @@ func newBoardTemplateSwimlane(boardId BoardID) Swimlane {
 }
 
 func (wekan *Wekan) InsertSwimlane(ctx context.Context, swimlane Swimlane) error {
-	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
 		return err
 	}
 
@@ -53,6 +53,12 @@ func (wekan *Wekan) InsertSwimlane(ctx context.Context, swimlane Swimlane) error
 	}
 
 	_, err := wekan.db.Collection("swimlanes").InsertOne(ctx, swimlane)
-	wekan.insertActivity(ctx, newActivityCreateSwimlane(wekan.adminUserID, swimlane.BoardID, swimlane.ID))
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	_, err = wekan.insertActivity(ctx, newActivityCreateSwimlane(wekan.adminUserID, swimlane.BoardID, swimlane.ID))
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
 	return err
 }

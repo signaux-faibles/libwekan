@@ -93,7 +93,7 @@ func (board Board) BuildRule(user User, labelName BoardLabelName) Rule {
 }
 
 func (wekan *Wekan) InsertRule(ctx context.Context, rule Rule) error {
-	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
 		return err
 	}
 
@@ -115,7 +115,7 @@ func (wekan *Wekan) InsertRule(ctx context.Context, rule Rule) error {
 }
 
 func (wekan *Wekan) InsertAction(ctx context.Context, action Action) error {
-	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
 		return err
 	}
 
@@ -124,7 +124,7 @@ func (wekan *Wekan) InsertAction(ctx context.Context, action Action) error {
 }
 
 func (wekan *Wekan) InsertTrigger(ctx context.Context, trigger Trigger) error {
-	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
 		return err
 	}
 

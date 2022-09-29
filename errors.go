@@ -75,3 +75,19 @@ type AlreadySetActivity struct {
 func (e AlreadySetActivity) Error() string {
 	return fmt.Sprintf("l'activité est déjà définie: activityType = %s", e.activityType)
 }
+
+type UnreachableMongoError struct {
+	err error
+}
+
+func (e UnreachableMongoError) Error() string {
+	return e.err.Error()
+}
+
+type InvalidMongoConfigurationError struct {
+	err error
+}
+
+func (e InvalidMongoConfigurationError) Error() string {
+	return e.err.Error()
+}

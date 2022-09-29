@@ -161,7 +161,10 @@ func (wekan *Wekan) GetUsersFromUsernames(ctx context.Context, usernames []Usern
 	var users []User
 	for cur.Next(ctx) {
 		var user User
-		cur.Decode(&user)
+		err := cur.Decode(&user)
+		if err != nil {
+			return nil, UnexpectedMongoError{err}
+		}
 		users = append(users, user)
 	}
 	if len(users) != len(usernameSet) {
@@ -174,7 +177,7 @@ func (wekan *Wekan) GetUsersFromUsernames(ctx context.Context, usernames []Usern
 	return users, nil
 }
 
-// GetUsersFromUsernames retourne les objets users correspondant aux usernames en une seule requête
+// GetUsersFromIDs retourne les objets users correspondant aux usernames en une seule requête
 func (wekan *Wekan) GetUsersFromIDs(ctx context.Context, userIDs []UserID) ([]User, error) {
 	userIDSet := uniq(userIDs)
 	cur, err := wekan.db.Collection("users").Find(ctx, bson.M{
@@ -186,12 +189,18 @@ func (wekan *Wekan) GetUsersFromIDs(ctx context.Context, userIDs []UserID) ([]Us
 	var users []User
 	for cur.Next(ctx) {
 		var user User
-		cur.Decode(&user)
+		err := cur.Decode(&user)
+		if err != nil {
+			return nil, UnexpectedMongoError{err}
+		}
 		users = append(users, user)
 	}
 	for cur.Next(ctx) {
 		var user User
-		cur.Decode(&user)
+		err := cur.Decode(&user)
+		if err != nil {
+			return nil, UnexpectedMongoError{err}
+		}
 		users = append(users, user)
 	}
 	if len(users) != len(userIDSet) {
@@ -230,7 +239,7 @@ func (wekan *Wekan) UsernameExists(ctx context.Context, username Username) (bool
 }
 
 func (wekan *Wekan) InsertUser(ctx context.Context, user User) (User, error) {
-	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
 		return User{}, err
 	}
 
@@ -334,7 +343,7 @@ func BuildUser(email, initials, fullname string) User {
 
 // EnableUser: active un utilisateur dans la base `users` et active la participation à son tableau templates
 func (wekan *Wekan) EnableUser(ctx context.Context, user User) error {
-	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
 		return err
 	}
 
@@ -362,7 +371,7 @@ func (wekan *Wekan) EnableUser(ctx context.Context, user User) error {
 }
 
 func (wekan *Wekan) CreateUsers(ctx context.Context, users Users) error {
-	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
 		return err
 	}
 
@@ -376,7 +385,7 @@ func (wekan *Wekan) CreateUsers(ctx context.Context, users Users) error {
 }
 
 func (wekan *Wekan) EnableUsers(ctx context.Context, users Users) error {
-	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
 		return err
 	}
 
@@ -391,7 +400,7 @@ func (wekan *Wekan) EnableUsers(ctx context.Context, users Users) error {
 
 // DisableUser désactive l'utilisateur dans la base `users` et désactive la participation à tous les tableaux
 func (wekan *Wekan) DisableUser(ctx context.Context, user User) error {
-	if err := wekan.EnsureAdminUserIsAdmin(ctx); err != nil {
+	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
 		return err
 	}
 

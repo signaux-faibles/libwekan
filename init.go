@@ -16,12 +16,12 @@ type Wekan struct {
 	adminUserID   UserID
 }
 
-// Connect retourne un objet de type `Wekan`
-func Connect(ctx context.Context, uri string, databaseName string, adminUsername Username) (Wekan, error) {
+// Init retourne un objet de type `Wekan`
+func Init(ctx context.Context, uri string, databaseName string, adminUsername Username) (Wekan, error) {
 	clientOptions := options.Client().ApplyURI(uri)
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
-		return Wekan{}, err
+		return Wekan{}, InvalidMongoConfigurationError{err}
 	}
 	w := Wekan{
 		url:           uri,
@@ -49,7 +49,7 @@ func (wekan *Wekan) AdminUser(ctx context.Context) (User, error) {
 	return admin, nil
 }
 
-func (wekan *Wekan) EnsureAdminUserIsAdmin(ctx context.Context) error {
+func (wekan *Wekan) CheckAdminUserIsAdmin(ctx context.Context) error {
 	if wekan.adminUserID != "" {
 		return nil
 	}
@@ -62,5 +62,6 @@ func (wekan *Wekan) EnsureAdminUserIsAdmin(ctx context.Context) error {
 }
 
 func (wekan *Wekan) Ping() error {
-	return wekan.client.Ping(context.Background(), nil)
+	err := wekan.client.Ping(context.Background(), nil)
+	return UnreachableMongoError{err}
 }
