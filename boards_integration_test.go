@@ -16,8 +16,8 @@ func Test_createBoard(t *testing.T) {
 
 func Test_getBoardFromID(t *testing.T) {
 	id := BoardID("kSPsxQZGLKR9tknEt")
-	title := "Tableau CRP BFC"
-	slug := "tableau-crp-bfc"
+	title := BoardTitle("Tableau CRP BFC")
+	slug := BoardSlug("tableau-crp-bfc")
 
 	ass := assert.New(t)
 	board, err := wekan.GetBoardFromID(context.Background(), id)
@@ -30,9 +30,9 @@ func Test_getBoardFromID(t *testing.T) {
 }
 
 func Test_getBoardFromSlug(t *testing.T) {
-	id := "kSPsxQZGLKR9tknEt"
-	title := "Tableau CRP BFC"
-	slug := "tableau-crp-bfc"
+	id := BoardID("kSPsxQZGLKR9tknEt")
+	title := BoardTitle("Tableau CRP BFC")
+	slug := BoardSlug("tableau-crp-bfc")
 
 	ass := assert.New(t)
 	board, err := wekan.GetBoardFromSlug(context.Background(), BoardSlug(slug))
@@ -41,22 +41,22 @@ func Test_getBoardFromSlug(t *testing.T) {
 	ass.NotEmpty(board)
 	ass.Equal(title, board.Title)
 	ass.Equal(slug, board.Slug)
-	ass.Equal(id, string(board.ID))
+	ass.Equal(id, board.ID)
 }
 
 func Test_getBoardFromTitle(t *testing.T) {
-	id := "kSPsxQZGLKR9tknEt"
-	title := "Tableau CRP BFC"
-	slug := "tableau-crp-bfc"
+	id := BoardID("kSPsxQZGLKR9tknEt")
+	title := BoardTitle("Tableau CRP BFC")
+	slug := BoardSlug("tableau-crp-bfc")
 
 	ass := assert.New(t)
-	board, err := wekan.GetBoardFromTitle(context.Background(), title)
+	board, err := wekan.GetBoardFromTitle(context.Background(), string(title))
 
 	ass.Nil(err)
 	ass.NotEmpty(board)
 	ass.Equal(title, board.Title)
 	ass.Equal(slug, board.Slug)
-	ass.Equal(id, string(board.ID))
+	ass.Equal(id, board.ID)
 }
 
 func Test_AddMemberToBoard(t *testing.T) {

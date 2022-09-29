@@ -13,7 +13,6 @@ import (
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // var dbClient *mongo.Client
@@ -104,8 +103,9 @@ func TestGetUser_when_user_not_exist(t *testing.T) {
 	ass := assert.New(t)
 	user, err := wekan.GetUserFromUsername(context.TODO(), Username("unexistant user"))
 	ass.NotNil(err)
-	ass.ErrorIs(err, mongo.ErrNoDocuments)
+	ass.ErrorIs(err, err.(UnknownUserError))
 	ass.Empty(user.ID)
+
 }
 
 func kill(mongodb *dockertest.Resource) {
