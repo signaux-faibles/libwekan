@@ -59,7 +59,7 @@ type BoardLabel struct {
 }
 
 type BoardMember struct {
-	UserId        UserID `bson:"userId"`
+	UserID        UserID `bson:"userId"`
 	IsAdmin       bool   `bson:"isAdmin"`
 	IsActive      bool   `bson:"isActive"`
 	IsNoComments  bool   `bson:"isNoComments"`
@@ -132,7 +132,7 @@ func (wekan *Wekan) GetBoardFromID(ctx context.Context, id BoardID) (Board, erro
 // getMember teste si l'utilisateur fait partie de l'array .members
 func (board Board) getMember(userID UserID) BoardMember {
 	for _, boardMember := range board.Members {
-		if boardMember.UserId == userID {
+		if boardMember.UserID == userID {
 			return boardMember
 		}
 	}
@@ -173,7 +173,8 @@ func (wekan *Wekan) EnableBoardMember(ctx context.Context, boardID BoardID, user
 		return err
 	}
 
-	_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": boardID},
+	updateResults, err := wekan.db.Collection("boards").UpdateOne(ctx,
+		bson.M{"_id": boardID},
 		bson.M{
 			"$set": bson.M{"members.$[member].isActive": true},
 		},
@@ -185,15 +186,18 @@ func (wekan *Wekan) EnableBoardMember(ctx context.Context, boardID BoardID, user
 	if err != nil {
 		return UnexpectedMongoError{err}
 	}
-	activity := newActivityAddBoardMember(wekan.adminUserID, userID, boardID)
-	_, err = wekan.insertActivity(context.Background(), activity)
-	return err
+	if updateResults.ModifiedCount == 1 {
+		activity := newActivityAddBoardMember(wekan.adminUserID, userID, boardID)
+		_, err = wekan.insertActivity(context.Background(), activity)
+		return err
+	}
+	return nil
 }
 
 // DisableBoardMember desactive l'utilisateur dans la propriété `member` d'une board
 func (wekan *Wekan) DisableBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
 	if wekan.adminUserID == userID {
-		return ForbiddenOperationError{"On ne désactive pas l'admin !!!"}
+		return ForbiddenOperationError{"On ne "}
 	}
 	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
 		return err
@@ -356,4 +360,20 @@ func (wekan *Wekan) InsertBoardLabel(ctx context.Context, board Board, boardLabe
 			},
 		})
 	return err
+}
+
+func (wekan *Wekan) SelectBoardsFromMemberID(ctx context.Context, memberID UserID) ([]Board, error) {
+	var boards []Board
+	query := bson.M{
+		"members.userId": memberID,
+	}
+	cur, err := wekan.db.Collection("boards").Find(ctx, query)
+	if err != nil {
+		return nil, UnexpectedMongoError{err}
+	}
+	err = cur.All(ctx, &boards)
+	if err != nil {
+		return nil, UnexpectedMongoError{err}
+	}
+	return boards, nil
 }

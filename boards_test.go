@@ -15,7 +15,7 @@ func TestBoards_UserIsMember(t *testing.T) {
 	}
 	boardWithUserToto := Board{
 		Members: []BoardMember{
-			{UserId: "toto"},
+			{UserID: "toto"},
 		},
 	}
 
@@ -24,7 +24,7 @@ func TestBoards_UserIsMember(t *testing.T) {
 
 	boardWithUserTata := Board{
 		Members: []BoardMember{
-			{UserId: "tata"},
+			{UserID: "tata"},
 		},
 	}
 
@@ -33,8 +33,8 @@ func TestBoards_UserIsMember(t *testing.T) {
 
 	boardWithUserTotoAndTata := Board{
 		Members: []BoardMember{
-			{UserId: "tata"},
-			{UserId: "toto"},
+			{UserID: "tata"},
+			{UserID: "toto"},
 		},
 	}
 
@@ -50,7 +50,7 @@ func TestBoards_UserIsActiveMember(t *testing.T) {
 	}
 	boardWithActiveToto := Board{
 		Members: []BoardMember{
-			{UserId: "toto", IsActive: true},
+			{UserID: "toto", IsActive: true},
 		},
 	}
 
@@ -59,7 +59,7 @@ func TestBoards_UserIsActiveMember(t *testing.T) {
 
 	boardWithInactiveToto := Board{
 		Members: []BoardMember{
-			{UserId: "toto", IsActive: false},
+			{UserID: "toto", IsActive: false},
 		},
 	}
 
@@ -68,7 +68,7 @@ func TestBoards_UserIsActiveMember(t *testing.T) {
 
 	boardWithUserTata := Board{
 		Members: []BoardMember{
-			{UserId: "tata", IsActive: true},
+			{UserID: "tata", IsActive: true},
 		},
 	}
 
@@ -77,8 +77,8 @@ func TestBoards_UserIsActiveMember(t *testing.T) {
 
 	boardWithUserTotoAndTata := Board{
 		Members: []BoardMember{
-			{UserId: "tata", IsActive: true},
-			{UserId: "toto", IsActive: false},
+			{UserID: "tata", IsActive: true},
+			{UserID: "toto", IsActive: false},
 		},
 	}
 

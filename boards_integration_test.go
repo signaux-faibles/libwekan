@@ -123,6 +123,27 @@ func Test_EnableBoardMember(t *testing.T) {
 	ass.Condition(activityCompareFunc(expected, actual))
 }
 
+func Test_EnableBoardMember_when_user_is_not_on_board(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
+	user := BuildUser("an_absent_user", "aau", "An absent user")
+	insertedUser, _ := wekan.InsertUser(context.Background(), user)
+	ass.NotNil(insertedUser)
+	board, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
+	ass.False(board.UserIsMember(user))
+
+	// WHEN
+	err := wekan.EnableBoardMember(context.Background(), board.ID, user.ID)
+	ass.Nil(err)
+
+	shouldNotUpdatedBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
+	ass.False(shouldNotUpdatedBoard.UserIsMember(user))
+	expected := newActivityAddBoardMember(wekan.adminUserID, user.ID, board.ID)
+	activities, err := wekan.selectActivitiesFromQuery(context.Background(), bson.M{"memberId": expected.MemberID, "boardId": expected.BoardID, "activityType": expected.ActivityType})
+	ass.Empty(activities, 0)
+	ass.Empty(nil)
+}
+
 func Test_DisableBoardMember(t *testing.T) {
 	ass := assert.New(t)
 
@@ -237,4 +258,44 @@ func activityCompareFunc(a1 Activity, a2 Activity) func() bool {
 			a1.Username == a2.Username &&
 			a1.UserID == a2.UserID
 	}
+}
+
+func TestBoard_SelectBoardsFromMemberID(t *testing.T) {
+	ass := assert.New(t)
+
+	boardBFC, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
+	boardNORD, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-codefi-nord")
+
+	usernameBFC := t.Name() + "bfc"
+	usernameNORD := t.Name() + "nord"
+	usernameBOTH := t.Name() + "both"
+
+	userBFC := BuildUser(usernameBFC, usernameBFC, usernameBFC)
+	userNORD := BuildUser(usernameNORD, usernameNORD, usernameNORD)
+	userBOTH := BuildUser(usernameBOTH, usernameBOTH, usernameBOTH)
+
+	insertedUserBFC, _ := wekan.InsertUser(context.Background(), userBFC)
+	insertedUserNORD, _ := wekan.InsertUser(context.Background(), userNORD)
+	insertedUserBOTH, _ := wekan.InsertUser(context.Background(), userBOTH)
+
+	wekan.AddMemberToBoard(context.Background(), boardBFC.ID, BoardMember{UserID: insertedUserBFC.ID, IsActive: true})
+	wekan.AddMemberToBoard(context.Background(), boardNORD.ID, BoardMember{UserID: insertedUserNORD.ID, IsActive: true})
+	wekan.AddMemberToBoard(context.Background(), boardBFC.ID, BoardMember{UserID: insertedUserBOTH.ID, IsActive: true})
+	wekan.AddMemberToBoard(context.Background(), boardNORD.ID, BoardMember{UserID: insertedUserBOTH.ID, IsActive: true})
+
+	boardsUserBFC, err := wekan.SelectBoardsFromMemberID(context.Background(), userBFC.ID)
+	ass.Nil(err)
+	ass.Len(boardsUserBFC, 2)
+
+	boardsUserNORD, err := wekan.SelectBoardsFromMemberID(context.Background(), userNORD.ID)
+	ass.Len(boardsUserNORD, 2)
+	ass.Nil(err)
+
+	boardsUserBOTH, err := wekan.SelectBoardsFromMemberID(context.Background(), userBOTH.ID)
+	ass.Len(boardsUserBOTH, 3)
+	ass.Nil(err)
+
+	boardsUserBIDON, err := wekan.SelectBoardsFromMemberID(context.Background(), "idBidon")
+	ass.Len(boardsUserBIDON, 0)
+	ass.Nil(err)
 }

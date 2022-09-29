@@ -400,20 +400,40 @@ func (wekan *Wekan) EnableUsers(ctx context.Context, users Users) error {
 
 // DisableUser désactive l'utilisateur dans la base `users` et désactive la participation à tous les tableaux
 func (wekan *Wekan) DisableUser(ctx context.Context, user User) error {
+	if user.ID == wekan.adminUserID {
+		return ForbiddenOperationError{"la désactivation de l'utilisateur administrateur est interdite"}
+	}
+
 	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
 		return err
 	}
 
+	// désactivation de l'utilisateur dans la collection users
 	_, err := wekan.db.Collection("users").UpdateOne(ctx, bson.M{"_id": user.ID}, bson.M{
 		"$set": bson.M{
 			"loginDisabled": true,
 		},
 	})
-
 	if err != nil {
 		return err
 	}
 
+	// activité de la désactivation de l'utilisateur sur toutes les boards
+	boards, err := wekan.SelectBoardsFromMemberID(ctx, user.ID)
+	if err != nil {
+		return err
+	}
+	for _, board := range boards {
+		if board.UserIsActiveMember(user) {
+			activity := newActivityRemoveBoardMember(wekan.adminUserID, user.ID, board.ID)
+			_, err := wekan.insertActivity(ctx, activity)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// désactivation sur toutes les boards
 	_, err = wekan.db.Collection("boards").UpdateMany(ctx, bson.M{},
 		bson.M{
 			"$set": bson.M{"members.$[member].isActive": false},
