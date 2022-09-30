@@ -155,13 +155,15 @@ func (wekan *Wekan) AddMemberToBoard(ctx context.Context, boardID BoardID, board
 		return err
 	}
 
-	activity := newActivityAddBoardMember(wekan.adminUserID, boardMember.UserID, boardID)
-	_, err := wekan.insertActivity(ctx, activity)
-	if err != nil {
-		return err
+	if boardMember.IsActive {
+		activity := newActivityAddBoardMember(wekan.adminUserID, boardMember.UserID, boardID)
+		_, err := wekan.insertActivity(ctx, activity)
+		if err != nil {
+			return err
+		}
 	}
 
-	_, err = wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": boardID},
+	_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": boardID},
 		bson.M{
 			"$push": bson.M{
 				"members": boardMember,
@@ -209,7 +211,7 @@ func (wekan *Wekan) DisableBoardMember(ctx context.Context, boardID BoardID, use
 		return err
 	}
 
-	_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": boardID},
+	updateStats, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": boardID},
 		bson.M{
 			"$set": bson.M{"members.$[member].isActive": false},
 		},
@@ -221,8 +223,11 @@ func (wekan *Wekan) DisableBoardMember(ctx context.Context, boardID BoardID, use
 	if err != nil {
 		return UnexpectedMongoError{err}
 	}
-	activity := newActivityAddBoardMember(wekan.adminUserID, userID, boardID)
-	_, err = wekan.insertActivity(context.Background(), activity)
+	if updateStats.ModifiedCount == 1 {
+		activity := newActivityRemoveBoardMember(wekan.adminUserID, userID, boardID)
+		_, err = wekan.insertActivity(context.Background(), activity)
+		return err
+	}
 	return nil
 }
 
