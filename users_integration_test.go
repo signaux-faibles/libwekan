@@ -1,6 +1,7 @@
 //go:build integration
 // +build integration
 
+// nolint:errcheck
 package libwekan
 
 import (
@@ -68,11 +69,11 @@ func TestUsers_DisableUser(t *testing.T) {
 	templateBoard, _ := wekan.GetBoardFromID(context.Background(), insertedUser.Profile.TemplatesBoardId)
 	ass.True(templateBoard.UserIsActiveMember(insertedUser))
 	bfcBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
-	ignore(wekan.EnsureUserIsActiveBoardMember(context.Background(), bfcBoard.ID, insertedUser.ID))
+	wekan.EnsureUserIsActiveBoardMember(context.Background(), bfcBoard.ID, insertedUser.ID)
 	activatedUserBfcBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
 	ass.True(activatedUserBfcBoard.UserIsActiveMember(insertedUser))
 	nordBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-codefi-nord")
-	ignore(wekan.AddMemberToBoard(context.Background(), nordBoard.ID, BoardMember{UserID: insertedUser.ID}))
+	wekan.AddMemberToBoard(context.Background(), nordBoard.ID, BoardMember{UserID: insertedUser.ID})
 	notActivatedUserNordBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-codefi-nord")
 	ass.True(notActivatedUserNordBoard.UserIsMember(insertedUser))
 	ass.False(notActivatedUserNordBoard.UserIsActiveMember(insertedUser))
@@ -101,7 +102,7 @@ func TestUsers_EnableUser(t *testing.T) {
 	ass := assert.New(t)
 	enabledUser := BuildUser(t.Name(), t.Name(), t.Name())
 	insertedUser, _ := wekan.InsertUser(context.Background(), enabledUser)
-	wekan.DisableUser(context.Background(), insertedUser)
+	ignore(wekan.DisableUser(context.Background(), insertedUser))
 	err := wekan.EnableUser(context.Background(), insertedUser)
 	ass.Nil(err)
 	updatedUser, _ := wekan.GetUserFromID(context.Background(), insertedUser.ID)
