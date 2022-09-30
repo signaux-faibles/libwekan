@@ -115,7 +115,7 @@ func (wekan *Wekan) GetBoardFromSlug(ctx context.Context, slug BoardSlug) (Board
 	return board, err
 }
 
-// GetBoardFromTitle GetBoardFromID retourne l'objet board à partir du champ .title
+// GetBoardFromTitle GetBoardFromID retourne l'objet board à partir du champ title
 func (wekan *Wekan) GetBoardFromTitle(ctx context.Context, title string) (Board, error) {
 	var board Board
 	err := wekan.db.Collection("boards").FindOne(ctx, bson.M{"title": title}).Decode(&board)
@@ -129,7 +129,7 @@ func (wekan *Wekan) GetBoardFromID(ctx context.Context, id BoardID) (Board, erro
 	return board, err
 }
 
-// getMember teste si l'utilisateur fait partie de l'array .members
+// getMember teste si l'utilisateur fait partie de l'array members
 func (board Board) getMember(userID UserID) BoardMember {
 	for _, boardMember := range board.Members {
 		if boardMember.UserID == userID {

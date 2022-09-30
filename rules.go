@@ -49,7 +49,7 @@ func (board Board) BuildTrigger(label BoardLabel) Trigger {
 		BoardID:      board.ID,
 		LabelID:      label.ID,
 		Description:  fmt.Sprintf("quand l'étiquette %s est ajoutée à la carte par *", label.Name),
-		UserID:       UserID("*"),
+		UserID:       "*",
 		CreatedAt:    time.Now(),
 		ModifiedAt:   time.Now(),
 	}

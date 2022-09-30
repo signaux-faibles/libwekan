@@ -92,20 +92,20 @@ type UserProfile struct {
 type Username string
 type UserID string
 
-func (u Username) toString() string {
-	return string(u)
+func (username Username) toString() string {
+	return string(username)
 }
 
-func (u UserID) toString() string {
-	return string(u)
+func (userId UserID) toString() string {
+	return string(userId)
 }
 
-func (u User) getUsername() Username {
-	return u.Username
+func (user User) getUsername() Username {
+	return user.Username
 }
 
-func (u User) getID() UserID {
-	return u.ID
+func (user User) getID() UserID {
+	return user.ID
 }
 
 // ListUsers returns all wekan users
@@ -341,7 +341,7 @@ func BuildUser(email, initials, fullname string) User {
 	return newUser
 }
 
-// EnableUser: active un utilisateur dans la base `users` et active la participation à son tableau templates
+// EnableUser active un utilisateur dans la base `users` et active la participation à son tableau templates
 func (wekan *Wekan) EnableUser(ctx context.Context, user User) error {
 	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
 		return err

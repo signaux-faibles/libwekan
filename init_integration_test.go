@@ -101,7 +101,7 @@ func Test_OnlyOneAdminInDB(t *testing.T) {
 
 func TestGetUser_when_user_not_exist(t *testing.T) {
 	ass := assert.New(t)
-	user, err := wekan.GetUserFromUsername(context.TODO(), Username("unexistant user"))
+	user, err := wekan.GetUserFromUsername(context.TODO(), "unexistant user")
 	ass.NotNil(err)
 	ass.ErrorIs(err, err.(UnknownUserError))
 	ass.Empty(user.ID)
