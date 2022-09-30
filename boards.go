@@ -155,7 +155,13 @@ func (wekan *Wekan) AddMemberToBoard(ctx context.Context, boardID BoardID, board
 		return err
 	}
 
-	_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": boardID},
+	activity := newActivityAddBoardMember(wekan.adminUserID, boardMember.UserID, boardID)
+	_, err := wekan.insertActivity(ctx, activity)
+	if err != nil {
+		return err
+	}
+
+	_, err = wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": boardID},
 		bson.M{
 			"$push": bson.M{
 				"members": boardMember,

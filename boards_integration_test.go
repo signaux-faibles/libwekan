@@ -78,6 +78,9 @@ func Test_AddMemberToBoard(t *testing.T) {
 	actualBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
 
 	ass.True(actualBoard.UserIsMember(insertedUser))
+
+	activities, _ := wekan.selectActivitiesFromQuery(context.Background(), bson.M{"memberId": insertedUser.ID, "activityType": "addBoardMember"})
+	ass.Len(activities, 2)
 }
 
 func Test_EnableBoardMember(t *testing.T) {

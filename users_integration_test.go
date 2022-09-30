@@ -2,6 +2,7 @@ package libwekan
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/bson"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -54,22 +55,43 @@ func TestUsers_createDuplicateUser(t *testing.T) {
 }
 
 func TestUsers_DisableUser(t *testing.T) {
+	// insertion d'un nouvel utilisateur
+	// ajout de l'utilisateur en tant que membre actif sur tableau-crp-bfc
+	// ajout de l'utilisateur en tant que membre inactif sur tableau-codefi-nord
 	ass := assert.New(t)
-	disabledUser := BuildUser(t.Name(), t.Name(), t.Name())
-	insertedUser, _ := wekan.InsertUser(context.Background(), disabledUser)
+	user := BuildUser(t.Name(), t.Name(), t.Name())
+	insertedUser, _ := wekan.InsertUser(context.Background(), user)
 	ass.False(insertedUser.LoginDisabled)
 	templateBoard, _ := wekan.GetBoardFromID(context.Background(), insertedUser.Profile.TemplatesBoardId)
 	ass.True(templateBoard.UserIsActiveMember(insertedUser))
-	board, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
-	wekan.EnsureUserIsActiveBoardMember(context.Background(), board.ID, insertedUser.ID)
-	ass.True(templateBoard.UserIsActiveMember(insertedUser))
-	wekan.DisableUser(context.Background(), insertedUser)
-	updatedUser, _ := wekan.GetUserFromID(context.Background(), insertedUser.ID)
-	ass.True(updatedUser.LoginDisabled)
-	updatedBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
-	ass.False(updatedBoard.UserIsActiveMember(updatedUser))
-	updatedTemplateBoard, _ := wekan.GetBoardFromID(context.Background(), insertedUser.Profile.TemplatesBoardId)
-	ass.False(updatedTemplateBoard.UserIsActiveMember(updatedUser))
+	bfcBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
+	wekan.EnsureUserIsActiveBoardMember(context.Background(), bfcBoard.ID, insertedUser.ID)
+	activatedUserBfcBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
+	ass.True(activatedUserBfcBoard.UserIsActiveMember(insertedUser))
+	nordBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-codefi-nord")
+	wekan.AddMemberToBoard(context.Background(), nordBoard.ID, BoardMember{UserID: insertedUser.ID})
+	notActivatedUserNordBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-codefi-nord")
+	ass.True(notActivatedUserNordBoard.UserIsMember(insertedUser))
+	ass.False(notActivatedUserNordBoard.UserIsActiveMember(insertedUser))
+
+	// désactivation de l'utilisateur
+	err := wekan.DisableUser(context.Background(), insertedUser)
+	ass.Nil(err)
+
+	// vérification des hypothèses
+	// l'utilisateur est désactivé
+	disabledUser, _ := wekan.GetUserFromID(context.Background(), insertedUser.ID)
+	ass.True(disabledUser.LoginDisabled)
+	// l'utilisateur est désactivé des boards où il était actif (templateBoard, tableau-crp-bfc)
+	disabledUserBfcBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
+	ass.False(disabledUserBfcBoard.UserIsActiveMember(disabledUser))
+	disabledUserNordBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
+	ass.False(disabledUserNordBoard.UserIsActiveMember(disabledUser))
+	disabledUserTemplateBoard, _ := wekan.GetBoardFromID(context.Background(), insertedUser.Profile.TemplatesBoardId)
+	ass.False(disabledUserTemplateBoard.UserIsActiveMember(disabledUser))
+	// les activities ont été insérées pour les deux boards où il était actif
+	activities, _ := wekan.selectActivitiesFromQuery(context.Background(), bson.M{"memberId": disabledUser.ID, "activityType": "removeBoardMember"})
+	ass.Len(activities, 2)
 }
 
 func TestUsers_EnableUser(t *testing.T) {
