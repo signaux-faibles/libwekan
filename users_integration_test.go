@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 package libwekan
 
 import (
@@ -65,11 +68,11 @@ func TestUsers_DisableUser(t *testing.T) {
 	templateBoard, _ := wekan.GetBoardFromID(context.Background(), insertedUser.Profile.TemplatesBoardId)
 	ass.True(templateBoard.UserIsActiveMember(insertedUser))
 	bfcBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
-	wekan.EnsureUserIsActiveBoardMember(context.Background(), bfcBoard.ID, insertedUser.ID)
+	ignore(wekan.EnsureUserIsActiveBoardMember(context.Background(), bfcBoard.ID, insertedUser.ID))
 	activatedUserBfcBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
 	ass.True(activatedUserBfcBoard.UserIsActiveMember(insertedUser))
 	nordBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-codefi-nord")
-	wekan.AddMemberToBoard(context.Background(), nordBoard.ID, BoardMember{UserID: insertedUser.ID})
+	ignore(wekan.AddMemberToBoard(context.Background(), nordBoard.ID, BoardMember{UserID: insertedUser.ID}))
 	notActivatedUserNordBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-codefi-nord")
 	ass.True(notActivatedUserNordBoard.UserIsMember(insertedUser))
 	ass.False(notActivatedUserNordBoard.UserIsActiveMember(insertedUser))

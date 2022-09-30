@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 package libwekan
 
 import (
@@ -130,4 +133,8 @@ func restoreDump(mongodb *dockertest.Resource) error {
 		return nil
 	}
 	return output.Flush()
+}
+
+func ignore(ignored interface{}) {
+	return
 }
