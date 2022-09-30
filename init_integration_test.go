@@ -1,3 +1,7 @@
+//go:build integration
+// +build integration
+
+// nolint:errcheck
 package libwekan
 
 import (
