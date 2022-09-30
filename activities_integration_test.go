@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 // nolint:errcheck
 package libwekan
@@ -12,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_insertActivity_whenEverythingsFine(t *testing.T) {
+func TestActivities_insertActivity_whenEverythingsFine(t *testing.T) {
 	ass := assert.New(t)
 	activity := newActivityCreateBoard(UserID(t.Name()+"_userId"), BoardID(t.Name()+"_boardID"))
 	insertedActivity, err := wekan.insertActivity(context.Background(), activity)
@@ -23,7 +22,7 @@ func Test_insertActivity_whenEverythingsFine(t *testing.T) {
 	ass.Equal(insertedActivity, selectedActivity)
 }
 
-func Test_insertActivity_withActivityIsAlreadySet(t *testing.T) {
+func TestActivies_insertActivity_withActivityIsAlreadySet(t *testing.T) {
 	ass := assert.New(t)
 	activity := newActivityCreateBoard(UserID(t.Name()+"_userId"), BoardID(t.Name()+"_boardID"))
 	insertedActivity, err := wekan.insertActivity(context.Background(), activity)
@@ -34,7 +33,7 @@ func Test_insertActivity_withActivityIsAlreadySet(t *testing.T) {
 	ass.IsType(AlreadySetActivityError{}, err)
 }
 
-func Test_selectActivitiesFromBoardID(t *testing.T) {
+func TestActivities_selectActivitiesFromBoardID(t *testing.T) {
 	ass := assert.New(t)
 
 	board, err := wekan.GetBoardFromSlug(context.Background(), "tableau-codefi-nord")

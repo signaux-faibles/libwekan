@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 // nolint:errcheck
 package libwekan
@@ -11,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_InsertRule_whenLabelDoesntExist(t *testing.T) {
+func TestRules_InsertRule_whenLabelDoesntExist(t *testing.T) {
 	ass := assert.New(t)
 	board, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
 	ass.Nil(err)
@@ -28,7 +27,7 @@ func Test_InsertRule_whenLabelDoesntExist(t *testing.T) {
 	ass.IsType(InsertEmptyRuleError{}, err)
 }
 
-func TestWekan_InsertRule_whenUserIsNotMember(t *testing.T) {
+func TestRulesInsertRule_whenUserIsNotMember(t *testing.T) {
 	ass := assert.New(t)
 	board, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
 	ass.Nil(err)
@@ -42,7 +41,7 @@ func TestWekan_InsertRule_whenUserIsNotMember(t *testing.T) {
 	ass.IsType(InsertEmptyRuleError{}, err)
 }
 
-func TestWekan_InsertRule_whenEverythingsFine(t *testing.T) {
+func TestRules_InsertRule_whenEverythingsFine(t *testing.T) {
 	ass := assert.New(t)
 	board, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
 	ass.Nil(err)

@@ -155,22 +155,26 @@ func (wekan *Wekan) AddMemberToBoard(ctx context.Context, boardID BoardID, board
 		return err
 	}
 
-	if boardMember.IsActive {
-		activity := newActivityAddBoardMember(wekan.adminUserID, boardMember.UserID, boardID)
-		_, err := wekan.insertActivity(ctx, activity)
-		if err != nil {
-			return err
-		}
-	}
+	toInsertBoardMember := boardMember
+	// l'utilisateur est activé par la méthode EnableBoardMember pour prendre en charge l'insertion de l'activity
+	toInsertBoardMember.IsActive = false
 
-	_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": boardID},
+	_, err := wekan.db.Collection("boards").UpdateOne(ctx,
+		bson.M{"_id": boardID},
 		bson.M{
 			"$push": bson.M{
-				"members": boardMember,
+				"members": toInsertBoardMember,
 			},
 		})
 	if err != nil {
 		return UnexpectedMongoError{err}
+	}
+
+	if boardMember.IsActive {
+		err = wekan.EnableBoardMember(ctx, boardID, boardMember.UserID)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -180,7 +184,6 @@ func (wekan *Wekan) EnableBoardMember(ctx context.Context, boardID BoardID, user
 	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
 		return err
 	}
-
 	updateResults, err := wekan.db.Collection("boards").UpdateOne(ctx,
 		bson.M{"_id": boardID},
 		bson.M{

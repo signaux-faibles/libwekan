@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 // nolint:errcheck
 package libwekan
@@ -22,6 +21,7 @@ import (
 // var dbClient *mongo.Client
 var wekan Wekan
 var cwd, _ = os.Getwd()
+var ctx = context.Background()
 
 func TestMain(m *testing.M) {
 	// uses a sensible default on windows (tcp/http) and linux/osx (socket)
@@ -62,7 +62,7 @@ func TestMain(m *testing.M) {
 		fmt.Println("Mongo n'est pas encore prêt")
 		var err error
 		mongoUrl := fmt.Sprintf("mongodb://root:password@localhost:%s", mongodb.GetPort("27017/tcp"))
-		wekan, err = Init(context.Background(), mongoUrl, "wekan", "signaux.faibles")
+		wekan, err = Init(ctx, mongoUrl, "wekan", "signaux.faibles")
 		if err != nil {
 			return err
 		}
@@ -98,7 +98,7 @@ func Test_OnlyOneAdminInDB(t *testing.T) {
 	ass.Nil(err)
 	ass.Equal(1, admins)
 
-	adminUser, err := wekan.AdminUser(context.Background())
+	adminUser, err := wekan.AdminUser(ctx)
 	ass.Nil(err)
 	ass.Equal(admin.ID, (adminUser).ID)
 }
