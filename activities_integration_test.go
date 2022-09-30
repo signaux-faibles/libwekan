@@ -14,10 +14,10 @@ import (
 func TestActivities_insertActivity_whenEverythingsFine(t *testing.T) {
 	ass := assert.New(t)
 	activity := newActivityCreateBoard(UserID(t.Name()+"_userId"), BoardID(t.Name()+"_boardID"))
-	insertedActivity, err := wekan.insertActivity(context.Background(), activity)
+	insertedActivity, err := wekan.insertActivity(ctx, activity)
 	ass.Nil(err)
 
-	selectedActivity, err := wekan.selectActivityFromID(context.Background(), insertedActivity.ID)
+	selectedActivity, err := wekan.selectActivityFromID(ctx, insertedActivity.ID)
 	ass.Nil(err)
 	ass.Equal(insertedActivity, selectedActivity)
 }
@@ -25,10 +25,10 @@ func TestActivities_insertActivity_whenEverythingsFine(t *testing.T) {
 func TestActivies_insertActivity_withActivityIsAlreadySet(t *testing.T) {
 	ass := assert.New(t)
 	activity := newActivityCreateBoard(UserID(t.Name()+"_userId"), BoardID(t.Name()+"_boardID"))
-	insertedActivity, err := wekan.insertActivity(context.Background(), activity)
+	insertedActivity, err := wekan.insertActivity(ctx, activity)
 	ass.Nil(err)
 
-	notInsertedActivity, err := wekan.insertActivity(context.Background(), insertedActivity)
+	notInsertedActivity, err := wekan.insertActivity(ctx, insertedActivity)
 	ass.Empty(notInsertedActivity)
 	ass.IsType(AlreadySetActivityError{}, err)
 }
@@ -36,13 +36,13 @@ func TestActivies_insertActivity_withActivityIsAlreadySet(t *testing.T) {
 func TestActivities_selectActivitiesFromBoardID(t *testing.T) {
 	ass := assert.New(t)
 
-	board, err := wekan.GetBoardFromSlug(context.Background(), "tableau-codefi-nord")
+	board, err := wekan.GetBoardFromSlug(ctx, "tableau-codefi-nord")
 	ass.Nil(err)
 	ass.NotEmpty(board)
 
 	activityToInsert := newActivityAddBoardMember("userID_de_test", "memberId_de_test", board.ID)
-	insertedActivity, _ := wekan.insertActivity(context.Background(), activityToInsert)
-	activities, err := wekan.selectActivitiesFromQuery(context.Background(), bson.M{"boardId": board.ID})
+	insertedActivity, _ := wekan.insertActivity(ctx, activityToInsert)
+	activities, err := wekan.selectActivitiesFromQuery(ctx, bson.M{"boardId": board.ID})
 	ass.Nil(err)
 	ass.NotNil(activities)
 
