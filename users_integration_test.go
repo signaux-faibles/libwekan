@@ -102,7 +102,7 @@ func TestUsers_EnableUser(t *testing.T) {
 	ass := assert.New(t)
 	enabledUser := BuildUser(t.Name(), t.Name(), t.Name())
 	insertedUser, _ := wekan.InsertUser(context.Background(), enabledUser)
-	ignore(wekan.DisableUser(context.Background(), insertedUser))
+	wekan.DisableUser(context.Background(), insertedUser)
 	err := wekan.EnableUser(context.Background(), insertedUser)
 	ass.Nil(err)
 	updatedUser, _ := wekan.GetUserFromID(context.Background(), insertedUser.ID)
