@@ -98,9 +98,8 @@ func Test_EnableBoardMember(t *testing.T) {
 	insertedNotEnabledUser, _ := wekan.InsertUser(context.Background(), notEnabledUser)
 	ass.False(board.UserIsMember(insertedNotEnabledUser))
 
-	wekan.AddMemberToBoard(context.Background(), board.ID, BoardMember{insertedUser.ID, false, false, false, false, false})
-	wekan.AddMemberToBoard(context.Background(), board.ID, BoardMember{insertedNotEnabledUser.ID, false, false, false, false, false})
-
+	addMemberToBoard(board.ID, BoardMember{insertedUser.ID, false, false, false, false, false}, t)
+	addMemberToBoard(board.ID, BoardMember{insertedNotEnabledUser.ID, false, false, false, false, false}, t)
 	insertedMemberBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
 	ass.False(insertedMemberBoard.UserIsActiveMember(insertedUser))
 	ass.False(insertedMemberBoard.UserIsActiveMember(insertedNotEnabledUser))
@@ -118,8 +117,8 @@ func Test_EnableBoardMember(t *testing.T) {
 	// on vérifie que l'activité a été créée
 	expected := newActivityAddBoardMember(wekan.adminUserID, user.ID, board.ID)
 	foundActivities, _ := wekan.selectActivitiesFromQuery(context.Background(), bson.M{"boardId": expected.BoardID, "memberId": expected.MemberID})
-	req := require.New(t)
-	req.Len(foundActivities, 1)
+	require.NotEmpty(t, foundActivities)
+	ass.Len(foundActivities, 1)
 
 	actual := foundActivities[0]
 
@@ -163,8 +162,8 @@ func Test_DisableBoardMember(t *testing.T) {
 	ass.False(board.UserIsMember(insertedUser))
 	ass.False(board.UserIsMember(insertedEnabledUser))
 
-	wekan.AddMemberToBoard(context.Background(), board.ID, BoardMember{insertedUser.ID, false, true, false, false, false})
-	wekan.AddMemberToBoard(context.Background(), board.ID, BoardMember{insertedEnabledUser.ID, false, true, false, false, false})
+	addMemberToBoard(board.ID, BoardMember{insertedUser.ID, false, true, false, false, false}, t)
+	addMemberToBoard(board.ID, BoardMember{insertedEnabledUser.ID, false, true, false, false, false}, t)
 
 	insertedMemberBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
 	ass.True(insertedMemberBoard.UserIsActiveMember(user))
@@ -184,8 +183,8 @@ func Test_DisableBoardMember(t *testing.T) {
 	// on vérifie que l'activité correspondante a été créée
 	expected := newActivityRemoveBoardMember(wekan.adminUserID, user.ID, board.ID)
 	foundActivities, _ := wekan.selectActivitiesFromQuery(context.Background(), bson.M{"boardId": expected.BoardID, "memberId": expected.MemberID, "activityType": "removeBoardMember"})
-	req := require.New(t)
-	req.Len(foundActivities, 1)
+	require.NotEmpty(t, foundActivities)
+	ass.Len(foundActivities, 1)
 
 	actual := foundActivities[0]
 	ass.Condition(activityCompareFunc(expected, actual))
@@ -281,10 +280,10 @@ func TestBoard_SelectBoardsFromMemberID(t *testing.T) {
 	insertedUserNORD, _ := wekan.InsertUser(context.Background(), userNORD)
 	insertedUserBOTH, _ := wekan.InsertUser(context.Background(), userBOTH)
 
-	wekan.AddMemberToBoard(context.Background(), boardBFC.ID, BoardMember{UserID: insertedUserBFC.ID, IsActive: true})
-	wekan.AddMemberToBoard(context.Background(), boardNORD.ID, BoardMember{UserID: insertedUserNORD.ID, IsActive: true})
-	wekan.AddMemberToBoard(context.Background(), boardBFC.ID, BoardMember{UserID: insertedUserBOTH.ID, IsActive: true})
-	wekan.AddMemberToBoard(context.Background(), boardNORD.ID, BoardMember{UserID: insertedUserBOTH.ID, IsActive: true})
+	addMemberToBoard(boardBFC.ID, BoardMember{UserID: insertedUserBFC.ID, IsActive: true}, t)
+	addMemberToBoard(boardNORD.ID, BoardMember{UserID: insertedUserNORD.ID, IsActive: true}, t)
+	addMemberToBoard(boardBFC.ID, BoardMember{UserID: insertedUserBOTH.ID, IsActive: true}, t)
+	addMemberToBoard(boardNORD.ID, BoardMember{UserID: insertedUserBOTH.ID, IsActive: true}, t)
 
 	boardsUserBFC, err := wekan.SelectBoardsFromMemberID(context.Background(), userBFC.ID)
 	ass.Nil(err)
@@ -301,4 +300,10 @@ func TestBoard_SelectBoardsFromMemberID(t *testing.T) {
 	boardsUserBIDON, err := wekan.SelectBoardsFromMemberID(context.Background(), "idBidon")
 	ass.Len(boardsUserBIDON, 0)
 	ass.Nil(err)
+}
+
+func addMemberToBoard(boardID BoardID, boardMember BoardMember, t *testing.T) {
+	req := require.New(t)
+	err := wekan.AddMemberToBoard(context.Background(), boardID, boardMember)
+	req.Nilf(err, "il faut corriger la méthode AddMemberToBoard qui est testée ailleurs")
 }
