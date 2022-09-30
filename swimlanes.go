@@ -44,7 +44,7 @@ func newBoardTemplateSwimlane(boardId BoardID) Swimlane {
 }
 
 func (wekan *Wekan) InsertSwimlane(ctx context.Context, swimlane Swimlane) error {
-	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
+	if err := wekan.AssertHasAdmin(ctx); err != nil {
 		return err
 	}
 

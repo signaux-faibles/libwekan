@@ -98,9 +98,9 @@ func Test_OnlyOneAdminInDB(t *testing.T) {
 	ass.Nil(err)
 	ass.Equal(1, admins)
 
-	adminUser, err := wekan.AdminUser(ctx)
-	ass.Nil(err)
-	ass.Equal(admin.ID, (adminUser).ID)
+	//adminUser, err := wekan.AdminUser(ctx)
+	ass.Nil(wekan.AssertHasAdmin(ctx))
+	ass.Equal(admin.ID, wekan.adminUserID)
 }
 
 func TestGetUser_when_user_not_exist(t *testing.T) {

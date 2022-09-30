@@ -239,7 +239,7 @@ func (wekan *Wekan) UsernameExists(ctx context.Context, username Username) (bool
 }
 
 func (wekan *Wekan) InsertUser(ctx context.Context, user User) (User, error) {
-	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
+	if err := wekan.AssertHasAdmin(ctx); err != nil {
 		return User{}, err
 	}
 
@@ -343,7 +343,7 @@ func BuildUser(email, initials, fullname string) User {
 
 // EnableUser active un utilisateur dans la base `users` et active la participation à son tableau templates
 func (wekan *Wekan) EnableUser(ctx context.Context, user User) error {
-	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
+	if err := wekan.AssertHasAdmin(ctx); err != nil {
 		return err
 	}
 
@@ -371,7 +371,7 @@ func (wekan *Wekan) EnableUser(ctx context.Context, user User) error {
 }
 
 func (wekan *Wekan) CreateUsers(ctx context.Context, users Users) error {
-	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
+	if err := wekan.AssertHasAdmin(ctx); err != nil {
 		return err
 	}
 
@@ -385,7 +385,7 @@ func (wekan *Wekan) CreateUsers(ctx context.Context, users Users) error {
 }
 
 func (wekan *Wekan) EnableUsers(ctx context.Context, users Users) error {
-	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
+	if err := wekan.AssertHasAdmin(ctx); err != nil {
 		return err
 	}
 
@@ -404,7 +404,7 @@ func (wekan *Wekan) DisableUser(ctx context.Context, user User) error {
 		return ForbiddenOperationError{"la désactivation de l'utilisateur administrateur est interdite"}
 	}
 
-	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
+	if err := wekan.AssertHasAdmin(ctx); err != nil {
 		return err
 	}
 
