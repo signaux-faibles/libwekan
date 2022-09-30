@@ -182,8 +182,8 @@ func Test_DisableBoardMember(t *testing.T) {
 	ass.True(disabledMemberBoard.UserIsActiveMember(enabledUser))
 
 	// on vérifie que l'activité correspondante a été créée
-	expected := newActivityAddBoardMember(wekan.adminUserID, user.ID, board.ID)
-	foundActivities, _ := wekan.selectActivitiesFromQuery(context.Background(), bson.M{"boardId": expected.BoardID, "memberId": expected.MemberID})
+	expected := newActivityRemoveBoardMember(wekan.adminUserID, user.ID, board.ID)
+	foundActivities, _ := wekan.selectActivitiesFromQuery(context.Background(), bson.M{"boardId": expected.BoardID, "memberId": expected.MemberID, "activityType": "removeBoardMember"})
 	req := require.New(t)
 	req.Len(foundActivities, 1)
 
