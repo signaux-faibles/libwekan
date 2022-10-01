@@ -34,9 +34,6 @@ jobs:
         with:
           version: v1.49
 
-      - name: Build package
-        run: go build -v .
-
       - name: Unit Tests
-        run: go test ./... -v
+        run: go test ./... -v -tags integration
 
