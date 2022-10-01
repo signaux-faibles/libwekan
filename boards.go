@@ -2,6 +2,7 @@ package libwekan
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -380,6 +381,22 @@ func (wekan *Wekan) SelectBoardsFromMemberID(ctx context.Context, memberID UserI
 	var boards []Board
 	query := bson.M{
 		"members.userId": memberID,
+	}
+	cur, err := wekan.db.Collection("boards").Find(ctx, query)
+	if err != nil {
+		return nil, UnexpectedMongoError{err}
+	}
+	err = cur.All(ctx, &boards)
+	if err != nil {
+		return nil, UnexpectedMongoError{err}
+	}
+	return boards, nil
+}
+
+func (wekan *Wekan) SelectBoardsFromSlugExpression(ctx context.Context, slugRegexp string) ([]Board, error) {
+	var boards []Board
+	query := bson.M{
+		"slug": primitive.Regex{Pattern: slugRegexp, Options: "i"},
 	}
 	cur, err := wekan.db.Collection("boards").Find(ctx, query)
 	if err != nil {

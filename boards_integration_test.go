@@ -332,3 +332,24 @@ func createTestUser(t *testing.T, suffix string) User {
 	insertedUser, _ := wekan.InsertUser(ctx, user)
 	return insertedUser
 }
+
+func TestBoards_SelectBoardsFromSlugExpression_withTwoBoards(t *testing.T) {
+	ass := assert.New(t)
+	boardsTableau, err := wekan.SelectBoardsFromSlugExpression(ctx, "^tableau-.*$")
+	ass.Nil(err)
+	ass.Len(boardsTableau, 2)
+}
+
+func TestBoards_SelectBoardsFromSlugExpression_withNoBoard(t *testing.T) {
+	ass := assert.New(t)
+	boardsNull, err := wekan.SelectBoardsFromSlugExpression(ctx, "^.*zgorglub$")
+	ass.Nil(err)
+	ass.Nil(boardsNull)
+}
+
+func TestBoards_SelectBoardsFromSlugExpression_withBadRegexp(t *testing.T) {
+	ass := assert.New(t)
+	boardsNull, err := wekan.SelectBoardsFromSlugExpression(ctx, "[")
+	ass.IsType(UnexpectedMongoError{}, err)
+	ass.Nil(boardsNull)
+}
