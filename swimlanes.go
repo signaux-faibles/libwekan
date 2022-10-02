@@ -6,6 +6,7 @@ import (
 )
 
 type SwimlaneID string
+
 type Swimlane struct {
 	ID         SwimlaneID `bson:"_id"`
 	Title      string     `bson:"title"`

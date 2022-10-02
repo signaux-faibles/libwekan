@@ -9,17 +9,20 @@ type ActivityID string
 type Activity struct {
 	ID             ActivityID   `bson:"_id"`
 	UserID         UserID       `bson:"userId,omitempty"`
-	Username       Username     `bson:"username"`
-	Type           string       `bson:"type"`
+	Username       Username     `bson:"username,omitempty"`
+	Type           string       `bson:"type,omitempty"`
 	MemberID       UserID       `bson:"memberId,omitempty"`
-	ActivityType   string       `bson:"activityType"`
-	ActivityTypeID string       `bson:"activityTypeID"`
+	ActivityType   string       `bson:"activityType,omitempty"`
+	ActivityTypeID string       `bson:"activityTypeID,omitempty"`
 	BoardID        BoardID      `bson:"boardId,omitempty"`
-	BoardLabelID   BoardLabelID `bson:"labelId"`
+	BoardLabelID   BoardLabelID `bson:"labelId,omitEmpty"`
+	CardTitle      string       `bson:"cardTitle,omitempty"`
 	ListID         ListID       `bson:"listId,omitempty"`
+	ListName       string       `bson:"listName,omitempty"`
 	CardID         CardID       `bson:"cardId,omitempty"`
 	CommentID      CommentID    `bson:"commentId, omitempty"`
 	SwimlaneID     SwimlaneID   `bson:"swimlaneID,omitempty"`
+	SwimlaneName   string       `bson:"swimlaneName,omitempty"`
 	CreatedAt      time.Time    `bson:"createdAt"`
 	ModifiedAt     time.Time    `bson:"modifiedAt"`
 }
@@ -106,6 +109,20 @@ func newActivityAddedLabel(userID UserID, boardLabelID BoardLabelID, boardID Boa
 		ActivityType: "addedLabel",
 		BoardID:      boardID,
 		SwimlaneID:   swimlaneID,
+	}
+}
+
+func newActivityCreateCard(userID UserID, list List, card Card, swimlane Swimlane) Activity {
+	return Activity{
+		UserID:       userID,
+		ActivityType: "createCard",
+		BoardID:      card.BoardID,
+		ListName:     list.Title,
+		ListID:       list.ID,
+		CardID:       card.ID,
+		CardTitle:    card.Title,
+		SwimlaneName: swimlane.Title,
+		SwimlaneID:   swimlane.ID,
 	}
 }
 
