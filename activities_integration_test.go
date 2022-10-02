@@ -35,17 +35,13 @@ func TestActivies_insertActivity_withActivityIsAlreadySet(t *testing.T) {
 
 func TestActivities_selectActivitiesFromBoardID(t *testing.T) {
 	ass := assert.New(t)
-
-	board, err := wekan.GetBoardFromSlug(ctx, "tableau-codefi-nord")
-	ass.Nil(err)
-	ass.NotEmpty(board)
+	board, _ := wekan.GetBoardFromSlug(ctx, "tableau-codefi-nord")
 
 	activityToInsert := newActivityAddBoardMember("userID_de_test", "memberId_de_test", board.ID)
 	insertedActivity, _ := wekan.insertActivity(ctx, activityToInsert)
 	activities, err := wekan.selectActivitiesFromQuery(ctx, bson.M{"boardId": board.ID})
 	ass.Nil(err)
 	ass.NotNil(activities)
-
 	ass.Contains(activities, insertedActivity)
 }
 

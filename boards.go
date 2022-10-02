@@ -72,6 +72,15 @@ type BoardID string
 type BoardSlug string
 type BoardTitle string
 
+// NewBoardLabel retourne un objet BoardLabel
+func NewBoardLabel(name string, color string) BoardLabel {
+	return BoardLabel{
+		ID:    BoardLabelID(newId6()),
+		Name:  BoardLabelName(name),
+		Color: color,
+	}
+}
+
 // GetLabelByName retourne l'objet BoardLabel correspondant au nom, vide si absent
 func (board Board) GetLabelByName(name BoardLabelName) BoardLabel {
 	for _, label := range board.Labels {
@@ -368,12 +377,21 @@ func (wekan *Wekan) InsertBoardLabel(ctx context.Context, board Board, boardLabe
 	if board.GetLabelByName(boardLabel.Name) != (BoardLabel{}) {
 		return BoardLabelAlreadyExistsError{boardLabel, board}
 	}
-	_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": board.ID},
+	stats, err := wekan.db.Collection("boards").UpdateOne(ctx,
+		bson.M{
+			"_id": board.ID,
+		},
 		bson.M{
 			"$push": bson.M{
 				"labels": boardLabel,
 			},
 		})
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	if stats.ModifiedCount != 1 {
+		return UnknownBoardError{board}
+	}
 	return err
 }
 

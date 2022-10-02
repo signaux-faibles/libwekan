@@ -72,3 +72,13 @@ func mapSlice[T any, M any](a []T, f func(T) M) []M {
 	}
 	return n
 }
+
+func sliceSelect[Element comparable](slice []Element, f func(Element) bool) []Element {
+	var selected []Element
+	for _, element := range slice {
+		if f(element) {
+			selected = append(selected, element)
+		}
+	}
+	return selected
+}

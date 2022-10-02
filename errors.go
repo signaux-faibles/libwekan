@@ -28,6 +28,14 @@ func (e UnknownBoardError) Error() string {
 	return fmt.Sprintf("la board est inconnue (BoardID: %s, Title: %s, Slug: %s", e.board.ID, e.board.Title, e.board.Slug)
 }
 
+type UnknownRuleError struct {
+	rule Rule
+}
+
+func (e UnknownRuleError) Error() string {
+	return fmt.Sprintf("Rule introuvable (RuleID: %s)", e.rule.ID)
+}
+
 type UserIsNotAdminError struct {
 	id UserID
 }
@@ -99,3 +107,11 @@ type ForbiddenOperationError struct {
 func (e ForbiddenOperationError) Error() string {
 	return e.message
 }
+func (e ForbiddenOperationError) Forbidden() {}
+
+type NotImplemented struct{}
+
+func (e NotImplemented) Error() string {
+	return "not implemented"
+}
+func (e NotImplemented) NotImplemented() {}

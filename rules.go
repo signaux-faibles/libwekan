@@ -111,7 +111,10 @@ func (wekan *Wekan) InsertRule(ctx context.Context, rule Rule) error {
 	}
 
 	_, err = wekan.db.Collection("rules").InsertOne(ctx, rule)
-	return err
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	return nil
 }
 
 func (wekan *Wekan) InsertAction(ctx context.Context, action Action) error {
@@ -120,7 +123,10 @@ func (wekan *Wekan) InsertAction(ctx context.Context, action Action) error {
 	}
 
 	_, err := wekan.db.Collection("actions").InsertOne(ctx, action)
-	return err
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	return nil
 }
 
 func (wekan *Wekan) InsertTrigger(ctx context.Context, trigger Trigger) error {
@@ -129,5 +135,20 @@ func (wekan *Wekan) InsertTrigger(ctx context.Context, trigger Trigger) error {
 	}
 
 	_, err := wekan.db.Collection("triggers").InsertOne(ctx, trigger)
-	return err
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	return nil
+}
+
+func (wekan *Wekan) SelectRulesFromBoardID(ctx context.Context, boardID BoardID) ([]Rule, error) {
+	return nil, NotImplemented{}
+}
+
+func (wekan *Wekan) SelectRuleFromID(ctx context.Context, ruleID RuleID) (Rule, error) {
+	return Rule{}, NotImplemented{}
+}
+
+func (wekan *Wekan) RemoveRuleWithID(ctx context.Context, ruleID RuleID) error {
+	return NotImplemented{}
 }
