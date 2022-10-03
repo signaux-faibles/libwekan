@@ -3,8 +3,12 @@ package libwekan
 import (
 	"context"
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 )
+
+type Rules []Rule
 
 type RuleID string
 type Rule struct {
@@ -92,6 +96,14 @@ func (board Board) BuildRule(user User, labelName BoardLabelName) Rule {
 	return rule
 }
 
+func (rules Rules) selectUser(username Username) Rules {
+	return selectSlice(rules, func(rule Rule) bool { return rule.Action.Username == username })
+}
+
+func (rules Rules) selectBoardLabelName(boardLabelID BoardLabelID) Rules {
+	return selectSlice(rules, func(rule Rule) bool { return rule.Trigger.LabelID == boardLabelID })
+}
+
 func (wekan *Wekan) InsertRule(ctx context.Context, rule Rule) error {
 	if err := wekan.AssertHasAdmin(ctx); err != nil {
 		return err
@@ -141,14 +153,62 @@ func (wekan *Wekan) InsertTrigger(ctx context.Context, trigger Trigger) error {
 	return nil
 }
 
-func (wekan *Wekan) SelectRulesFromBoardID(ctx context.Context, boardID BoardID) ([]Rule, error) {
-	return nil, NotImplemented{}
+func (wekan *Wekan) SelectRulesFromBoardID(ctx context.Context, boardID BoardID) (Rules, error) {
+	var malformedRules, rules Rules
+	cur, err := wekan.db.Collection("rules").Find(ctx, bson.M{"boardId": boardID})
+	if err != nil {
+		return nil, UnexpectedMongoError{err}
+	}
+	if err := cur.All(ctx, &malformedRules); err != nil {
+		return nil, UnexpectedMongoError{err}
+	}
+	for _, malformedRule := range malformedRules {
+		rule, err := wekan.SelectRuleFromID(ctx, malformedRule.ID)
+		if err != nil {
+			return Rules{}, err
+		}
+		rules = append(rules, rule)
+	}
+	return rules, nil
 }
 
 func (wekan *Wekan) SelectRuleFromID(ctx context.Context, ruleID RuleID) (Rule, error) {
-	return Rule{}, NotImplemented{}
+	var rule Rule
+	err := wekan.db.Collection("rules").FindOne(ctx, bson.M{"_id": ruleID}).Decode(&rule)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return Rule{}, RuleNotFoundError{ruleID}
+		}
+		return Rule{}, UnexpectedMongoError{err}
+	}
+	if err := wekan.db.Collection("actions").FindOne(ctx, bson.M{"_id": rule.ActionID}).Decode(&rule.Action); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return Rule{}, ActionNotFoundError{*rule.ActionID}
+		}
+		return Rule{}, UnexpectedMongoError{err}
+	}
+	if err := wekan.db.Collection("triggers").FindOne(ctx, bson.M{"_id": rule.TriggerID}).Decode(&rule.Trigger); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return Rule{}, TriggerNotFoundError{*rule.TriggerID}
+		}
+		return Rule{}, UnexpectedMongoError{err}
+	}
+	return rule, nil
 }
 
 func (wekan *Wekan) RemoveRuleWithID(ctx context.Context, ruleID RuleID) error {
-	return NotImplemented{}
+	return NotImplemented{"SelectRulesFromBoardID"}
+}
+
+func (wekan *Wekan) EnsureRuleExists(ctx context.Context, user User, board Board, boardLabel BoardLabel) error {
+	boardRules, err := wekan.SelectRulesFromBoardID(ctx, board.ID)
+	if err != nil {
+		return err
+	}
+	existingRules := boardRules.selectBoardLabelName(boardLabel.ID).selectUser(user.Username)
+	if len(existingRules) <= 0 {
+		rule := board.BuildRule(user, boardLabel.Name)
+		return wekan.InsertRule(ctx, rule)
+	}
+	return nil
 }

@@ -28,13 +28,13 @@ func (e UnknownBoardError) Error() string {
 	return fmt.Sprintf("la board est inconnue (BoardID: %s, Title: %s, Slug: %s", e.board.ID, e.board.Title, e.board.Slug)
 }
 
-type UnknownRuleError struct {
-	rule Rule
-}
-
-func (e UnknownRuleError) Error() string {
-	return fmt.Sprintf("Rule introuvable (RuleID: %s)", e.rule.ID)
-}
+//type UnknownRuleError struct {
+//	rule Rule
+//}
+//
+//func (e UnknownRuleError) Error() string {
+//	return fmt.Sprintf("Rule introuvable (RuleID: %s)", e.rule.ID)
+//}
 
 type UserIsNotAdminError struct {
 	id UserID
@@ -117,10 +117,12 @@ func (e ForbiddenOperationError) Error() string {
 }
 func (e ForbiddenOperationError) Forbidden() {}
 
-type NotImplemented struct{}
+type NotImplemented struct {
+	method string
+}
 
 func (e NotImplemented) Error() string {
-	return "not implemented"
+	return "not implemented : " + e.method
 }
 func (e NotImplemented) NotImplemented() {}
 
@@ -130,4 +132,28 @@ type CardNotFoundError struct {
 
 func (e CardNotFoundError) Error() string {
 	return fmt.Sprintf("la carte n'existe pas (ID: %s)", e.cardID)
+}
+
+type RuleNotFoundError struct {
+	ruleID RuleID
+}
+
+func (e RuleNotFoundError) Error() string {
+	return fmt.Sprintf("la règle n'existe pas (ID: %s)", e.ruleID)
+}
+
+type ActionNotFoundError struct {
+	actionId ActionID
+}
+
+func (e ActionNotFoundError) Error() string {
+	return fmt.Sprintf("l'action n'existe pas (ID: %s)", e.actionId)
+}
+
+type TriggerNotFoundError struct {
+	triggerId TriggerID
+}
+
+func (e TriggerNotFoundError) Error() string {
+	return fmt.Sprintf("le trigger n'existe pas (ID: %s)", e.triggerId)
 }
