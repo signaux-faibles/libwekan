@@ -85,19 +85,27 @@ func (e AlreadySetActivityError) Error() string {
 }
 
 type UnreachableMongoError struct {
-	Err error
+	err error
 }
 
 func (e UnreachableMongoError) Error() string {
-	return e.Err.Error()
+	return "la connexion a échoué"
+}
+
+func (e UnreachableMongoError) Unwrap() error {
+	return e.err
 }
 
 type InvalidMongoConfigurationError struct {
-	Err error
+	err error
 }
 
 func (e InvalidMongoConfigurationError) Error() string {
-	return e.Err.Error()
+	return "les paramètres de connexion sont invalides"
+}
+
+func (e InvalidMongoConfigurationError) Unwrap() error {
+	return e.err
 }
 
 type ForbiddenOperationError struct {
@@ -115,3 +123,11 @@ func (e NotImplemented) Error() string {
 	return "not implemented"
 }
 func (e NotImplemented) NotImplemented() {}
+
+type CardNotFoundError struct {
+	cardID CardID
+}
+
+func (e CardNotFoundError) Error() string {
+	return fmt.Sprintf("la carte n'existe pas (ID: %s)", e.cardID)
+}

@@ -9,9 +9,31 @@ import (
 	"testing"
 )
 
-func TestCards_InsertCard(t *testing.T) {
-	err := wekan.InsertCard(ctx, Card{})
-	assert.IsType(t, NotImplemented{}, err)
+func TestCards_InsertCard_withGetCardFromID(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
+	boardID := BoardID(t.Name())
+	listID := ListID(t.Name())
+	swimlaneID := SwimlaneID(t.Name())
+	title := t.Name()
+	description := t.Name()
+	userID := UserID(t.Name())
+	card := BuildCard(boardID, listID, swimlaneID, title, description, userID)
+
+	// WHEN
+	err := wekan.InsertCard(ctx, card)
+	ass.Nil(err)
+	actualCard, err := wekan.GetCardFromID(ctx, card.ID)
+	ass.Nil(err)
+
+	// THEN
+	ass.Equal(card, actualCard)
+}
+
+func TestCards_GetCardsFromID_whenCardDoesntExists(t *testing.T) {
+	cardID := CardID(t.Name())
+	_, err := wekan.GetCardFromID(ctx, cardID)
+	assert.IsType(t, CardNotFoundError{}, err)
 }
 
 func TestCards_SelectCardsFromUserID(t *testing.T) {

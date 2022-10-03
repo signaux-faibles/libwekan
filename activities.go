@@ -32,8 +32,8 @@ func (activity Activity) withIDandDates(t time.Time) (Activity, error) {
 		return activity, AlreadySetActivityError{}
 	}
 	activity.ID = ActivityID(newId())
-	activity.CreatedAt = t.In(time.UTC).Truncate(time.Millisecond)
-	activity.ModifiedAt = t.In(time.UTC).Truncate(time.Millisecond)
+	activity.CreatedAt = toMongoTime(t)
+	activity.ModifiedAt = toMongoTime(t)
 	return activity, nil
 }
 

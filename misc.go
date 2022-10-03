@@ -82,3 +82,7 @@ func sliceSelect[Element comparable](slice []Element, f func(Element) bool) []El
 	}
 	return selected
 }
+
+func toMongoTime(t time.Time) time.Time {
+	return t.In(time.UTC).Truncate(time.Millisecond)
+}

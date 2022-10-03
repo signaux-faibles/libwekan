@@ -2,6 +2,8 @@ package libwekan
 
 import (
 	"context"
+	"errors"
+	"go.mongodb.org/mongo-driver/bson"
 	"time"
 )
 
@@ -48,7 +50,7 @@ type Card struct {
 	SwimlaneID       SwimlaneID     `bson:"swimlaneId"`
 	Type             string         `bson:"type"`
 	Archived         bool           `bson:"archived"`
-	ParentID         CardID         `bson:"parentId"`
+	ParentID         CardID         `bson:"parentId,omitempty"`
 	CoverID          string         `bson:"coverId"`
 	CreatedAt        time.Time      `bson:"createdAt"`
 	ModifiedAt       time.Time      `bson:"modifiedAt"`
@@ -70,30 +72,77 @@ type Card struct {
 	StartAt          time.Time      `bson:"startAt"`
 }
 
+func BuildCard(boardID BoardID, listID ListID, swimlaneID SwimlaneID, title string, description string, userID UserID) Card {
+	return Card{
+		ID:               CardID(newId()),
+		Title:            title,
+		ListID:           listID,
+		BoardID:          boardID,
+		SwimlaneID:       swimlaneID,
+		Type:             "card",
+		CreatedAt:        toMongoTime(time.Now()),
+		ModifiedAt:       toMongoTime(time.Now()),
+		DateLastActivity: toMongoTime(time.Now()),
+		Description:      description,
+		UserID:           userID,
+		TargetIDGantt:    []string{},
+		LinkTypeGantt:    []string{},
+		LinkIDGantt:      []string{},
+		StartAt:          toMongoTime(time.Now()),
+	}
+}
+
+func (wekan *Wekan) SelectCardsFromQuery(ctx context.Context, query bson.M) ([]Card, error) {
+	var cards []Card
+	cur, err := wekan.db.Collection("cards").Find(ctx, query)
+	if err != nil {
+		return nil, UnexpectedMongoError{err}
+	}
+	err = cur.All(ctx, &cards)
+	if err != nil {
+		return nil, UnexpectedMongoError{err}
+	}
+	return cards, nil
+}
+
 func (wekan *Wekan) SelectCardsFromUserID(ctx context.Context, userID UserID) ([]Card, error) {
-	return nil, NotImplemented{}
+	return wekan.SelectCardsFromQuery(ctx, bson.M{"userId": userID})
 }
 
 func (wekan *Wekan) SelectCardsFromMemberID(ctx context.Context, userID UserID) ([]Card, error) {
-	return nil, NotImplemented{}
+	return wekan.SelectCardsFromQuery(ctx, bson.M{"members.userId": userID})
 }
 
 func (wekan *Wekan) SelectCardsFromBoardID(ctx context.Context, boardID BoardID) ([]Card, error) {
-	return nil, NotImplemented{}
+	return wekan.SelectCardsFromQuery(ctx, bson.M{"boardId": boardID})
 }
 
-func (wekan *Wekan) SelectCardsFromSwimlaneID(ctx context.Context, boardID BoardID) ([]Card, error) {
-	return nil, NotImplemented{}
+func (wekan *Wekan) SelectCardsFromSwimlaneID(ctx context.Context, swimlaneID SwimlaneID) ([]Card, error) {
+	return wekan.SelectCardsFromQuery(ctx, bson.M{"swimlaneId": swimlaneID})
 }
 
-func (wekan *Wekan) SelectCardsFromListID(ctx context.Context, boardID BoardID) ([]Card, error) {
-	return nil, NotImplemented{}
+func (wekan *Wekan) SelectCardsFromListID(ctx context.Context, listID ListID) ([]Card, error) {
+	return wekan.SelectCardsFromQuery(ctx, bson.M{"listId": listID})
 }
 
-func (wekan *Wekan) GetCardFromID(ctx context.Context, cardID CardID) ([]Card, error) {
-	return nil, NotImplemented{}
+func (wekan *Wekan) GetCardFromID(ctx context.Context, cardID CardID) (Card, error) {
+	cards, err := wekan.SelectCardsFromQuery(ctx, bson.M{"_id": cardID})
+	if err != nil {
+		return Card{}, UnexpectedMongoError{err}
+	}
+	if len(cards) == 0 {
+		return Card{}, CardNotFoundError{cardID}
+	}
+	if len(cards) > 1 {
+		return Card{}, UnexpectedMongoError{errors.New("erreur fatale, cette requête ne peut retourner qu'un objet")}
+	}
+	return cards[0], nil
 }
 
 func (wekan *Wekan) InsertCard(ctx context.Context, card Card) error {
-	return NotImplemented{}
+	_, err := wekan.db.Collection("cards").InsertOne(ctx, card)
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	return nil
 }
