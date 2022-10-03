@@ -69,11 +69,11 @@ func (e BoardLabelAlreadyExistsError) Error() string {
 }
 
 type UnexpectedMongoError struct {
-	err error
+	Err error
 }
 
 func (e UnexpectedMongoError) Error() string {
-	return e.err.Error()
+	return e.Err.Error()
 }
 
 type AlreadySetActivityError struct {
@@ -85,19 +85,19 @@ func (e AlreadySetActivityError) Error() string {
 }
 
 type UnreachableMongoError struct {
-	err error
+	Err error
 }
 
 func (e UnreachableMongoError) Error() string {
-	return e.err.Error()
+	return e.Err.Error()
 }
 
 type InvalidMongoConfigurationError struct {
-	err error
+	Err error
 }
 
 func (e InvalidMongoConfigurationError) Error() string {
-	return e.err.Error()
+	return e.Err.Error()
 }
 
 type ForbiddenOperationError struct {

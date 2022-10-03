@@ -21,7 +21,6 @@ import (
 // var dbClient *mongo.Client
 var wekan Wekan
 var cwd, _ = os.Getwd()
-var ctx = context.Background()
 
 func TestMain(m *testing.M) {
 	// uses a sensible default on windows (tcp/http) and linux/osx (socket)
