@@ -86,3 +86,12 @@ func sliceSelect[Element comparable](slice []Element, f func(Element) bool) []El
 func toMongoTime(t time.Time) time.Time {
 	return t.In(time.UTC).Truncate(time.Millisecond)
 }
+
+func contains[Element comparable](elements []Element, element Element) bool {
+	for _, actual := range elements {
+		if element == actual {
+			return true
+		}
+	}
+	return false
+}

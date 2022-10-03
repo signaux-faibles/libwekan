@@ -92,6 +92,12 @@ func BuildCard(boardID BoardID, listID ListID, swimlaneID SwimlaneID, title stri
 	}
 }
 
+func (card *Card) AddMember(memberID UserID) {
+	if !(contains(card.Members, memberID)) {
+		card.Members = append(card.Members, memberID)
+	}
+}
+
 func (wekan *Wekan) SelectCardsFromQuery(ctx context.Context, query bson.M) ([]Card, error) {
 	var cards []Card
 	cur, err := wekan.db.Collection("cards").Find(ctx, query)
@@ -110,7 +116,7 @@ func (wekan *Wekan) SelectCardsFromUserID(ctx context.Context, userID UserID) ([
 }
 
 func (wekan *Wekan) SelectCardsFromMemberID(ctx context.Context, userID UserID) ([]Card, error) {
-	return wekan.SelectCardsFromQuery(ctx, bson.M{"members.userId": userID})
+	return wekan.SelectCardsFromQuery(ctx, bson.M{"members": userID})
 }
 
 func (wekan *Wekan) SelectCardsFromBoardID(ctx context.Context, boardID BoardID) ([]Card, error) {
