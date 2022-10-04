@@ -19,18 +19,19 @@ type Wekan struct {
 }
 
 // Init retourne un objet de type `Wekan`
-func Init(ctx context.Context, uri string, databaseName string, adminUsername Username) (Wekan, error) {
+func Init(ctx context.Context, uri string, databaseName string, adminUsername Username, slugDomainRegexp string) (Wekan, error) {
 	clientOptions := options.Client().ApplyURI(uri)
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		return Wekan{}, InvalidMongoConfigurationError{err}
 	}
 	w := Wekan{
-		url:           uri,
-		databaseName:  databaseName,
-		client:        client,
-		db:            client.Database(databaseName),
-		adminUsername: adminUsername,
+		url:              uri,
+		databaseName:     databaseName,
+		client:           client,
+		db:               client.Database(databaseName),
+		adminUsername:    adminUsername,
+		slugDomainRegexp: slugDomainRegexp,
 	}
 
 	if err != nil {

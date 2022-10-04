@@ -61,7 +61,7 @@ func TestMain(m *testing.M) {
 		fmt.Println("Mongo n'est pas encore prêt")
 		var err error
 		mongoUrl := fmt.Sprintf("mongodb://root:password@localhost:%s", mongodb.GetPort("27017/tcp"))
-		wekan, err = Init(ctx, mongoUrl, "wekan", "signaux.faibles")
+		wekan, err = Init(ctx, mongoUrl, "wekan", "signaux.faibles", "^tableau-crp.*")
 		if err != nil {
 			return err
 		}

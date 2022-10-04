@@ -341,23 +341,29 @@ func createTestUser(t *testing.T, suffix string) User {
 	return insertedUser
 }
 
-func TestBoards_SelectBoardsFromSlugExpression_withTwoBoards(t *testing.T) {
+func TestBoards_SelectDomainRegexp_withTwoBoards(t *testing.T) {
 	ass := assert.New(t)
-	boardsTableau, err := wekan.SelectBoardsFromSlugExpression(ctx, "^tableau-.*$")
+	wekanTest := wekan
+	wekanTest.slugDomainRegexp = "^tableau.*"
+	boardsTableau, err := wekanTest.SelectDomainBoards(ctx)
 	ass.Nil(err)
 	ass.Len(boardsTableau, 2)
 }
 
-func TestBoards_SelectBoardsFromSlugExpression_withNoBoard(t *testing.T) {
+func TestBoards_SelectDomainRegexp_withNoBoard(t *testing.T) {
 	ass := assert.New(t)
-	boardsNull, err := wekan.SelectBoardsFromSlugExpression(ctx, "^.*zgorglub$")
+	wekanTest := wekan
+	wekanTest.slugDomainRegexp = "^zgorglub.*"
+	boardsNull, err := wekanTest.SelectDomainBoards(ctx)
 	ass.Nil(err)
 	ass.Nil(boardsNull)
 }
 
-func TestBoards_SelectBoardsFromSlugExpression_withBadRegexp(t *testing.T) {
+func TestBoards_SelectDomainRegexp_withBadRegexp(t *testing.T) {
 	ass := assert.New(t)
-	boardsNull, err := wekan.SelectBoardsFromSlugExpression(ctx, "[")
+	wekanTest := wekan
+	wekanTest.slugDomainRegexp = "[" // regexp invalide
+	boardsNull, err := wekanTest.SelectDomainBoards(ctx)
 	ass.IsType(UnexpectedMongoError{}, err)
 	ass.Nil(boardsNull)
 }
