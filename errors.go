@@ -157,3 +157,9 @@ type TriggerNotFoundError struct {
 func (e TriggerNotFoundError) Error() string {
 	return fmt.Sprintf("le trigger n'existe pas (ID: %s)", e.triggerId)
 }
+
+type NothingDoneError struct{}
+
+func (e NothingDoneError) Error() string {
+	return "le traitement n'a aucun effet"
+}

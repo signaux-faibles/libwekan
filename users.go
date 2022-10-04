@@ -442,3 +442,39 @@ func (wekan *Wekan) DisableUsers(ctx context.Context, users Users) error {
 	}
 	return nil
 }
+
+func (wekan *Wekan) RemoveCardMemberShip(ctx context.Context, cardID CardID, memberID UserID) error {
+	stats, err := wekan.db.Collection("cards").UpdateOne(ctx, bson.M{
+		"_id": cardID,
+	}, bson.M{
+		"$pull": bson.M{
+			"members": memberID,
+		},
+	})
+
+	if stats.ModifiedCount == 0 {
+		return NothingDoneError{}
+	}
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	return nil
+}
+
+func (wekan *Wekan) AddCardMemberShip(ctx context.Context, cardID CardID, memberID UserID) error {
+	stats, err := wekan.db.Collection("cards").UpdateOne(ctx, bson.M{
+		"_id": cardID,
+	}, bson.M{
+		"$pull": bson.M{
+			"members": memberID,
+		},
+	})
+
+	if stats.ModifiedCount == 0 {
+		return NothingDoneError{}
+	}
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	return nil
+}

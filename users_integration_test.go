@@ -164,3 +164,13 @@ func TestUsers_GetUsersFromIDs(t *testing.T) {
 	ass.Equal("l'utilisateur n'est pas connu (ids in (notAnID))", err.Error())
 	ass.Len(selectedSomeExistingUsers, 0)
 }
+
+func TestUsers_RemoveCardMemberShip(t *testing.T) {
+	ass := assert.New(t)
+	// créer un utilisateur
+	// créer une carte
+	// ajouter l'utilisateur sur la carte
+	// retirer l'utilisateur de la carte
+	// profit !
+	ass.True(false)
+}

@@ -197,7 +197,23 @@ func (wekan *Wekan) SelectRuleFromID(ctx context.Context, ruleID RuleID) (Rule, 
 }
 
 func (wekan *Wekan) RemoveRuleWithID(ctx context.Context, ruleID RuleID) error {
-	return NotImplemented{"SelectRulesFromBoardID"}
+	rule, err := wekan.SelectRuleFromID(ctx, ruleID)
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	_, err = wekan.db.Collection("actions").DeleteOne(ctx, bson.M{"_id": rule.Action.ID})
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	_, err = wekan.db.Collection("triggers").DeleteOne(ctx, bson.M{"_id": rule.Trigger.ID})
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	_, err = wekan.db.Collection("rules").DeleteOne(ctx, bson.M{"_id": rule.ID})
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	return nil
 }
 
 func (wekan *Wekan) EnsureRuleExists(ctx context.Context, user User, board Board, boardLabel BoardLabel) error {
