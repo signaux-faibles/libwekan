@@ -1,11 +1,9 @@
 //go:build integration
-// +build integration
 
 // nolint:errcheck
 package libwekan
 
 import (
-	"context"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"testing"
@@ -13,20 +11,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_createBoard(t *testing.T) {
+func TestBoards_createBoard(t *testing.T) {
 	ass := assert.New(t)
 	board := newBoard("la board à toto", "la-board-a-toto", "board")
-	err := wekan.InsertBoard(context.Background(), board)
+	err := wekan.InsertBoard(ctx, board)
 	ass.Nil(err)
 }
 
-func Test_getBoardFromID(t *testing.T) {
+func TestBoards_getBoardFromID(t *testing.T) {
 	id := BoardID("kSPsxQZGLKR9tknEt")
 	title := BoardTitle("Tableau CRP BFC")
 	slug := BoardSlug("tableau-crp-bfc")
 
 	ass := assert.New(t)
-	board, err := wekan.GetBoardFromID(context.Background(), id)
+	board, err := wekan.GetBoardFromID(ctx, id)
 
 	ass.Nil(err)
 	ass.NotEmpty(board)
@@ -35,13 +33,13 @@ func Test_getBoardFromID(t *testing.T) {
 	ass.Equal(id, board.ID)
 }
 
-func Test_getBoardFromSlug(t *testing.T) {
+func TestBoards_getBoardFromSlug(t *testing.T) {
 	id := BoardID("kSPsxQZGLKR9tknEt")
 	title := BoardTitle("Tableau CRP BFC")
 	slug := BoardSlug("tableau-crp-bfc")
 
 	ass := assert.New(t)
-	board, err := wekan.GetBoardFromSlug(context.Background(), slug)
+	board, err := wekan.GetBoardFromSlug(ctx, slug)
 
 	ass.Nil(err)
 	ass.NotEmpty(board)
@@ -50,13 +48,13 @@ func Test_getBoardFromSlug(t *testing.T) {
 	ass.Equal(id, board.ID)
 }
 
-func Test_getBoardFromTitle(t *testing.T) {
+func TestBoards_getBoardFromTitle(t *testing.T) {
 	id := BoardID("kSPsxQZGLKR9tknEt")
 	title := BoardTitle("Tableau CRP BFC")
 	slug := BoardSlug("tableau-crp-bfc")
 
 	ass := assert.New(t)
-	board, err := wekan.GetBoardFromTitle(context.Background(), string(title))
+	board, err := wekan.GetBoardFromTitle(ctx, string(title))
 
 	ass.Nil(err)
 	ass.NotEmpty(board)
@@ -65,62 +63,81 @@ func Test_getBoardFromTitle(t *testing.T) {
 	ass.Equal(id, board.ID)
 }
 
-func Test_AddMemberToBoard(t *testing.T) {
+func TestBoards_AddMemberToBoard_with_active_member(t *testing.T) {
 	ass := assert.New(t)
-	board, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
+	board, err := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
 
 	ass.Nil(err)
 
-	user := BuildUser("test_add_member_to_board", "tamb", "Test Add Member To Board")
-	insertedUser, _ := wekan.InsertUser(context.Background(), user)
+	user := BuildUser(t.Name(), t.Name(), t.Name())
+	insertedUser, _ := wekan.InsertUser(ctx, user)
 	ass.False(board.UserIsMember(insertedUser))
 
-	boardMember := BoardMember{insertedUser.ID, false, true, false, false, false}
-	err = wekan.AddMemberToBoard(context.Background(), board.ID, boardMember)
+	boardMember := BoardMember{UserID: insertedUser.ID, IsActive: true}
+	err = wekan.AddMemberToBoard(ctx, board.ID, boardMember)
 	ass.Nil(err)
 
-	actualBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
+	actualBoard, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
 
 	ass.True(actualBoard.UserIsMember(insertedUser))
-
-	activities, _ := wekan.selectActivitiesFromQuery(context.Background(), bson.M{"memberId": insertedUser.ID, "activityType": "addBoardMember"})
-	ass.Len(activities, 2)
+	ass.True(actualBoard.UserIsActiveMember(insertedUser))
 }
 
-func Test_EnableBoardMember(t *testing.T) {
+func TestBoards_AddMemberToBoard_with_inactive_member(t *testing.T) {
 	ass := assert.New(t)
 	// GIVEN
-	board, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
+	board, err := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
+	ass.Nil(err)
+
+	user := createTestUser(t, "coucou")
+	//insertedUser, _ := wekan.InsertUser(ctx, user)
+	//ass.False(board.UserIsMember(insertedUser))
+
+	boardMember := BoardMember{UserID: user.ID, IsActive: false}
+
+	// WHEN
+	err = wekan.AddMemberToBoard(ctx, board.ID, boardMember)
+
+	// THEN
+	ass.Nil(err)
+	actualBoard, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
+	ass.True(actualBoard.UserIsMember(user))
+	ass.False(actualBoard.UserIsActiveMember(user))
+}
+
+func TestBoards_EnableBoardMember(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
+	board, err := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
 
 	ass.Nil(err)
 
 	user := BuildUser("test_enable_board_member", "tebm", "Test Enable Board Member")
-	insertedUser, _ := wekan.InsertUser(context.Background(), user)
+	insertedUser, _ := wekan.InsertUser(ctx, user)
 	ass.False(board.UserIsMember(insertedUser))
 
 	notEnabledUser := BuildUser("test_not_enable_board_member", "tnebm", "Test Not Enable Board Member")
-	insertedNotEnabledUser, _ := wekan.InsertUser(context.Background(), notEnabledUser)
+	insertedNotEnabledUser, _ := wekan.InsertUser(ctx, notEnabledUser)
 	ass.False(board.UserIsMember(insertedNotEnabledUser))
 
-	addMemberToBoard(board.ID, BoardMember{insertedUser.ID, false, false, false, false, false}, t)
-	addMemberToBoard(board.ID, BoardMember{insertedNotEnabledUser.ID, false, false, false, false, false}, t)
-	insertedMemberBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
+	wekan.AddMemberToBoard(ctx, board.ID, BoardMember{insertedUser.ID, false, false, false, false, false})
+	wekan.AddMemberToBoard(ctx, board.ID, BoardMember{insertedNotEnabledUser.ID, false, false, false, false, false})
+	insertedMemberBoard, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
 	ass.False(insertedMemberBoard.UserIsActiveMember(insertedUser))
 	ass.False(insertedMemberBoard.UserIsActiveMember(insertedNotEnabledUser))
 
 	// WHEN
-	err = wekan.EnableBoardMember(context.Background(), insertedMemberBoard.ID, user.ID)
-	ass.Nil(err)
+	err = wekan.EnableBoardMember(ctx, insertedMemberBoard.ID, user.ID)
 
 	// THEN
-	enabledMemberBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
-
+	ass.Nil(err)
+	enabledMemberBoard, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
 	ass.True(enabledMemberBoard.UserIsActiveMember(user))
 	ass.False(enabledMemberBoard.UserIsActiveMember(notEnabledUser))
 
 	// on vérifie que l'activité a été créée
 	expected := newActivityAddBoardMember(wekan.adminUserID, user.ID, board.ID)
-	foundActivities, _ := wekan.selectActivitiesFromQuery(context.Background(), bson.M{"boardId": expected.BoardID, "memberId": expected.MemberID})
+	foundActivities, _ := wekan.selectActivitiesFromQuery(ctx, bson.M{"boardId": expected.BoardID, "memberId": expected.MemberID})
 	require.NotEmpty(t, foundActivities)
 	ass.Len(foundActivities, 1)
 
@@ -129,64 +146,53 @@ func Test_EnableBoardMember(t *testing.T) {
 	ass.Condition(activityCompareFunc(expected, actual))
 }
 
-func Test_EnableBoardMember_when_user_is_not_on_board(t *testing.T) {
+func TestBoards_EnableBoardMember_when_user_is_not_on_board(t *testing.T) {
 	ass := assert.New(t)
 	// GIVEN
 	user := BuildUser("an_absent_user", "aau", "An absent user")
-	insertedUser, _ := wekan.InsertUser(context.Background(), user)
+	insertedUser, _ := wekan.InsertUser(ctx, user)
 	ass.NotNil(insertedUser)
-	board, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
+	board, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
 	ass.False(board.UserIsMember(user))
 
 	// WHEN
-	err := wekan.EnableBoardMember(context.Background(), board.ID, user.ID)
+	err := wekan.EnableBoardMember(ctx, board.ID, user.ID)
 	ass.Nil(err)
 
-	shouldNotUpdatedBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
+	shouldNotUpdatedBoard, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
 	ass.False(shouldNotUpdatedBoard.UserIsMember(user))
 	expected := newActivityAddBoardMember(wekan.adminUserID, user.ID, board.ID)
-	activities, err := wekan.selectActivitiesFromQuery(context.Background(), bson.M{"memberId": expected.MemberID, "boardId": expected.BoardID, "activityType": expected.ActivityType})
+	activities, err := wekan.selectActivitiesFromQuery(ctx, bson.M{"memberId": expected.MemberID, "boardId": expected.BoardID, "activityType": expected.ActivityType})
 	ass.Empty(activities, 0)
 	ass.Empty(nil)
 }
 
-func Test_DisableBoardMember(t *testing.T) {
+func TestBoards_DisableBoardMember(t *testing.T) {
 	ass := assert.New(t)
 
 	// GIVEN
-	board, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
-
-	ass.Nil(err)
-
+	board, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
 	user := BuildUser("test_disable_board_member", "tdbm", "Test Disable Board Member")
 	enabledUser := BuildUser("test_not_disable_board_member", "tndbm", "Test Not Disable Board Member")
-
-	insertedUser, _ := wekan.InsertUser(context.Background(), user)
-	insertedEnabledUser, _ := wekan.InsertUser(context.Background(), enabledUser)
-	ass.False(board.UserIsMember(insertedUser))
-	ass.False(board.UserIsMember(insertedEnabledUser))
-
-	addMemberToBoard(board.ID, BoardMember{insertedUser.ID, false, true, false, false, false}, t)
-	addMemberToBoard(board.ID, BoardMember{insertedEnabledUser.ID, false, true, false, false, false}, t)
-
-	insertedMemberBoard, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
-	ass.True(insertedMemberBoard.UserIsActiveMember(user))
-	ass.True(insertedMemberBoard.UserIsActiveMember(enabledUser))
+	insertedUser, _ := wekan.InsertUser(ctx, user)
+	insertedEnabledUser, _ := wekan.InsertUser(ctx, enabledUser)
+	wekan.AddMemberToBoard(ctx, board.ID, BoardMember{insertedUser.ID, false, true, false, false, false})
+	wekan.AddMemberToBoard(ctx, board.ID, BoardMember{insertedEnabledUser.ID, false, true, false, false, false})
+	insertedMemberBoard, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
 
 	// WHEN
-	err = wekan.DisableBoardMember(context.Background(), insertedMemberBoard.ID, user.ID)
-	ass.Nil(err)
+	err := wekan.DisableBoardMember(ctx, insertedMemberBoard.ID, user.ID)
 
 	// THEN
-	disabledMemberBoard, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
 	ass.Nil(err)
-
+	disabledMemberBoard, err := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
+	ass.Nil(err)
 	ass.False(disabledMemberBoard.UserIsActiveMember(user))
 	ass.True(disabledMemberBoard.UserIsActiveMember(enabledUser))
 
 	// on vérifie que l'activité correspondante a été créée
 	expected := newActivityRemoveBoardMember(wekan.adminUserID, user.ID, board.ID)
-	foundActivities, _ := wekan.selectActivitiesFromQuery(context.Background(), bson.M{"boardId": expected.BoardID, "memberId": expected.MemberID, "activityType": "removeBoardMember"})
+	foundActivities, _ := wekan.selectActivitiesFromQuery(ctx, bson.M{"boardId": expected.BoardID, "memberId": expected.MemberID, "activityType": "removeBoardMember"})
 	require.NotEmpty(t, foundActivities)
 	ass.Len(foundActivities, 1)
 
@@ -194,59 +200,79 @@ func Test_DisableBoardMember(t *testing.T) {
 	ass.Condition(activityCompareFunc(expected, actual))
 }
 
-func Test_EnsureUserIsActiveBoardMember(t *testing.T) {
+func TestBoards_EnsureUserIsActiveBoardMember(t *testing.T) {
+	// GIVEN
 	ass := assert.New(t)
-	board, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
-	ass.Nil(err)
-
+	board, err := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
 	user := BuildUser("test_ensure_user_is_active_board_member", "teuiabm", "Test Ensure User Is Active Board Member")
-	insertedUser, err := wekan.InsertUser(context.Background(), user)
+	insertedUser, err := wekan.InsertUser(ctx, user)
+
+	// WHEN
+	err = wekan.EnsureUserIsActiveBoardMember(ctx, board.ID, user.ID)
+
+	// THEN
 	ass.Nil(err)
-
-	ass.False(board.UserIsMember(insertedUser))
-	ass.False(board.UserIsActiveMember(insertedUser))
-
-	err = wekan.EnsureUserIsActiveBoardMember(context.Background(), board.ID, user.ID)
-	ass.Nil(err)
-
-	updatedBoard, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
+	updatedBoard, err := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
 	ass.Nil(err)
 	ass.True(updatedBoard.UserIsMember(insertedUser))
 	ass.True(updatedBoard.UserIsActiveMember(insertedUser))
 }
 
-func Test_InsertBoardLabel_whenBoardLabelDontExists(t *testing.T) {
+func TestBoards_InsertBoardLabel_whenBoardLabelDontExists(t *testing.T) {
+	// GIVEN
 	ass := assert.New(t)
-	board, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
-	ass.Nil(err)
+	board, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
 	boardLabel := BoardLabel{
 		ID:    BoardLabelID(newId6()),
 		Name:  "test label",
 		Color: "orange",
 	}
-	err = wekan.InsertBoardLabel(context.Background(), board, boardLabel)
+
+	// WHEN
+	err := wekan.InsertBoardLabel(ctx, board, boardLabel)
+
+	// THEN
 	ass.Nil(err)
-	updatedBoard, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
+	updatedBoard, err := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
 	ass.Nil(err)
 	insertedLabel := updatedBoard.GetLabelByID(boardLabel.ID)
 	ass.NotEmpty(insertedLabel)
 }
 
-func Test_InsertBoardLabel_whenBoardLabelAlreadyExists(t *testing.T) {
+func TestBoards_InsertBoardLabel_whenBoardLabelAlreadyExists(t *testing.T) {
+	// GIVEN
 	ass := assert.New(t)
-	board, err := wekan.GetBoardFromSlug(context.Background(), "tableau-codefi-nord")
-	ass.Nil(err)
+	testBoardSlug := BoardSlug("tableau-crp-bfc")
+	board, _ := wekan.GetBoardFromSlug(ctx, testBoardSlug)
 	boardLabel := BoardLabel{
 		ID:    BoardLabelID(newId6()),
 		Name:  "test label",
 		Color: "orange",
 	}
-	err = wekan.InsertBoardLabel(context.Background(), board, boardLabel)
-	ass.Nil(err)
-	updatedBoard, err := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
-	ass.Nil(err)
-	err = wekan.InsertBoardLabel(context.Background(), updatedBoard, boardLabel)
+	wekan.InsertBoardLabel(ctx, board, boardLabel)
+	updatedBoard, _ := wekan.GetBoardFromSlug(ctx, testBoardSlug)
+
+	// WHEN
+	err := wekan.InsertBoardLabel(ctx, updatedBoard, boardLabel)
+
+	// THEN
 	ass.IsType(BoardLabelAlreadyExistsError{}, err)
+}
+
+func TestBoards_InsertBoardLabel_whenBoardIsUnknown(t *testing.T) {
+	// WHEN
+	ass := assert.New(t)
+	boardID := BoardID("fakeID")
+	board := Board{ID: boardID}
+	boardLabel := BoardLabel{
+		ID:    BoardLabelID(newId6()),
+		Name:  "test label",
+		Color: "orange",
+	}
+
+	// THEN
+	err := wekan.InsertBoardLabel(ctx, board, boardLabel)
+	ass.Equal(UnknownBoardError{board}, err)
 }
 
 func activityCompareFunc(a1 Activity, a2 Activity) func() bool {
@@ -266,11 +292,12 @@ func activityCompareFunc(a1 Activity, a2 Activity) func() bool {
 	}
 }
 
+// nolint:errcheck
 func TestBoard_SelectBoardsFromMemberID(t *testing.T) {
 	ass := assert.New(t)
 
-	boardBFC, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-crp-bfc")
-	boardNORD, _ := wekan.GetBoardFromSlug(context.Background(), "tableau-codefi-nord")
+	boardBFC, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
+	boardNORD, _ := wekan.GetBoardFromSlug(ctx, "tableau-codefi-nord")
 
 	usernameBFC := t.Name() + "bfc"
 	usernameNORD := t.Name() + "nord"
@@ -280,34 +307,63 @@ func TestBoard_SelectBoardsFromMemberID(t *testing.T) {
 	userNORD := BuildUser(usernameNORD, usernameNORD, usernameNORD)
 	userBOTH := BuildUser(usernameBOTH, usernameBOTH, usernameBOTH)
 
-	insertedUserBFC, _ := wekan.InsertUser(context.Background(), userBFC)
-	insertedUserNORD, _ := wekan.InsertUser(context.Background(), userNORD)
-	insertedUserBOTH, _ := wekan.InsertUser(context.Background(), userBOTH)
+	insertedUserBFC, _ := wekan.InsertUser(ctx, userBFC)
+	insertedUserNORD, _ := wekan.InsertUser(ctx, userNORD)
+	insertedUserBOTH, _ := wekan.InsertUser(ctx, userBOTH)
 
-	addMemberToBoard(boardBFC.ID, BoardMember{UserID: insertedUserBFC.ID, IsActive: true}, t)
-	addMemberToBoard(boardNORD.ID, BoardMember{UserID: insertedUserNORD.ID, IsActive: true}, t)
-	addMemberToBoard(boardBFC.ID, BoardMember{UserID: insertedUserBOTH.ID, IsActive: true}, t)
-	addMemberToBoard(boardNORD.ID, BoardMember{UserID: insertedUserBOTH.ID, IsActive: true}, t)
+	wekan.AddMemberToBoard(ctx, boardBFC.ID, BoardMember{UserID: insertedUserBFC.ID, IsActive: true})
+	wekan.AddMemberToBoard(ctx, boardNORD.ID, BoardMember{UserID: insertedUserNORD.ID, IsActive: true})
+	wekan.AddMemberToBoard(ctx, boardBFC.ID, BoardMember{UserID: insertedUserBOTH.ID, IsActive: true})
+	wekan.AddMemberToBoard(ctx, boardNORD.ID, BoardMember{UserID: insertedUserBOTH.ID, IsActive: true})
 
-	boardsUserBFC, err := wekan.SelectBoardsFromMemberID(context.Background(), userBFC.ID)
+	boardsUserBFC, err := wekan.SelectBoardsFromMemberID(ctx, userBFC.ID)
 	ass.Nil(err)
 	ass.Len(boardsUserBFC, 2)
 
-	boardsUserNORD, err := wekan.SelectBoardsFromMemberID(context.Background(), userNORD.ID)
+	boardsUserNORD, err := wekan.SelectBoardsFromMemberID(ctx, userNORD.ID)
 	ass.Len(boardsUserNORD, 2)
 	ass.Nil(err)
 
-	boardsUserBOTH, err := wekan.SelectBoardsFromMemberID(context.Background(), userBOTH.ID)
+	boardsUserBOTH, err := wekan.SelectBoardsFromMemberID(ctx, userBOTH.ID)
 	ass.Len(boardsUserBOTH, 3)
 	ass.Nil(err)
 
-	boardsUserBIDON, err := wekan.SelectBoardsFromMemberID(context.Background(), "idBidon")
+	boardsUserBIDON, err := wekan.SelectBoardsFromMemberID(ctx, "idBidon")
 	ass.Len(boardsUserBIDON, 0)
 	ass.Nil(err)
 }
 
-func addMemberToBoard(boardID BoardID, boardMember BoardMember, t *testing.T) {
-	req := require.New(t)
-	err := wekan.AddMemberToBoard(context.Background(), boardID, boardMember)
-	req.Nilf(err, "il faut corriger la méthode AddMemberToBoard qui est testée ailleurs")
+func createTestUser(t *testing.T, suffix string) User {
+	username := t.Name() + suffix
+	user := BuildUser(username, username, username)
+	user.ID = UserID(username)
+	insertedUser, _ := wekan.InsertUser(ctx, user)
+	return insertedUser
+}
+
+func TestBoards_SelectDomainRegexp_withTwoBoards(t *testing.T) {
+	ass := assert.New(t)
+	wekanTest := wekan
+	wekanTest.slugDomainRegexp = "^tableau.*"
+	boardsTableau, err := wekanTest.SelectDomainBoards(ctx)
+	ass.Nil(err)
+	ass.Len(boardsTableau, 2)
+}
+
+func TestBoards_SelectDomainRegexp_withNoBoard(t *testing.T) {
+	ass := assert.New(t)
+	wekanTest := wekan
+	wekanTest.slugDomainRegexp = "^zgorglub.*"
+	boardsNull, err := wekanTest.SelectDomainBoards(ctx)
+	ass.Nil(err)
+	ass.Nil(boardsNull)
+}
+
+func TestBoards_SelectDomainRegexp_withBadRegexp(t *testing.T) {
+	ass := assert.New(t)
+	wekanTest := wekan
+	wekanTest.slugDomainRegexp = "[" // regexp invalide
+	boardsNull, err := wekanTest.SelectDomainBoards(ctx)
+	ass.IsType(UnexpectedMongoError{}, err)
+	ass.Nil(boardsNull)
 }

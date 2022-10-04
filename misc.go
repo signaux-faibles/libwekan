@@ -72,3 +72,26 @@ func mapSlice[T any, M any](a []T, f func(T) M) []M {
 	}
 	return n
 }
+
+func toMongoTime(t time.Time) time.Time {
+	return t.In(time.UTC).Truncate(time.Millisecond)
+}
+
+func contains[Element comparable](elements []Element, element Element) bool {
+	for _, actual := range elements {
+		if element == actual {
+			return true
+		}
+	}
+	return false
+}
+
+func selectSlice[Element comparable](slice []Element, filter func(Element) bool) []Element {
+	var accepted []Element
+	for _, element := range slice {
+		if filter(element) {
+			accepted = append(accepted, element)
+		}
+	}
+	return accepted
+}

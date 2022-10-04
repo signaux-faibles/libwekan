@@ -1,7 +1,6 @@
 package libwekan
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -138,6 +137,6 @@ func TestBoards_DisableBoardMember_cant_disable_admin(t *testing.T) {
 	dummyWekan := Wekan{
 		adminUserID: "zero+zero",
 	}
-	err := dummyWekan.DisableBoardMember(context.Background(), "fakeBoardId", dummyWekan.adminUserID)
+	err := dummyWekan.DisableBoardMember(ctx, "fakeBoardId", dummyWekan.adminUserID)
 	ass.ErrorIs(err, err.(ForbiddenOperationError))
 }

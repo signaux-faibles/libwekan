@@ -239,7 +239,7 @@ func (wekan *Wekan) UsernameExists(ctx context.Context, username Username) (bool
 }
 
 func (wekan *Wekan) InsertUser(ctx context.Context, user User) (User, error) {
-	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
+	if err := wekan.AssertHasAdmin(ctx); err != nil {
 		return User{}, err
 	}
 
@@ -343,7 +343,7 @@ func BuildUser(email, initials, fullname string) User {
 
 // EnableUser active un utilisateur dans la base `users` et active la participation à son tableau templates
 func (wekan *Wekan) EnableUser(ctx context.Context, user User) error {
-	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
+	if err := wekan.AssertHasAdmin(ctx); err != nil {
 		return err
 	}
 
@@ -371,7 +371,7 @@ func (wekan *Wekan) EnableUser(ctx context.Context, user User) error {
 }
 
 func (wekan *Wekan) CreateUsers(ctx context.Context, users Users) error {
-	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
+	if err := wekan.AssertHasAdmin(ctx); err != nil {
 		return err
 	}
 
@@ -385,7 +385,7 @@ func (wekan *Wekan) CreateUsers(ctx context.Context, users Users) error {
 }
 
 func (wekan *Wekan) EnableUsers(ctx context.Context, users Users) error {
-	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
+	if err := wekan.AssertHasAdmin(ctx); err != nil {
 		return err
 	}
 
@@ -404,7 +404,7 @@ func (wekan *Wekan) DisableUser(ctx context.Context, user User) error {
 		return ForbiddenOperationError{"la désactivation de l'utilisateur administrateur est interdite"}
 	}
 
-	if err := wekan.CheckAdminUserIsAdmin(ctx); err != nil {
+	if err := wekan.AssertHasAdmin(ctx); err != nil {
 		return err
 	}
 
@@ -418,36 +418,19 @@ func (wekan *Wekan) DisableUser(ctx context.Context, user User) error {
 		return err
 	}
 
-	// activité de la désactivation de l'utilisateur sur toutes les boards
+	// désactivation du BoardMember sur toutes les boards où il est présent
 	boards, err := wekan.SelectBoardsFromMemberID(ctx, user.ID)
 	if err != nil {
 		return err
 	}
+
 	for _, board := range boards {
-		if board.UserIsActiveMember(user) {
-			activity := newActivityRemoveBoardMember(wekan.adminUserID, user.ID, board.ID)
-			_, err := wekan.insertActivity(ctx, activity)
-			if err != nil {
-				return err
-			}
+		if err = wekan.DisableBoardMember(ctx, board.ID, user.ID); err != nil {
+			return err
 		}
 	}
 
-	// désactivation sur toutes les boards
-	_, err = wekan.db.Collection("boards").UpdateMany(ctx, bson.M{},
-		bson.M{
-			"$set": bson.M{"members.$[member].isActive": false},
-		},
-		&options.UpdateOptions{
-			ArrayFilters: &options.ArrayFilters{
-				Filters: bson.A{bson.M{"member.userId": user.ID}}},
-		},
-	)
-	if err != nil {
-		return err
-	}
-
-	return err
+	return nil
 }
 
 func (wekan *Wekan) DisableUsers(ctx context.Context, users Users) error {

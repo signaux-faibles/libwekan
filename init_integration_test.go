@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 // nolint:errcheck
 package libwekan
@@ -62,7 +61,7 @@ func TestMain(m *testing.M) {
 		fmt.Println("Mongo n'est pas encore prêt")
 		var err error
 		mongoUrl := fmt.Sprintf("mongodb://root:password@localhost:%s", mongodb.GetPort("27017/tcp"))
-		wekan, err = Init(context.Background(), mongoUrl, "wekan", "signaux.faibles")
+		wekan, err = Init(ctx, mongoUrl, "wekan", "signaux.faibles", "^tableau-crp.*")
 		if err != nil {
 			return err
 		}
@@ -98,9 +97,9 @@ func Test_OnlyOneAdminInDB(t *testing.T) {
 	ass.Nil(err)
 	ass.Equal(1, admins)
 
-	adminUser, err := wekan.AdminUser(context.Background())
-	ass.Nil(err)
-	ass.Equal(admin.ID, (adminUser).ID)
+	//adminUser, err := wekan.AdminUser(ctx)
+	ass.Nil(wekan.AssertHasAdmin(ctx))
+	ass.Equal(admin.ID, wekan.adminUserID)
 }
 
 func TestGetUser_when_user_not_exist(t *testing.T) {

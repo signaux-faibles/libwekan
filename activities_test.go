@@ -95,7 +95,7 @@ func TestActivities_newActivityAddComment(t *testing.T) {
 	ass.Equal(expected, activity)
 }
 
-func TestActivitie_newActivityAddedLabel(t *testing.T) {
+func TestActivities_newActivityAddedLabel(t *testing.T) {
 	ass := assert.New(t)
 	expected := Activity{
 		UserID:       "userID",
@@ -106,4 +106,33 @@ func TestActivitie_newActivityAddedLabel(t *testing.T) {
 	}
 	activity := newActivityAddedLabel("userID", "boardLabelID", "boardID", "swimlaneID")
 	ass.Equal(expected, activity)
+}
+
+func TestActivities_newActivityCreateCard(t *testing.T) {
+	expected := Activity{
+		UserID:       "userID",
+		ActivityType: "createCard",
+		BoardID:      "card.BoardID",
+		ListName:     "list.Title",
+		ListID:       "list.ID",
+		CardID:       "card.ID",
+		CardTitle:    "card.Title",
+		SwimlaneName: "swimlane.Title",
+		SwimlaneID:   "swimlane.ID",
+	}
+	list := List{
+		ID:    "list.ID",
+		Title: "list.Title",
+	}
+	swimlane := Swimlane{
+		ID:    "swimlane.ID",
+		Title: "swimlane.Title",
+	}
+	card := Card{
+		ID:      "card.ID",
+		Title:   "card.Title",
+		BoardID: "card.BoardID",
+	}
+	activity := newActivityCreateCard("userID", list, card, swimlane)
+	assert.Equal(t, expected, activity)
 }
