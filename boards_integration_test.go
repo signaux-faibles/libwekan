@@ -13,19 +13,29 @@ import (
 
 func TestBoards_createBoard(t *testing.T) {
 	ass := assert.New(t)
+	// GIVEN
 	board := newBoard("la board à toto", "la-board-a-toto", "board")
+
+	// WHEN
 	err := wekan.InsertBoard(ctx, board)
 	ass.Nil(err)
+
+	// THEN
+	actualBoard, err := wekan.GetBoardFromID(ctx, board.ID)
+	ass.Equal(board, actualBoard)
 }
 
 func TestBoards_getBoardFromID(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
 	id := BoardID("kSPsxQZGLKR9tknEt")
 	title := BoardTitle("Tableau CRP BFC")
 	slug := BoardSlug("tableau-crp-bfc")
 
-	ass := assert.New(t)
+	// WHEN
 	board, err := wekan.GetBoardFromID(ctx, id)
 
+	// THEN
 	ass.Nil(err)
 	ass.NotEmpty(board)
 	ass.Equal(title, board.Title)
@@ -34,13 +44,16 @@ func TestBoards_getBoardFromID(t *testing.T) {
 }
 
 func TestBoards_getBoardFromSlug(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
 	id := BoardID("kSPsxQZGLKR9tknEt")
 	title := BoardTitle("Tableau CRP BFC")
 	slug := BoardSlug("tableau-crp-bfc")
 
-	ass := assert.New(t)
+	// WHEN
 	board, err := wekan.GetBoardFromSlug(ctx, slug)
 
+	// THEN
 	ass.Nil(err)
 	ass.NotEmpty(board)
 	ass.Equal(title, board.Title)
@@ -49,13 +62,16 @@ func TestBoards_getBoardFromSlug(t *testing.T) {
 }
 
 func TestBoards_getBoardFromTitle(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
 	id := BoardID("kSPsxQZGLKR9tknEt")
 	title := BoardTitle("Tableau CRP BFC")
 	slug := BoardSlug("tableau-crp-bfc")
 
-	ass := assert.New(t)
+	// WHEN
 	board, err := wekan.GetBoardFromTitle(ctx, string(title))
 
+	// THEN
 	ass.Nil(err)
 	ass.NotEmpty(board)
 	ass.Equal(title, board.Title)
@@ -65,22 +81,38 @@ func TestBoards_getBoardFromTitle(t *testing.T) {
 
 func TestBoards_AddMemberToBoard_with_active_member(t *testing.T) {
 	ass := assert.New(t)
-	board, err := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
-
-	ass.Nil(err)
-
-	user := BuildUser(t.Name(), t.Name(), t.Name())
-	insertedUser, _ := wekan.InsertUser(ctx, user)
+	// GIVEN
+	board, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
+	insertedUser := createTestUser(t, "")
 	ass.False(board.UserIsMember(insertedUser))
-
 	boardMember := BoardMember{UserID: insertedUser.ID, IsActive: true}
-	err = wekan.AddMemberToBoard(ctx, board.ID, boardMember)
+
+	// WHEN
+	err := wekan.AddMemberToBoard(ctx, board.ID, boardMember)
 	ass.Nil(err)
 
+	// THEN
 	actualBoard, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
-
 	ass.True(actualBoard.UserIsMember(insertedUser))
 	ass.True(actualBoard.UserIsActiveMember(insertedUser))
+}
+
+func TestBoards_AddMemberToBoard_withUnknownUser(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
+	board, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
+	notInsertedUser := BuildUser(t.Name(), t.Name(), t.Name())
+	ass.False(board.UserIsMember(notInsertedUser))
+	boardMember := BoardMember{UserID: notInsertedUser.ID, IsActive: true}
+
+	// WHEN
+	err := wekan.AddMemberToBoard(ctx, board.ID, boardMember)
+	ass.IsType(UnknownUserError{}, err)
+
+	// THEN
+	actualBoard, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
+	ass.False(actualBoard.UserIsMember(notInsertedUser))
+	ass.False(actualBoard.UserIsActiveMember(notInsertedUser))
 }
 
 func TestBoards_AddMemberToBoard_with_inactive_member(t *testing.T) {
@@ -88,11 +120,7 @@ func TestBoards_AddMemberToBoard_with_inactive_member(t *testing.T) {
 	// GIVEN
 	board, err := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
 	ass.Nil(err)
-
 	user := createTestUser(t, "coucou")
-	//insertedUser, _ := wekan.InsertUser(ctx, user)
-	//ass.False(board.UserIsMember(insertedUser))
-
 	boardMember := BoardMember{UserID: user.ID, IsActive: false}
 
 	// WHEN

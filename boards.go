@@ -165,6 +165,10 @@ func (wekan *Wekan) AddMemberToBoard(ctx context.Context, boardID BoardID, board
 		return err
 	}
 
+	if _, err := wekan.GetUserFromID(ctx, boardMember.UserID); err != nil {
+		return err
+	}
+
 	toInsertBoardMember := boardMember
 	// l'utilisateur est activé par la méthode EnableBoardMember pour prendre en charge l'insertion de l'activity
 	toInsertBoardMember.IsActive = false
@@ -315,8 +319,8 @@ func newBoard(title string, slug string, boardType string) Board {
 		Type:       boardType,
 		Slug:       BoardSlug(slug),
 		Archived:   false,
-		CreatedAt:  time.Now(),
-		ModifiedAt: time.Now(),
+		CreatedAt:  toMongoTime(time.Now()),
+		ModifiedAt: toMongoTime(time.Now()),
 		Stars:      0,
 		Labels: []BoardLabel{
 			{"green", "n4eJyZ", ""},
