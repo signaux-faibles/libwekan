@@ -8,13 +8,14 @@ import (
 )
 
 type Wekan struct {
-	url           string
-	databaseName  string
-	client        *mongo.Client
-	db            *mongo.Database
-	adminUsername Username
-	adminUserID   UserID
-	privileged    bool
+	url              string
+	databaseName     string
+	client           *mongo.Client
+	db               *mongo.Database
+	adminUsername    Username
+	adminUserID      UserID
+	privileged       bool
+	slugDomainRegexp string
 }
 
 // Init retourne un objet de type `Wekan`

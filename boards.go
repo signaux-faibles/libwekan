@@ -411,10 +411,10 @@ func (wekan *Wekan) SelectBoardsFromMemberID(ctx context.Context, memberID UserI
 	return boards, nil
 }
 
-func (wekan *Wekan) SelectBoardsFromSlugExpression(ctx context.Context, slugRegexp string) ([]Board, error) {
+func (wekan *Wekan) SelectDomainBoards(ctx context.Context) ([]Board, error) {
 	var boards []Board
 	query := bson.M{
-		"slug": primitive.Regex{Pattern: slugRegexp, Options: "i"},
+		"slug": primitive.Regex{Pattern: wekan.slugDomainRegexp, Options: "i"},
 	}
 	cur, err := wekan.db.Collection("boards").Find(ctx, query)
 	if err != nil {
