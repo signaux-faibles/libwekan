@@ -92,6 +92,11 @@ type UserProfile struct {
 type Username string
 type UserID string
 
+func (userID UserID) Check(ctx context.Context, wekan *Wekan) error {
+	_, err := wekan.GetUserFromID(ctx, userID)
+	return err
+}
+
 func (username Username) toString() string {
 	return string(username)
 }
@@ -274,10 +279,10 @@ func (wekan *Wekan) InsertTemplates(ctx context.Context, templates UserTemplates
 }
 
 func (user *User) BuildTemplates() UserTemplates {
-	templateBoard := newBoard("Template", "templates", "template-container")
-	cardTemplateSwimlane := newCardTemplateSwimlane(templateBoard.ID)
-	listTemplateSwimlane := newListTemplateSwimlane(templateBoard.ID)
-	boardTemplateSwimlane := newBoardTemplateSwimlane(templateBoard.ID)
+	templateBoard := buildBoard("Template", "templates", "template-container")
+	cardTemplateSwimlane := buildCardTemplateSwimlane(templateBoard.ID)
+	listTemplateSwimlane := buildListTemplateSwimlane(templateBoard.ID)
+	boardTemplateSwimlane := buildBoardTemplateSwimlane(templateBoard.ID)
 
 	user.Profile.TemplatesBoardId = templateBoard.ID
 	user.Profile.CardTemplatesSwimlaneId = cardTemplateSwimlane.ID
@@ -443,7 +448,11 @@ func (wekan *Wekan) DisableUsers(ctx context.Context, users Users) error {
 	return nil
 }
 
-func (wekan *Wekan) RemoveCardMemberShip(ctx context.Context, cardID CardID, memberID UserID) error {
+func (wekan *Wekan) RemoveMemberFromCard(ctx context.Context, cardID CardID, memberID UserID) error {
+	if _, err := wekan.GetUserFromID(ctx, memberID); err != nil {
+		return UnknownUserError{string(memberID)}
+	}
+
 	stats, err := wekan.db.Collection("cards").UpdateOne(ctx, bson.M{
 		"_id": cardID,
 	}, bson.M{
@@ -461,20 +470,37 @@ func (wekan *Wekan) RemoveCardMemberShip(ctx context.Context, cardID CardID, mem
 	return nil
 }
 
-func (wekan *Wekan) AddCardMemberShip(ctx context.Context, cardID CardID, memberID UserID) error {
+func (wekan *Wekan) AddMemberToCard(ctx context.Context, cardID CardID, memberID UserID) error {
+	card, err := wekan.GetCardFromID(ctx, cardID)
+	if err != nil {
+		return err
+	}
+	board, err := wekan.GetBoardFromID(ctx, card.BoardID)
+	if err != nil {
+		return err
+	}
+	user, err := wekan.GetUserFromID(ctx, memberID)
+	if err != nil {
+		return err
+	}
+	if !board.UserIsActiveMember(user) {
+		return ForbiddenOperationError{"l'utilisateur n'est pas membre actif du tableau"}
+	}
+
 	stats, err := wekan.db.Collection("cards").UpdateOne(ctx, bson.M{
 		"_id": cardID,
 	}, bson.M{
-		"$pull": bson.M{
+		"$addToSet": bson.M{
 			"members": memberID,
 		},
 	})
 
+	if err != nil {
+		fmt.Println(err)
+		return UnexpectedMongoError{err}
+	}
 	if stats.ModifiedCount == 0 {
 		return NothingDoneError{}
-	}
-	if err != nil {
-		return UnexpectedMongoError{err}
 	}
 	return nil
 }

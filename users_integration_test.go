@@ -22,14 +22,17 @@ func TestUsers_usernameExists(t *testing.T) {
 
 func TestUsers_createUser(t *testing.T) {
 	ass := assert.New(t)
+	// GIVEN
 	username := Username("toto@grand.velo.com")
 	initials := "TGV"
 	fullname := "Toto Grand-Vélo"
-
 	user := BuildUser(string(username), initials, fullname)
+
+	// WHEN
 	insertedUser, err := wekan.InsertUser(ctx, user)
 	ass.Nil(err)
 
+	// THEN
 	foundUser, err := wekan.GetUserFromUsername(ctx, username)
 	ass.Nil(err)
 	ass.Equal(username, foundUser.Username)
@@ -37,6 +40,7 @@ func TestUsers_createUser(t *testing.T) {
 	ass.Equal(fullname, foundUser.Profile.Fullname)
 	ass.Equal(string(username), foundUser.Emails[0].Address)
 
+	// On vérifie également que l'utilisateur est bien membre de son tableau de templates
 	templateBoard, err := wekan.GetBoardFromID(ctx, insertedUser.Profile.TemplatesBoardId)
 	ass.Nil(err)
 	ass.True(templateBoard.UserIsMember(user))
@@ -44,17 +48,15 @@ func TestUsers_createUser(t *testing.T) {
 
 func TestUsers_createDuplicateUser(t *testing.T) {
 	ass := assert.New(t)
-
+	// GIVEN
 	user := BuildUser("tata@grand.vela.com", "TGV", "Tata Grand-Véla")
+	wekan.InsertUser(ctx, user)
+
+	// WHEN
 	_, err := wekan.InsertUser(ctx, user)
 
-	ass.Nil(err)
-
-	user = BuildUser("tata@grand.vela.com", "TGV", "Tata Grand-Véla")
-	_, err = wekan.InsertUser(ctx, user)
-
-	_, ok := err.(UserAlreadyExistsError)
-	ass.True(ok)
+	// THEN
+	ass.IsType(UserAlreadyExistsError{}, err)
 }
 
 func TestUsers_DisableUser(t *testing.T) {
@@ -99,78 +101,86 @@ func TestUsers_DisableUser(t *testing.T) {
 
 func TestUsers_EnableUser(t *testing.T) {
 	ass := assert.New(t)
+	// GIVEN
 	enabledUser := BuildUser(t.Name(), t.Name(), t.Name())
 	insertedUser, _ := wekan.InsertUser(ctx, enabledUser)
 	wekan.DisableUser(ctx, insertedUser)
+
+	// WHEN
 	err := wekan.EnableUser(ctx, insertedUser)
 	ass.Nil(err)
+
+	// THEN
 	updatedUser, _ := wekan.GetUserFromID(ctx, insertedUser.ID)
 	templateBoard, _ := wekan.GetBoardFromID(ctx, updatedUser.Profile.TemplatesBoardId)
 	ass.False(updatedUser.LoginDisabled)
 	ass.True(templateBoard.UserIsActiveMember(updatedUser))
 }
 
-func TestUsers_GetUsersFromUsernames(t *testing.T) {
+func TestUsers_GetUsersFromUsernames_WhenAllExists(t *testing.T) {
 	ass := assert.New(t)
-	for _, i := range []string{"a", "b", "c", "d", "e"} {
-		username := t.Name() + i
-		user := BuildUser(username, username, username)
-		wekan.InsertUser(ctx, user)
+	// GIVEN
+	for _, suffix := range []string{"a", "b", "c", "d", "e"} {
+		createTestUser(t, suffix)
 	}
-
 	existingUsernames := []Username{Username(t.Name() + "a"), Username(t.Name() + "b"), Username(t.Name() + "c")}
+
+	// WHEN
 	selectedExistingUsers, err := wekan.GetUsersFromUsernames(ctx, existingUsernames)
 	ass.Nil(err)
+
+	// THEN
 	ass.Len(selectedExistingUsers, 3)
+}
 
-	notExistingUsernames := []Username{Username(t.Name() + "m"), Username(t.Name() + "n"), Username(t.Name() + "l")}
-	selectedNotExistingUsers, err := wekan.GetUsersFromUsernames(ctx, notExistingUsernames)
-	ass.IsType(UnknownUserError{}, err)
-	ass.Equal("l'utilisateur n'est pas connu (usernames in (TestUsers_GetUsersFromUsernamesl, TestUsers_GetUsersFromUsernamesm, TestUsers_GetUsersFromUsernamesn))", err.Error())
-	ass.Len(selectedNotExistingUsers, 0)
+func TestUsers_GetUsersFromUsernames_WhenSomeDoesntExist(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
+	for _, suffix := range []string{"a", "b", "c", "d", "e"} {
+		createTestUser(t, suffix)
+	}
+	someNotExistingUsernames := []Username{Username(t.Name() + "a"), Username(t.Name() + "b"), Username(t.Name() + "l")}
 
-	someExistingUsernames := []Username{Username(t.Name() + "a"), Username(t.Name() + "b"), Username(t.Name() + "l")}
-	selectedSomeExistingUsers, err := wekan.GetUsersFromUsernames(ctx, someExistingUsernames)
+	// WHEN
+	selectedExistingUsers, err := wekan.GetUsersFromUsernames(ctx, someNotExistingUsernames)
+
+	// THEN
 	ass.IsType(UnknownUserError{}, err)
-	ass.Equal("l'utilisateur n'est pas connu (usernames in (TestUsers_GetUsersFromUsernamesl))", err.Error())
-	ass.Len(selectedSomeExistingUsers, 0)
+	ass.Len(selectedExistingUsers, 0)
+}
+
+func TestUsers_GetUsersFromIDs_WhenUsersExists(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
+	var actualUserIDs []UserID
+	for _, suffix := range []string{"a", "b", "c", "d", "e"} {
+		user := createTestUser(t, suffix)
+		actualUserIDs = append(actualUserIDs, user.ID)
+	}
+	someExistingUserIDs := actualUserIDs[0:3]
+
+	// WHEN
+	selectedExistingUsers, err := wekan.GetUsersFromIDs(ctx, someExistingUserIDs)
+
+	// THEN
+	ass.Nil(err)
+	ass.Len(selectedExistingUsers, 3)
 }
 
 func TestUsers_GetUsersFromIDs(t *testing.T) {
 	ass := assert.New(t)
-
-	var actualUserIDS []UserID
-	for _, i := range []string{"a", "b", "c", "d", "e"} {
-		username := t.Name() + i
-		user := BuildUser(username, username, username)
-		wekan.InsertUser(ctx, user)
-		actualUserIDS = append(actualUserIDS, user.ID)
+	// GIVEN
+	var actualUserIDs []UserID
+	for _, suffix := range []string{"a", "b", "c", "d", "e"} {
+		user := createTestUser(t, suffix)
+		actualUserIDs = append(actualUserIDs, user.ID)
 	}
+	someExistingUserIDs := append(actualUserIDs[0:3], "iAmNotAnID")
 
-	existingUserIDs := actualUserIDS[0:3]
-	selectedExistingUsers, err := wekan.GetUsersFromIDs(ctx, existingUserIDs)
-	ass.Nil(err)
-	ass.Len(selectedExistingUsers, 3)
+	// WHEN
+	selectedExistingUsers, err := wekan.GetUsersFromIDs(ctx, someExistingUserIDs)
 
-	notExistingUserIDs := []UserID{"notAnID", "notAnotherID", "pinchMeIfItsAnID"}
-	selectedNotExistingUsers, err := wekan.GetUsersFromIDs(ctx, notExistingUserIDs)
+	// THEN
 	ass.IsType(UnknownUserError{}, err)
-	ass.Equal("l'utilisateur n'est pas connu (ids in (notAnID, notAnotherID, pinchMeIfItsAnID))", err.Error())
-	ass.Len(selectedNotExistingUsers, 0)
-
-	someExistingUserIDs := append(actualUserIDS[0:2], "notAnID")
-	selectedSomeExistingUsers, err := wekan.GetUsersFromIDs(ctx, someExistingUserIDs)
-	ass.IsType(UnknownUserError{}, err)
-	ass.Equal("l'utilisateur n'est pas connu (ids in (notAnID))", err.Error())
-	ass.Len(selectedSomeExistingUsers, 0)
-}
-
-func TestUsers_RemoveCardMemberShip(t *testing.T) {
-	ass := assert.New(t)
-	// créer un utilisateur
-	// créer une carte
-	// ajouter l'utilisateur sur la carte
-	// retirer l'utilisateur de la carte
-	// profit !
-	ass.True(false)
+	ass.Len(selectedExistingUsers, 0)
 }

@@ -3,6 +3,7 @@ package libwekan
 import (
 	"context"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -72,6 +73,11 @@ type BoardID string
 type BoardSlug string
 type BoardTitle string
 
+func (boardID BoardID) Check(ctx context.Context, wekan *Wekan) error {
+	_, err := wekan.GetBoardFromID(ctx, boardID)
+	return err
+}
+
 // NewBoardLabel retourne un objet BoardLabel
 func NewBoardLabel(name string, color string) BoardLabel {
 	return BoardLabel{
@@ -135,8 +141,13 @@ func (wekan *Wekan) GetBoardFromTitle(ctx context.Context, title string) (Board,
 // GetBoardFromID retourne l'objet board à partir du champ ._id
 func (wekan *Wekan) GetBoardFromID(ctx context.Context, id BoardID) (Board, error) {
 	var board Board
-	err := wekan.db.Collection("boards").FindOne(ctx, bson.M{"_id": id}).Decode(&board)
-	return board, err
+	if err := wekan.db.Collection("boards").FindOne(ctx, bson.M{"_id": id}).Decode(&board); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return Board{}, UnknownBoardError{Board{ID: id}}
+		}
+		return Board{}, err
+	}
+	return board, nil
 }
 
 // getMember teste si l'utilisateur fait partie de l'array members
@@ -311,7 +322,7 @@ func (wekan *Wekan) EnsureUserIsBoardAdmin(ctx context.Context, boardID BoardID,
 	return nil
 }
 
-func newBoard(title string, slug string, boardType string) Board {
+func buildBoard(title string, slug string, boardType string) Board {
 	board := Board{
 		ID:         BoardID(newId()),
 		Title:      BoardTitle(title),

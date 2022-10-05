@@ -14,7 +14,7 @@ import (
 func TestBoards_createBoard(t *testing.T) {
 	ass := assert.New(t)
 	// GIVEN
-	board := newBoard("la board à toto", "la-board-a-toto", "board")
+	board := buildBoard("la board à toto", "la-board-a-toto", "board")
 
 	// WHEN
 	err := wekan.InsertBoard(ctx, board)
@@ -140,12 +140,10 @@ func TestBoards_EnableBoardMember(t *testing.T) {
 
 	ass.Nil(err)
 
-	user := BuildUser("test_enable_board_member", "tebm", "Test Enable Board Member")
-	insertedUser, _ := wekan.InsertUser(ctx, user)
+	insertedUser := createTestUser(t, "enabled")
 	ass.False(board.UserIsMember(insertedUser))
 
-	notEnabledUser := BuildUser("test_not_enable_board_member", "tnebm", "Test Not Enable Board Member")
-	insertedNotEnabledUser, _ := wekan.InsertUser(ctx, notEnabledUser)
+	insertedNotEnabledUser := createTestUser(t, "disabled")
 	ass.False(board.UserIsMember(insertedNotEnabledUser))
 
 	wekan.AddMemberToBoard(ctx, board.ID, BoardMember{insertedUser.ID, false, false, false, false, false})
@@ -155,16 +153,16 @@ func TestBoards_EnableBoardMember(t *testing.T) {
 	ass.False(insertedMemberBoard.UserIsActiveMember(insertedNotEnabledUser))
 
 	// WHEN
-	err = wekan.EnableBoardMember(ctx, insertedMemberBoard.ID, user.ID)
+	err = wekan.EnableBoardMember(ctx, insertedMemberBoard.ID, insertedUser.ID)
 
 	// THEN
 	ass.Nil(err)
 	enabledMemberBoard, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
-	ass.True(enabledMemberBoard.UserIsActiveMember(user))
-	ass.False(enabledMemberBoard.UserIsActiveMember(notEnabledUser))
+	ass.True(enabledMemberBoard.UserIsActiveMember(insertedUser))
+	ass.False(enabledMemberBoard.UserIsActiveMember(insertedNotEnabledUser))
 
 	// on vérifie que l'activité a été créée
-	expected := newActivityAddBoardMember(wekan.adminUserID, user.ID, board.ID)
+	expected := newActivityAddBoardMember(wekan.adminUserID, insertedUser.ID, board.ID)
 	foundActivities, _ := wekan.selectActivitiesFromQuery(ctx, bson.M{"boardId": expected.BoardID, "memberId": expected.MemberID})
 	require.NotEmpty(t, foundActivities)
 	ass.Len(foundActivities, 1)
@@ -177,19 +175,18 @@ func TestBoards_EnableBoardMember(t *testing.T) {
 func TestBoards_EnableBoardMember_when_user_is_not_on_board(t *testing.T) {
 	ass := assert.New(t)
 	// GIVEN
-	user := BuildUser("an_absent_user", "aau", "An absent user")
-	insertedUser, _ := wekan.InsertUser(ctx, user)
-	ass.NotNil(insertedUser)
+	insertedUser := createTestUser(t, "absent")
 	board, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
-	ass.False(board.UserIsMember(user))
+	ass.False(board.UserIsMember(insertedUser))
 
 	// WHEN
-	err := wekan.EnableBoardMember(ctx, board.ID, user.ID)
+	err := wekan.EnableBoardMember(ctx, board.ID, insertedUser.ID)
 	ass.Nil(err)
 
+	// THEN
 	shouldNotUpdatedBoard, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
-	ass.False(shouldNotUpdatedBoard.UserIsMember(user))
-	expected := newActivityAddBoardMember(wekan.adminUserID, user.ID, board.ID)
+	ass.False(shouldNotUpdatedBoard.UserIsMember(insertedUser))
+	expected := newActivityAddBoardMember(wekan.adminUserID, insertedUser.ID, board.ID)
 	activities, err := wekan.selectActivitiesFromQuery(ctx, bson.M{"memberId": expected.MemberID, "boardId": expected.BoardID, "activityType": expected.ActivityType})
 	ass.Empty(activities, 0)
 	ass.Empty(nil)
@@ -200,26 +197,24 @@ func TestBoards_DisableBoardMember(t *testing.T) {
 
 	// GIVEN
 	board, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
-	user := BuildUser("test_disable_board_member", "tdbm", "Test Disable Board Member")
-	enabledUser := BuildUser("test_not_disable_board_member", "tndbm", "Test Not Disable Board Member")
-	insertedUser, _ := wekan.InsertUser(ctx, user)
-	insertedEnabledUser, _ := wekan.InsertUser(ctx, enabledUser)
-	wekan.AddMemberToBoard(ctx, board.ID, BoardMember{insertedUser.ID, false, true, false, false, false})
+	insertedDisabledUser := createTestUser(t, "disabled")
+	insertedEnabledUser := createTestUser(t, "enabled")
+	wekan.AddMemberToBoard(ctx, board.ID, BoardMember{insertedDisabledUser.ID, false, true, false, false, false})
 	wekan.AddMemberToBoard(ctx, board.ID, BoardMember{insertedEnabledUser.ID, false, true, false, false, false})
 	insertedMemberBoard, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
 
 	// WHEN
-	err := wekan.DisableBoardMember(ctx, insertedMemberBoard.ID, user.ID)
+	err := wekan.DisableBoardMember(ctx, insertedMemberBoard.ID, insertedDisabledUser.ID)
 
 	// THEN
 	ass.Nil(err)
 	disabledMemberBoard, err := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
 	ass.Nil(err)
-	ass.False(disabledMemberBoard.UserIsActiveMember(user))
-	ass.True(disabledMemberBoard.UserIsActiveMember(enabledUser))
+	ass.False(disabledMemberBoard.UserIsActiveMember(insertedDisabledUser))
+	ass.True(disabledMemberBoard.UserIsActiveMember(insertedEnabledUser))
 
 	// on vérifie que l'activité correspondante a été créée
-	expected := newActivityRemoveBoardMember(wekan.adminUserID, user.ID, board.ID)
+	expected := newActivityRemoveBoardMember(wekan.adminUserID, insertedDisabledUser.ID, board.ID)
 	foundActivities, _ := wekan.selectActivitiesFromQuery(ctx, bson.M{"boardId": expected.BoardID, "memberId": expected.MemberID, "activityType": "removeBoardMember"})
 	require.NotEmpty(t, foundActivities)
 	ass.Len(foundActivities, 1)
@@ -231,15 +226,14 @@ func TestBoards_DisableBoardMember(t *testing.T) {
 func TestBoards_EnsureUserIsActiveBoardMember(t *testing.T) {
 	// GIVEN
 	ass := assert.New(t)
-	board, err := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
-	user := BuildUser("test_ensure_user_is_active_board_member", "teuiabm", "Test Ensure User Is Active Board Member")
-	insertedUser, err := wekan.InsertUser(ctx, user)
+	board, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
+	insertedUser := createTestUser(t, "")
 
 	// WHEN
-	err = wekan.EnsureUserIsActiveBoardMember(ctx, board.ID, user.ID)
+	err := wekan.EnsureUserIsActiveBoardMember(ctx, board.ID, insertedUser.ID)
+	ass.Nil(err)
 
 	// THEN
-	ass.Nil(err)
 	updatedBoard, err := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
 	ass.Nil(err)
 	ass.True(updatedBoard.UserIsMember(insertedUser))
@@ -303,24 +297,6 @@ func TestBoards_InsertBoardLabel_whenBoardIsUnknown(t *testing.T) {
 	ass.Equal(UnknownBoardError{board}, err)
 }
 
-func activityCompareFunc(a1 Activity, a2 Activity) func() bool {
-	return func() bool {
-		return a1.ActivityType == a2.ActivityType &&
-			a1.ActivityTypeID == a2.ActivityTypeID &&
-			a1.BoardID == a2.BoardID &&
-			a1.BoardLabelID == a2.BoardLabelID &&
-			a1.CardID == a2.CardID &&
-			a1.CommentID == a2.CommentID &&
-			a1.ListID == a2.ListID &&
-			a1.MemberID == a2.MemberID &&
-			a1.SwimlaneID == a2.SwimlaneID &&
-			a1.Type == a2.Type &&
-			a1.Username == a2.Username &&
-			a1.UserID == a2.UserID
-	}
-}
-
-// nolint:errcheck
 func TestBoard_SelectBoardsFromMemberID(t *testing.T) {
 	ass := assert.New(t)
 
@@ -361,14 +337,6 @@ func TestBoard_SelectBoardsFromMemberID(t *testing.T) {
 	ass.Nil(err)
 }
 
-func createTestUser(t *testing.T, suffix string) User {
-	username := t.Name() + suffix
-	user := BuildUser(username, username, username)
-	user.ID = UserID(username)
-	insertedUser, _ := wekan.InsertUser(ctx, user)
-	return insertedUser
-}
-
 func TestBoards_SelectDomainRegexp_withTwoBoards(t *testing.T) {
 	ass := assert.New(t)
 	wekanTest := wekan
@@ -394,4 +362,30 @@ func TestBoards_SelectDomainRegexp_withBadRegexp(t *testing.T) {
 	boardsNull, err := wekanTest.SelectDomainBoards(ctx)
 	ass.IsType(UnexpectedMongoError{}, err)
 	ass.Nil(boardsNull)
+}
+
+// helpers internes aux tests
+func createTestUser(t *testing.T, suffix string) User {
+	username := t.Name() + suffix
+	user := BuildUser(username, username, username)
+	user.ID = UserID(username)
+	insertedUser, _ := wekan.InsertUser(ctx, user)
+	return insertedUser
+}
+
+func activityCompareFunc(a1 Activity, a2 Activity) func() bool {
+	return func() bool {
+		return a1.ActivityType == a2.ActivityType &&
+			a1.ActivityTypeID == a2.ActivityTypeID &&
+			a1.BoardID == a2.BoardID &&
+			a1.BoardLabelID == a2.BoardLabelID &&
+			a1.CardID == a2.CardID &&
+			a1.CommentID == a2.CommentID &&
+			a1.ListID == a2.ListID &&
+			a1.MemberID == a2.MemberID &&
+			a1.SwimlaneID == a2.SwimlaneID &&
+			a1.Type == a2.Type &&
+			a1.Username == a2.Username &&
+			a1.UserID == a2.UserID
+	}
 }

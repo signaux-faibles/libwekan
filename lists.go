@@ -31,20 +31,34 @@ type List struct {
 	WipLimit   ListWipLimit `bson:"wipLimit"`
 }
 
-func BuildList(title string, boardID BoardID, sort int) List {
+func BuildList(boardID BoardID, title string, sort int) List {
 	return List{
 		ID:      ListID(newId()),
 		Title:   title,
 		BoardID: boardID,
 		Type:    "list",
 		Width:   "270px",
+		Sort:    sort,
 		WipLimit: ListWipLimit{
 			Value: 1,
 		},
 	}
 }
+
+func (listID ListID) Check(ctx context.Context, wekan *Wekan) error {
+	_, err := wekan.GetListFromID(ctx, listID)
+	return err
+}
+
 func (wekan *Wekan) InsertList(ctx context.Context, list List) error {
-	_, err := wekan.db.Collection("list").InsertOne(ctx, list)
+	if err := wekan.AssertHasAdmin(ctx); err != nil {
+		return err
+	}
+	if _, err := wekan.GetBoardFromID(ctx, list.BoardID); err != nil {
+		return err
+	}
+
+	_, err := wekan.db.Collection("lists").InsertOne(ctx, list)
 	if err != nil {
 		return UnexpectedMongoError{err}
 	}
@@ -62,7 +76,7 @@ func (wekan *Wekan) GetListFromID(ctx context.Context, listID ListID) (List, err
 
 func (wekan *Wekan) SelectListsFromBoardID(ctx context.Context, boardID BoardID) ([]List, error) {
 	var lists []List
-	cur, err := wekan.db.Collection("lists").Find(ctx, bson.M{})
+	cur, err := wekan.db.Collection("lists").Find(ctx, bson.M{"boardId": boardID})
 	if err != nil {
 		return nil, UnexpectedMongoError{err}
 	}

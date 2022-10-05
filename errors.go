@@ -161,5 +161,13 @@ func (e TriggerNotFoundError) Error() string {
 type NothingDoneError struct{}
 
 func (e NothingDoneError) Error() string {
-	return "le traitement n'a aucun effet"
+	return "le traitement n'a eu aucun effet"
+}
+
+type UnknownActivityError struct {
+	key string
+}
+
+func (e UnknownActivityError) Error() string {
+	return fmt.Sprintf("l'activité n'existe pas (ID: %s)", e.key)
 }

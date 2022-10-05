@@ -2,6 +2,7 @@ package libwekan
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/bson"
 	"time"
 )
 
@@ -19,29 +20,29 @@ type Swimlane struct {
 	ModifiedAt time.Time  `bson:"modifiedAt"`
 }
 
-func newTemplateSwimlaneContainer(boardId BoardID, title string, sort int) Swimlane {
-	newSwimlane := Swimlane{
+func buildSwimlane(boardID BoardID, swimlaneType string, title string, sort int) Swimlane {
+	swimlane := Swimlane{
 		ID:         SwimlaneID(newId()),
 		Title:      title,
-		BoardID:    boardId,
+		BoardID:    boardID,
 		Sort:       sort,
-		Type:       "template-container",
+		Type:       swimlaneType,
 		Archived:   false,
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
 		ModifiedAt: time.Now(),
 	}
-	return newSwimlane
+	return swimlane
 }
 
-func newCardTemplateSwimlane(boardId BoardID) Swimlane {
-	return newTemplateSwimlaneContainer(boardId, "Card Templates", 1)
+func buildCardTemplateSwimlane(boardId BoardID) Swimlane {
+	return buildSwimlane(boardId, "template-container", "Card Templates", 1)
 }
-func newListTemplateSwimlane(boardId BoardID) Swimlane {
-	return newTemplateSwimlaneContainer(boardId, "List Templates", 2)
+func buildListTemplateSwimlane(boardId BoardID) Swimlane {
+	return buildSwimlane(boardId, "template-container", "List Templates", 2)
 }
-func newBoardTemplateSwimlane(boardId BoardID) Swimlane {
-	return newTemplateSwimlaneContainer(boardId, "Board Templates", 3)
+func buildBoardTemplateSwimlane(boardId BoardID) Swimlane {
+	return buildSwimlane(boardId, "template-container", "Board Templates", 3)
 }
 
 func (wekan *Wekan) InsertSwimlane(ctx context.Context, swimlane Swimlane) error {
@@ -62,4 +63,29 @@ func (wekan *Wekan) InsertSwimlane(ctx context.Context, swimlane Swimlane) error
 		return UnexpectedMongoError{err}
 	}
 	return err
+}
+
+func (swimlaneID SwimlaneID) Check(ctx context.Context, wekan *Wekan) error {
+	_, err := wekan.GetSwimlaneFromID(ctx, swimlaneID)
+	return err
+}
+
+func (wekan *Wekan) GetSwimlaneFromID(ctx context.Context, swimlaneID SwimlaneID) (Swimlane, error) {
+	var swimlane Swimlane
+	if err := wekan.db.Collection("swimlanes").FindOne(ctx, bson.M{"_id": swimlaneID}).Decode(&swimlane); err != nil {
+		return Swimlane{}, UnexpectedMongoError{err}
+	}
+	return swimlane, nil
+}
+
+func (wekan *Wekan) GetSwimlanesFromBoardID(ctx context.Context, boardID BoardID) ([]Swimlane, error) {
+	var swimlanes []Swimlane
+	cur, err := wekan.db.Collection("swimlanes").Find(ctx, bson.M{"boardId": boardID})
+	if err != nil {
+		return nil, UnexpectedMongoError{err}
+	}
+	if err := cur.All(ctx, &swimlanes); err != nil {
+		return nil, UnexpectedMongoError{err}
+	}
+	return swimlanes, nil
 }

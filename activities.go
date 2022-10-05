@@ -2,6 +2,8 @@ package libwekan
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 )
 
@@ -25,6 +27,11 @@ type Activity struct {
 	SwimlaneName   string       `bson:"swimlaneName,omitempty"`
 	CreatedAt      time.Time    `bson:"createdAt"`
 	ModifiedAt     time.Time    `bson:"modifiedAt"`
+}
+
+func (activityID ActivityID) Check(ctx context.Context, wekan *Wekan) error {
+	_, err := wekan.GetActivityFromID(ctx, activityID)
+	return err
 }
 
 func (activity Activity) withIDandDates(t time.Time) (Activity, error) {
@@ -136,4 +143,16 @@ func (wekan *Wekan) insertActivity(ctx context.Context, activity Activity) (Acti
 		return Activity{}, UnexpectedMongoError{err}
 	}
 	return insertable, nil
+}
+
+func (wekan *Wekan) GetActivityFromID(ctx context.Context, activityID ActivityID) (Activity, error) {
+	var activity Activity
+	err := wekan.db.Collection("activities").FindOne(ctx, bson.M{"_id": activityID}).Decode(&activity)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return Activity{}, UnknownActivityError{string(activityID)}
+		}
+		return Activity{}, UnexpectedMongoError{err}
+	}
+	return activity, nil
 }

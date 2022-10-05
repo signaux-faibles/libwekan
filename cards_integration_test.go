@@ -6,17 +6,15 @@ package libwekan
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func TestCards_InsertCard_withGetCardFromID(t *testing.T) {
 	ass := assert.New(t)
 	// GIVEN
-	card := buildTestCard(t)
-
+	card := createTestCard(t, createTestUser(t, "").ID, nil, nil, nil)
 	// WHEN
-	err := wekan.InsertCard(ctx, card)
-	ass.Nil(err)
 	actualCard, err := wekan.GetCardFromID(ctx, card.ID)
 	ass.Nil(err)
 
@@ -25,15 +23,13 @@ func TestCards_InsertCard_withGetCardFromID(t *testing.T) {
 }
 
 func TestCards_GetCardsFromID_whenCardDoesntExists(t *testing.T) {
-	card := buildTestCard(t)
-	_, err := wekan.GetCardFromID(ctx, card.ID)
+	_, err := wekan.GetCardFromID(ctx, CardID(t.Name()+"CatchMeIfYouCan"))
 	assert.IsType(t, CardNotFoundError{}, err)
 }
 
 func TestCards_SelectCardsFromUserID(t *testing.T) {
 	// GIVEN
-	card := buildTestCard(t)
-	wekan.InsertCard(ctx, card)
+	card := createTestCard(t, createTestUser(t, "").ID, nil, nil, nil)
 
 	// WHEN
 	actualCards, err := wekan.SelectCardsFromUserID(ctx, card.UserID)
@@ -45,7 +41,7 @@ func TestCards_SelectCardsFromUserID(t *testing.T) {
 
 func TestCards_SelectCardsFromBoardID(t *testing.T) {
 	// GIVEN
-	card := buildTestCard(t)
+	card := createTestCard(t, createTestUser(t, "").ID, nil, nil, nil)
 	wekan.InsertCard(ctx, card)
 
 	// WHEN
@@ -57,23 +53,27 @@ func TestCards_SelectCardsFromBoardID(t *testing.T) {
 }
 
 func TestCards_SelectCardsFromMemberID(t *testing.T) {
+	ass := assert.New(t)
 	// GIVEN
-	card := buildTestCard(t)
-	memberID := UserID(t.Name() + "MemberID")
-	card.Members = []UserID{memberID}
-	wekan.InsertCard(ctx, card)
+	card := createTestCard(t, createTestUser(t, "Owner").ID, nil, nil, nil)
+	member := createTestUser(t, "Member")
+	wekan.AddMemberToBoard(ctx, card.BoardID, BoardMember{UserID: member.ID, IsActive: true})
+	insertedMember, _ := wekan.GetUserFromID(ctx, member.ID)
+	wekan.AddMemberToCard(ctx, card.ID, member.ID)
 
 	// WHEN
-	actualCards, err := wekan.SelectCardsFromMemberID(ctx, memberID)
+	insertedCard, _ := wekan.GetCardFromID(ctx, card.ID)
+	actualCards, err := wekan.SelectCardsFromMemberID(ctx, insertedMember.ID)
 
 	// THEN
-	assert.Nil(t, err)
-	assert.Equal(t, []Card{card}, actualCards)
+	ass.Nil(err)
+	require.Len(t, actualCards, 1)
+	ass.Equal(insertedCard, actualCards[0])
 }
 
 func TestCards_SelectCardsFromSwimlaneID(t *testing.T) {
 	// GIVEN
-	card := buildTestCard(t)
+	card := createTestCard(t, createTestUser(t, "").ID, nil, nil, nil)
 	wekan.InsertCard(ctx, card)
 
 	// WHEN
@@ -86,7 +86,7 @@ func TestCards_SelectCardsFromSwimlaneID(t *testing.T) {
 
 func TestCards_SelectCardsFromListID(t *testing.T) {
 	// GIVEN
-	card := buildTestCard(t)
+	card := createTestCard(t, createTestUser(t, "").ID, nil, nil, nil)
 	wekan.InsertCard(ctx, card)
 
 	// WHEN
@@ -95,4 +95,83 @@ func TestCards_SelectCardsFromListID(t *testing.T) {
 	// THEN
 	assert.Nil(t, err)
 	assert.Equal(t, []Card{card}, actualCards)
+}
+
+func TestUsers_AddCardMembership_WhenBoardIsTheSame(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
+	board, swimlanes, lists := createTestBoard(t, "", 1, 1)
+	user := createTestUser(t, "User")
+	wekan.AddMemberToBoard(ctx, board.ID, BoardMember{UserID: user.ID, IsActive: true})
+	member := createTestUser(t, "Member")
+	wekan.AddMemberToBoard(ctx, board.ID, BoardMember{UserID: member.ID, IsActive: true})
+	card := createTestCard(t, user.ID, &board.ID, &(swimlanes[0].ID), &(lists[0].ID))
+
+	// WHEN
+	err := wekan.AddMemberToCard(ctx, card.ID, member.ID)
+	ass.Nil(err)
+
+	// THEN
+	actualCard, _ := wekan.GetCardFromID(ctx, card.ID)
+	ass.Contains(actualCard.Members, member.ID)
+}
+
+func TestUsers_AddCardMembership_WhenBoardIsNotTheSame(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
+	memberBoard, _, _ := createTestBoard(t, "", 1, 1)
+	cardBoard, cardSwimlanes, cardLists := createTestBoard(t, "", 1, 1)
+
+	cardOwner := createTestUser(t, "CardOwner")
+	wekan.AddMemberToBoard(ctx, cardBoard.ID, BoardMember{UserID: cardOwner.ID, IsActive: true})
+	cardMember := createTestUser(t, "CardMember")
+	wekan.AddMemberToBoard(ctx, memberBoard.ID, BoardMember{UserID: cardMember.ID, IsActive: true})
+	card := createTestCard(t, cardOwner.ID, &cardBoard.ID, &(cardSwimlanes[0].ID), &(cardLists[0].ID))
+
+	// WHEN
+	err := wekan.AddMemberToCard(ctx, card.ID, cardMember.ID)
+	ass.IsType(ForbiddenOperationError{}, err)
+
+	// THEN
+	actualCard, _ := wekan.GetCardFromID(ctx, card.ID)
+	ass.NotContains(actualCard.Members, cardMember.ID)
+}
+
+func TestUsers_RemoveMemberFromCard_WhenUserIsMember(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
+	board, swimlanes, lists := createTestBoard(t, "", 1, 1)
+	user := createTestUser(t, "User")
+	wekan.AddMemberToBoard(ctx, board.ID, BoardMember{UserID: user.ID, IsActive: true})
+	member := createTestUser(t, "Member")
+	wekan.AddMemberToBoard(ctx, board.ID, BoardMember{UserID: member.ID, IsActive: true})
+	card := createTestCard(t, user.ID, &board.ID, &(swimlanes[0].ID), &(lists[0].ID))
+	wekan.AddMemberToCard(ctx, card.ID, member.ID)
+
+	// WHEN
+	err := wekan.RemoveMemberFromCard(ctx, card.ID, member.ID)
+	ass.Nil(err)
+
+	// Then
+	actualCard, _ := wekan.GetCardFromID(ctx, card.ID)
+	ass.NotContains(actualCard.Members, card.ID)
+}
+
+func TestUsers_RemoveMemberFromCard_WhenUserIsNotMember(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
+	board, swimlanes, lists := createTestBoard(t, "", 1, 1)
+	user := createTestUser(t, "User")
+	wekan.AddMemberToBoard(ctx, board.ID, BoardMember{UserID: user.ID, IsActive: true})
+	member := createTestUser(t, "Member")
+	wekan.AddMemberToBoard(ctx, board.ID, BoardMember{UserID: member.ID, IsActive: true})
+	card := createTestCard(t, user.ID, &board.ID, &(swimlanes[0].ID), &(lists[0].ID))
+
+	// WHEN
+	err := wekan.RemoveMemberFromCard(ctx, card.ID, member.ID)
+
+	// Then
+	actualCard, _ := wekan.GetCardFromID(ctx, card.ID)
+	ass.IsType(NothingDoneError{}, err)
+	ass.NotContains(actualCard.Members, card.ID)
 }

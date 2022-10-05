@@ -1,6 +1,8 @@
 package libwekan
 
 import (
+	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -139,4 +141,24 @@ func TestBoards_DisableBoardMember_cant_disable_admin(t *testing.T) {
 	}
 	err := dummyWekan.DisableBoardMember(ctx, "fakeBoardId", dummyWekan.adminUserID)
 	ass.ErrorIs(err, err.(ForbiddenOperationError))
+}
+
+func createTestBoard(t *testing.T, suffix string, swimlanesCount int, listsCount int) (Board, []Swimlane, []List) {
+	ctx := context.Background()
+	board := buildBoard(t.Name()+suffix, t.Name()+suffix, "board")
+	wekan.InsertBoard(ctx, board)
+	var swimlanes []Swimlane
+	var lists []List
+	for i := 0; i < swimlanesCount; i++ {
+		swimlane := buildSwimlane(board.ID, "swimlane", t.Name()+"swimlane", i)
+		swimlanes = append(swimlanes, swimlane)
+		wekan.InsertSwimlane(ctx, swimlane)
+	}
+	for i := 0; i < listsCount; i++ {
+		title := fmt.Sprintf("%sList%d", t.Name(), i)
+		list := BuildList(board.ID, title, i)
+		lists = append(lists, list)
+		wekan.InsertList(ctx, list)
+	}
+	return board, swimlanes, lists
 }

@@ -98,3 +98,16 @@ func (wekan *Wekan) Ping(ctx context.Context) error {
 	}
 	return nil
 }
+
+type Document interface {
+	Check(context.Context, *Wekan) error
+}
+
+func (wekan *Wekan) CheckDocuments(ctx context.Context, documents ...Document) error {
+	for _, document := range documents {
+		if err := document.Check(ctx, wekan); err != nil {
+			return err
+		}
+	}
+	return nil
+}

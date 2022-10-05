@@ -6,7 +6,7 @@ import (
 )
 
 func Test_BuildList(t *testing.T) {
-	list := BuildList(t.Name(), BoardID(t.Name()), 0)
+	list := BuildList(BoardID(t.Name()), t.Name(), 0)
 	expected := List{
 		ID:      "expectedID",
 		Title:   t.Name(),

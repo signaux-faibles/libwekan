@@ -79,6 +79,8 @@ func BuildCard(boardID BoardID, listID ListID, swimlaneID SwimlaneID, title stri
 		ListID:           listID,
 		BoardID:          boardID,
 		SwimlaneID:       swimlaneID,
+		Members:          []UserID{},
+		LabelIDs:         []BoardLabelID{},
 		Type:             "card",
 		CreatedAt:        toMongoTime(time.Now()),
 		ModifiedAt:       toMongoTime(time.Now()),
@@ -90,6 +92,11 @@ func BuildCard(boardID BoardID, listID ListID, swimlaneID SwimlaneID, title stri
 		LinkIDGantt:      []string{},
 		StartAt:          toMongoTime(time.Now()),
 	}
+}
+
+func (cardID CardID) Check(ctx context.Context, wekan *Wekan) error {
+	_, err := wekan.GetCardFromID(ctx, cardID)
+	return err
 }
 
 func (card *Card) AddMember(memberID UserID) {
@@ -146,8 +153,15 @@ func (wekan *Wekan) GetCardFromID(ctx context.Context, cardID CardID) (Card, err
 }
 
 func (wekan *Wekan) InsertCard(ctx context.Context, card Card) error {
-	_, err := wekan.db.Collection("cards").InsertOne(ctx, card)
-	if err != nil {
+	if err := wekan.CheckDocuments(
+		ctx,
+		card.BoardID,
+		card.ListID,
+		card.SwimlaneID,
+	); err != nil {
+		return err
+	}
+	if _, err := wekan.db.Collection("cards").InsertOne(ctx, card); err != nil {
 		return UnexpectedMongoError{err}
 	}
 	return nil
