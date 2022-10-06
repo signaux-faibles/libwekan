@@ -28,28 +28,29 @@ func (e UnknownBoardError) Error() string {
 	return fmt.Sprintf("la board est inconnue (BoardID: %s, Title: %s, Slug: %s", e.board.ID, e.board.Title, e.board.Slug)
 }
 
-//type UnknownRuleError struct {
-//	rule Rule
-//}
-//
-//func (e UnknownRuleError) Error() string {
-//	return fmt.Sprintf("Rule introuvable (RuleID: %s)", e.rule.ID)
-//}
+type NotPrivilegedError struct {
+	id  UserID
+	err error
+}
 
-type UserIsNotAdminError struct {
+func (e NotPrivilegedError) Unwrap() error {
+	return e.err
+}
+
+func (e NotPrivilegedError) Error() string {
+	return fmt.Sprintf("l'utilisateur n'est pas admin: id = %s", e.id)
+}
+
+type ProtectedUserError struct {
 	id UserID
 }
 
-func (e UserIsNotAdminError) Error() string {
-	return fmt.Sprintf("l'utilisateur n'est pas admin: id = %s", e.id)
+func (e ProtectedUserError) Error() string {
+	return fmt.Sprintf("cet action est interdite sur cet utilisateur (%s)", e.id)
 }
 
 type AdminUserIsNotAdminError struct {
 	username Username
-}
-
-func (e AdminUserIsNotAdminError) Error() string {
-	return fmt.Sprintf("l'utilisateur n'est pas admin: username = %s", e.username)
 }
 
 type InsertEmptyRuleError struct {
@@ -69,11 +70,15 @@ func (e BoardLabelAlreadyExistsError) Error() string {
 }
 
 type UnexpectedMongoError struct {
-	Err error
+	err error
 }
 
 func (e UnexpectedMongoError) Error() string {
-	return e.Err.Error()
+	return "une erreur est survenue lors de l'exécution de la requête"
+}
+
+func (e UnexpectedMongoError) Unwrap() error {
+	return e.err
 }
 
 type AlreadySetActivityError struct {
@@ -109,13 +114,16 @@ func (e InvalidMongoConfigurationError) Unwrap() error {
 }
 
 type ForbiddenOperationError struct {
-	message string
+	err error
 }
 
 func (e ForbiddenOperationError) Error() string {
-	return e.message
+	return "operation interdite"
 }
-func (e ForbiddenOperationError) Forbidden() {}
+
+func (e ForbiddenOperationError) Unwrap() error {
+	return e.err
+}
 
 type NotImplemented struct {
 	method string
@@ -124,7 +132,6 @@ type NotImplemented struct {
 func (e NotImplemented) Error() string {
 	return "not implemented : " + e.method
 }
-func (e NotImplemented) NotImplemented() {}
 
 type CardNotFoundError struct {
 	cardID CardID
@@ -170,4 +177,12 @@ type UnknownActivityError struct {
 
 func (e UnknownActivityError) Error() string {
 	return fmt.Sprintf("l'activité n'existe pas (ID: %s)", e.key)
+}
+
+type UserIsNotMemberError struct {
+	userID UserID
+}
+
+func (e UserIsNotMemberError) Error() string {
+	return fmt.Sprintf("cette action nécessite que l'utilisateur soit membre (id=%s)", e.userID)
 }

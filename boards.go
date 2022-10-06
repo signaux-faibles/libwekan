@@ -73,6 +73,10 @@ type BoardID string
 type BoardSlug string
 type BoardTitle string
 
+func (boardID BoardID) GetDocument(ctx context.Context, wekan *Wekan) (Board, error) {
+	return wekan.GetBoardFromID(ctx, boardID)
+}
+
 func (boardID BoardID) Check(ctx context.Context, wekan *Wekan) error {
 	_, err := wekan.GetBoardFromID(ctx, boardID)
 	return err
@@ -107,35 +111,24 @@ func (board Board) GetLabelByID(id BoardLabelID) BoardLabel {
 	return BoardLabel{}
 }
 
-// ListAllBoards retourne toutes les boards
-func (wekan *Wekan) ListAllBoards(ctx context.Context) ([]Board, error) {
-	var boards []Board
-	cursor, err := wekan.db.Collection("boards").Find(ctx, bson.M{"type": "board"})
-	if err != nil {
-		return nil, err
-	}
-	for cursor.Next(ctx) {
-		var board Board
-		if err := cursor.Decode(&board); err != nil {
-			return nil, err
-		}
-		boards = append(boards, board)
-	}
-	return boards, nil
-}
-
 // GetBoardFromSlug retourne l'objet board à partir du champ .slug
 func (wekan *Wekan) GetBoardFromSlug(ctx context.Context, slug BoardSlug) (Board, error) {
 	var board Board
 	err := wekan.db.Collection("boards").FindOne(ctx, bson.M{"slug": slug}).Decode(&board)
-	return board, err
+	if err != nil {
+		return Board{}, UnexpectedMongoError{err}
+	}
+	return board, nil
 }
 
 // GetBoardFromTitle GetBoardFromID retourne l'objet board à partir du champ title
 func (wekan *Wekan) GetBoardFromTitle(ctx context.Context, title string) (Board, error) {
 	var board Board
 	err := wekan.db.Collection("boards").FindOne(ctx, bson.M{"title": title}).Decode(&board)
-	return board, err
+	if err != nil {
+		return Board{}, UnexpectedMongoError{err}
+	}
+	return board, nil
 }
 
 // GetBoardFromID retourne l'objet board à partir du champ ._id
@@ -145,13 +138,13 @@ func (wekan *Wekan) GetBoardFromID(ctx context.Context, id BoardID) (Board, erro
 		if err == mongo.ErrNoDocuments {
 			return Board{}, UnknownBoardError{Board{ID: id}}
 		}
-		return Board{}, err
+		return Board{}, UnexpectedMongoError{err}
 	}
 	return board, nil
 }
 
-// getMember teste si l'utilisateur fait partie de l'array members
-func (board Board) getMember(userID UserID) BoardMember {
+// GetMember teste si l'utilisateur fait partie de l'array members
+func (board Board) GetMember(userID UserID) BoardMember {
 	for _, boardMember := range board.Members {
 		if boardMember.UserID == userID {
 			return boardMember
@@ -162,17 +155,17 @@ func (board Board) getMember(userID UserID) BoardMember {
 
 // UserIsMember teste si l'utilisateur est membre de la board, activé ou non
 func (board Board) UserIsMember(user User) bool {
-	return board.getMember(user.ID) != BoardMember{}
+	return board.GetMember(user.ID) != BoardMember{}
 }
 
 // UserIsActiveMember teste si l'utilisateur est activé sur la board, s'il est absent il est alors considéré comme inactif
 func (board Board) UserIsActiveMember(user User) bool {
-	return board.getMember(user.ID).IsActive
+	return board.GetMember(user.ID).IsActive
 }
 
 // AddMemberToBoard ajoute un objet BoardMember sur la board
 func (wekan *Wekan) AddMemberToBoard(ctx context.Context, boardID BoardID, boardMember BoardMember) error {
-	if err := wekan.AssertHasAdmin(ctx); err != nil {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
 		return err
 	}
 
@@ -206,7 +199,7 @@ func (wekan *Wekan) AddMemberToBoard(ctx context.Context, boardID BoardID, board
 
 // EnableBoardMember active l'utilisateur dans la propriété `member` d'une board
 func (wekan *Wekan) EnableBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
-	if err := wekan.AssertHasAdmin(ctx); err != nil {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
 		return err
 	}
 	updateResults, err := wekan.db.Collection("boards").UpdateOne(ctx,
@@ -232,13 +225,14 @@ func (wekan *Wekan) EnableBoardMember(ctx context.Context, boardID BoardID, user
 
 // DisableBoardMember desactive l'utilisateur dans la propriété `member` d'une board
 func (wekan *Wekan) DisableBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
-	if wekan.adminUserID == userID {
-		return ForbiddenOperationError{"On ne "}
-	}
-	if err := wekan.AssertHasAdmin(ctx); err != nil {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
 		return err
 	}
-
+	if wekan.adminUserID == userID {
+		return ForbiddenOperationError{
+			ProtectedUserError{userID},
+		}
+	}
 	updateStats, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": boardID},
 		bson.M{
 			"$set": bson.M{"members.$[member].isActive": false},
@@ -261,11 +255,14 @@ func (wekan *Wekan) DisableBoardMember(ctx context.Context, boardID BoardID, use
 
 // EnsureUserIsActiveBoardMember fait en sorte de rendre l'utilisateur participant et actif à une board
 func (wekan *Wekan) EnsureUserIsActiveBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
-	board, err := wekan.GetBoardFromID(ctx, boardID)
+	if err := wekan.AssertPrivileged(ctx); err != nil {
+		return err
+	}
+	board, err := boardID.GetDocument(ctx, wekan)
 	if err != nil {
 		return err
 	}
-	user, err := wekan.GetUserFromID(ctx, userID)
+	user, err := userID.GetDocument(ctx, wekan)
 	if err != nil {
 		return err
 	}
@@ -280,15 +277,14 @@ func (wekan *Wekan) EnsureUserIsActiveBoardMember(ctx context.Context, boardID B
 
 // EnsureUserIsInactiveBoardMember fait en sorte de désactiver un utilisateur sur une board lorsqu'il est participant
 func (wekan *Wekan) EnsureUserIsInactiveBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
-	if err := wekan.AssertHasAdmin(ctx); err != nil {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
 		return err
 	}
-
-	board, err := wekan.GetBoardFromID(ctx, boardID)
+	board, err := boardID.GetDocument(ctx, wekan)
 	if err != nil {
 		return err
 	}
-	user, err := wekan.GetUserFromID(ctx, userID)
+	user, err := userID.GetDocument(ctx, wekan)
 	if err != nil {
 		return err
 	}
@@ -299,7 +295,7 @@ func (wekan *Wekan) EnsureUserIsInactiveBoardMember(ctx context.Context, boardID
 }
 
 func (wekan *Wekan) EnsureUserIsBoardAdmin(ctx context.Context, boardID BoardID, userID UserID) error {
-	if err := wekan.AssertHasAdmin(ctx); err != nil {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
 		return err
 	}
 
@@ -369,13 +365,13 @@ func buildBoard(title string, slug string, boardType string) Board {
 }
 
 func (wekan *Wekan) InsertBoard(ctx context.Context, board Board) error {
-	if err := wekan.AssertHasAdmin(ctx); err != nil {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
 		return err
 	}
 
 	_, err := wekan.insertActivity(ctx, newActivityCreateBoard(wekan.adminUserID, board.ID))
 	if err != nil {
-		return UnexpectedMongoError{err}
+		return err
 	}
 	_, err = wekan.db.Collection("boards").InsertOne(ctx, board)
 	if err != nil {
@@ -385,7 +381,7 @@ func (wekan *Wekan) InsertBoard(ctx context.Context, board Board) error {
 }
 
 func (wekan *Wekan) InsertBoardLabel(ctx context.Context, board Board, boardLabel BoardLabel) error {
-	if err := wekan.AssertHasAdmin(ctx); err != nil {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
 		return err
 	}
 

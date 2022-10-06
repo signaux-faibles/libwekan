@@ -34,6 +34,10 @@ func (activityID ActivityID) Check(ctx context.Context, wekan *Wekan) error {
 	return err
 }
 
+func (activityID ActivityID) GetDocument(ctx context.Context, wekan *Wekan) (Activity, error) {
+	return wekan.GetActivityFromID(ctx, activityID)
+}
+
 func (activity Activity) withIDandDates(t time.Time) (Activity, error) {
 	if activity.ID != "" {
 		return activity, AlreadySetActivityError{}
@@ -155,4 +159,29 @@ func (wekan *Wekan) GetActivityFromID(ctx context.Context, activityID ActivityID
 		return Activity{}, UnexpectedMongoError{err}
 	}
 	return activity, nil
+}
+
+func (wekan *Wekan) SelectActivityFromID(ctx context.Context, activityID ActivityID) (Activity, error) {
+	var activity Activity
+	err := wekan.db.Collection("activities").FindOne(ctx, bson.M{"_id": activityID}).Decode(&activity)
+	if err != nil {
+		return Activity{}, UnexpectedMongoError{err}
+	}
+	return activity, nil
+}
+
+func (wekan *Wekan) SelectActivitiesFromQuery(ctx context.Context, query bson.M) ([]Activity, error) {
+	var activities []Activity
+	cur, err := wekan.db.Collection("activities").Find(ctx, query)
+	if err != nil {
+		return nil, UnexpectedMongoError{err}
+	}
+	if err := cur.All(ctx, &activities); err != nil {
+		return nil, UnexpectedMongoError{err}
+	}
+	return activities, nil
+}
+
+func (wekan *Wekan) SelectActivitiesFromBoardID(ctx context.Context, boardID BoardID) ([]Activity, error) {
+	return wekan.SelectActivitiesFromQuery(ctx, bson.M{"boardId": boardID})
 }

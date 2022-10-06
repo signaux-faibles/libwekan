@@ -50,8 +50,12 @@ func (listID ListID) Check(ctx context.Context, wekan *Wekan) error {
 	return err
 }
 
+func (listID ListID) GetDocument(ctx context.Context, wekan *Wekan) (List, error) {
+	return wekan.GetListFromID(ctx, listID)
+}
+
 func (wekan *Wekan) InsertList(ctx context.Context, list List) error {
-	if err := wekan.AssertHasAdmin(ctx); err != nil {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
 		return err
 	}
 	if _, err := wekan.GetBoardFromID(ctx, list.BoardID); err != nil {

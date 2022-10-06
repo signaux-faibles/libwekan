@@ -8,6 +8,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"os"
 	"strconv"
 	"testing"
@@ -98,7 +100,7 @@ func Test_OnlyOneAdminInDB(t *testing.T) {
 	ass.Equal(1, admins)
 
 	//adminUser, err := wekan.AdminUser(ctx)
-	ass.Nil(wekan.AssertHasAdmin(ctx))
+	ass.Nil(wekan.AssertPrivileged(ctx))
 	ass.Equal(admin.ID, wekan.adminUserID)
 }
 
@@ -111,6 +113,15 @@ func TestGetUser_when_user_not_exist(t *testing.T) {
 
 }
 
+func TestWekan_Init_WithBadParams(t *testing.T) {
+	// WHEN
+	badWekan, err := Init(context.Background(), "badUri", "badDb", "badAdmin", "badDomain")
+
+	// THEN
+	assert.Empty(t, badWekan)
+	assert.IsType(t, InvalidMongoConfigurationError{}, err)
+
+}
 func kill(mongodb *dockertest.Resource) {
 	if mongodb == nil {
 		panic("mongodb n'a pas démarré")
@@ -124,13 +135,77 @@ func restoreDump(mongodb *dockertest.Resource) error {
 	var b bytes.Buffer
 	output := bufio.NewWriter(&b)
 
-	options := dockertest.ExecOptions{
+	dockerOptions := dockertest.ExecOptions{
 		StdOut: output,
 		StdErr: output,
 	}
 
-	if _, err := mongodb.Exec([]string{"/bin/bash", "-c", "mongorestore  --uri mongodb://root:password@localhost/ /dump"}, options); err != nil {
+	if _, err := mongodb.Exec([]string{"/bin/bash", "-c", "mongorestore  --uri mongodb://root:password@localhost/ /dump"}, dockerOptions); err != nil {
 		return nil
 	}
 	return output.Flush()
+}
+
+func newTestBadWekan(dbname string) Wekan {
+	clientOptions := options.Client().ApplyURI("mongodb://127.0.0.1:80").SetConnectTimeout(time.Millisecond).SetTimeout(time.Millisecond)
+	client, _ := mongo.Connect(context.Background(), clientOptions)
+	return Wekan{
+		client: client,
+		db:     client.Database(dbname),
+	}
+}
+
+func TestWekan_CheckDocuments_WithBadDocuments(t *testing.T) {
+	// GIVEN
+	badUserID := UserID("badUser")
+
+	// WHEN
+	err := wekan.CheckDocuments(ctx, badUserID)
+
+	// THEN
+	assert.IsType(t, UserNotFoundError{}, err)
+}
+
+func TestWekan_AssertPrivileged(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
+	badAdminWekan := wekan
+	False := false
+	badAdminWekan.privileged = &False
+
+	// On vérifie les implémentations dans les différentes fonctions qui utilisent cette fonction
+	errs := []error{
+		badAdminWekan.AssertPrivileged(ctx),
+		badAdminWekan.AddMemberToBoard(ctx, "", BoardMember{}),
+		badAdminWekan.AddMemberToCard(ctx, "", ""),
+		badAdminWekan.DisableBoardMember(ctx, "", ""),
+		badAdminWekan.DisableUser(ctx, User{}),
+		badAdminWekan.DisableUsers(ctx, Users{User{}}),
+		badAdminWekan.DisableBoardMember(ctx, "", ""),
+		badAdminWekan.EnableBoardMember(ctx, "", ""),
+		badAdminWekan.EnableUser(ctx, User{}),
+		badAdminWekan.EnableUsers(ctx, Users{User{}}),
+		badAdminWekan.EnsureMemberInCard(ctx, "", ""),
+		badAdminWekan.EnsureMemberOutOfCard(ctx, "", ""),
+		badAdminWekan.EnsureRuleExists(ctx, User{}, Board{}, BoardLabel{}),
+		badAdminWekan.EnsureUserIsBoardAdmin(ctx, "", ""),
+		badAdminWekan.EnsureUserIsActiveBoardMember(ctx, "", ""),
+		badAdminWekan.EnsureUserIsInactiveBoardMember(ctx, "", ""),
+		badAdminWekan.InsertBoard(ctx, Board{}),
+		badAdminWekan.InsertBoardLabel(ctx, Board{}, BoardLabel{}),
+		badAdminWekan.InsertAction(ctx, Action{}),
+		badAdminWekan.InsertCard(ctx, Card{}),
+		badAdminWekan.InsertUser(ctx, User{}),
+		badAdminWekan.InsertUsers(ctx, Users{User{}}),
+		badAdminWekan.InsertRule(ctx, Rule{}),
+		badAdminWekan.InsertList(ctx, List{}),
+		badAdminWekan.InsertTrigger(ctx, Trigger{}),
+		badAdminWekan.InsertTemplates(ctx, UserTemplates{}),
+		badAdminWekan.RemoveMemberFromCard(ctx, "", ""),
+		badAdminWekan.RemoveRuleWithID(ctx, ""),
+	}
+
+	for i, err := range errs {
+		ass.IsType(NotPrivilegedError{}, err, "echec pour la fonction %d", i)
+	}
 }

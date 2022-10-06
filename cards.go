@@ -99,6 +99,10 @@ func (cardID CardID) Check(ctx context.Context, wekan *Wekan) error {
 	return err
 }
 
+func (cardID CardID) GetDocument(ctx context.Context, wekan *Wekan) (Card, error) {
+	return wekan.GetCardFromID(ctx, cardID)
+}
+
 func (card *Card) AddMember(memberID UserID) {
 	if !(contains(card.Members, memberID)) {
 		card.Members = append(card.Members, memberID)
@@ -153,6 +157,9 @@ func (wekan *Wekan) GetCardFromID(ctx context.Context, cardID CardID) (Card, err
 }
 
 func (wekan *Wekan) InsertCard(ctx context.Context, card Card) error {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
+		return err
+	}
 	if err := wekan.CheckDocuments(
 		ctx,
 		card.BoardID,

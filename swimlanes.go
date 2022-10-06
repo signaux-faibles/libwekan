@@ -46,7 +46,7 @@ func buildBoardTemplateSwimlane(boardId BoardID) Swimlane {
 }
 
 func (wekan *Wekan) InsertSwimlane(ctx context.Context, swimlane Swimlane) error {
-	if err := wekan.AssertHasAdmin(ctx); err != nil {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
 		return err
 	}
 
@@ -68,6 +68,10 @@ func (wekan *Wekan) InsertSwimlane(ctx context.Context, swimlane Swimlane) error
 func (swimlaneID SwimlaneID) Check(ctx context.Context, wekan *Wekan) error {
 	_, err := wekan.GetSwimlaneFromID(ctx, swimlaneID)
 	return err
+}
+
+func (swimlaneID SwimlaneID) GetDocument(ctx context.Context, wekan *Wekan) (Swimlane, error) {
+	return wekan.GetSwimlaneFromID(ctx, swimlaneID)
 }
 
 func (wekan *Wekan) GetSwimlaneFromID(ctx context.Context, swimlaneID SwimlaneID) (Swimlane, error) {

@@ -92,6 +92,14 @@ type UserProfile struct {
 type Username string
 type UserID string
 
+func (userID UserID) String() string {
+	return string(userID)
+}
+
+func (userID UserID) GetDocument(ctx context.Context, wekan *Wekan) (User, error) {
+	return wekan.GetUserFromID(ctx, userID)
+}
+
 func (userID UserID) Check(ctx context.Context, wekan *Wekan) error {
 	_, err := wekan.GetUserFromID(ctx, userID)
 	return err
@@ -223,12 +231,12 @@ func (wekan *Wekan) GetUsers(ctx context.Context) (Users, error) {
 	var users Users
 	cursor, err := wekan.db.Collection("users").Find(ctx, bson.M{})
 	if err != nil {
-		return nil, err
+		return nil, UnexpectedMongoError{err}
 	}
 	for cursor.Next(ctx) {
 		var user User
 		if err := cursor.Decode(&user); err != nil {
-			return nil, err
+			return nil, UnexpectedMongoError{err}
 		}
 		users = append(users, user)
 	}
@@ -243,23 +251,23 @@ func (wekan *Wekan) UsernameExists(ctx context.Context, username Username) (bool
 	return err == nil, err
 }
 
-func (wekan *Wekan) InsertUser(ctx context.Context, user User) (User, error) {
-	if err := wekan.AssertHasAdmin(ctx); err != nil {
-		return User{}, err
+func (wekan *Wekan) InsertUser(ctx context.Context, user User) error {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
+		return err
 	}
 
 	userAlreadyExists, err := wekan.UsernameExists(ctx, user.Username)
 	if err != nil || userAlreadyExists {
-		return User{}, UserAlreadyExistsError{user}
+		return UserAlreadyExistsError{user}
 	}
 	if err = wekan.InsertTemplates(ctx, user.BuildTemplates()); err != nil {
-		return User{}, err
+		return err
 	}
 	if _, err = wekan.db.Collection("users").InsertOne(ctx, user); err != nil {
-		return User{}, err
+		return UnexpectedMongoError{err}
 	}
 	err = wekan.EnsureUserIsActiveBoardMember(ctx, user.Profile.TemplatesBoardId, user.ID)
-	return user, err
+	return err
 }
 
 func (wekan *Wekan) InsertTemplates(ctx context.Context, templates UserTemplates) error {
@@ -348,7 +356,7 @@ func BuildUser(email, initials, fullname string) User {
 
 // EnableUser active un utilisateur dans la base `users` et active la participation à son tableau templates
 func (wekan *Wekan) EnableUser(ctx context.Context, user User) error {
-	if err := wekan.AssertHasAdmin(ctx); err != nil {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
 		return err
 	}
 
@@ -375,13 +383,13 @@ func (wekan *Wekan) EnableUser(ctx context.Context, user User) error {
 	return err
 }
 
-func (wekan *Wekan) CreateUsers(ctx context.Context, users Users) error {
-	if err := wekan.AssertHasAdmin(ctx); err != nil {
+func (wekan *Wekan) InsertUsers(ctx context.Context, users Users) error {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
 		return err
 	}
 
 	for _, user := range users {
-		_, err := wekan.InsertUser(ctx, user)
+		err := wekan.InsertUser(ctx, user)
 		if err != nil {
 			return err
 		}
@@ -390,7 +398,7 @@ func (wekan *Wekan) CreateUsers(ctx context.Context, users Users) error {
 }
 
 func (wekan *Wekan) EnableUsers(ctx context.Context, users Users) error {
-	if err := wekan.AssertHasAdmin(ctx); err != nil {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
 		return err
 	}
 
@@ -405,11 +413,7 @@ func (wekan *Wekan) EnableUsers(ctx context.Context, users Users) error {
 
 // DisableUser désactive l'utilisateur dans la base `users` et désactive la participation à tous les tableaux
 func (wekan *Wekan) DisableUser(ctx context.Context, user User) error {
-	if user.ID == wekan.adminUserID {
-		return ForbiddenOperationError{"la désactivation de l'utilisateur administrateur est interdite"}
-	}
-
-	if err := wekan.AssertHasAdmin(ctx); err != nil {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
 		return err
 	}
 
@@ -449,8 +453,11 @@ func (wekan *Wekan) DisableUsers(ctx context.Context, users Users) error {
 }
 
 func (wekan *Wekan) RemoveMemberFromCard(ctx context.Context, cardID CardID, memberID UserID) error {
-	if _, err := wekan.GetUserFromID(ctx, memberID); err != nil {
-		return UnknownUserError{string(memberID)}
+	if err := wekan.AssertPrivileged(ctx); err != nil {
+		return err
+	}
+	if err := wekan.CheckDocuments(ctx, cardID, memberID); err != nil {
+		return err
 	}
 
 	stats, err := wekan.db.Collection("cards").UpdateOne(ctx, bson.M{
@@ -470,7 +477,18 @@ func (wekan *Wekan) RemoveMemberFromCard(ctx context.Context, cardID CardID, mem
 	return nil
 }
 
+func (wekan *Wekan) EnsureMemberOutOfCard(ctx context.Context, cardId CardID, memberID UserID) error {
+	err := wekan.RemoveMemberFromCard(ctx, cardId, memberID)
+	if _, ok := err.(NothingDoneError); ok {
+		return nil
+	}
+	return err
+}
+
 func (wekan *Wekan) AddMemberToCard(ctx context.Context, cardID CardID, memberID UserID) error {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
+		return err
+	}
 	card, err := wekan.GetCardFromID(ctx, cardID)
 	if err != nil {
 		return err
@@ -484,7 +502,9 @@ func (wekan *Wekan) AddMemberToCard(ctx context.Context, cardID CardID, memberID
 		return err
 	}
 	if !board.UserIsActiveMember(user) {
-		return ForbiddenOperationError{"l'utilisateur n'est pas membre actif du tableau"}
+		return ForbiddenOperationError{
+			UserIsNotMemberError{memberID},
+		}
 	}
 
 	stats, err := wekan.db.Collection("cards").UpdateOne(ctx, bson.M{
@@ -496,11 +516,18 @@ func (wekan *Wekan) AddMemberToCard(ctx context.Context, cardID CardID, memberID
 	})
 
 	if err != nil {
-		fmt.Println(err)
 		return UnexpectedMongoError{err}
 	}
 	if stats.ModifiedCount == 0 {
 		return NothingDoneError{}
 	}
 	return nil
+}
+
+func (wekan *Wekan) EnsureMemberInCard(ctx context.Context, cardID CardID, memberID UserID) error {
+	err := wekan.AddMemberToCard(ctx, cardID, memberID)
+	if _, ok := err.(NothingDoneError); ok {
+		return nil
+	}
+	return err
 }
