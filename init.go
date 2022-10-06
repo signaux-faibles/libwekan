@@ -36,6 +36,10 @@ func Init(ctx context.Context, uri string, databaseName string, adminUsername Us
 	return w, nil
 }
 
+func (wekan *Wekan) Ping(ctx context.Context) error {
+	return wekan.client.Ping(ctx, nil)
+}
+
 // AssertPrivileged s'assure que l'utilisateur déclaré dans la propriété
 // Wekan.adminUsername est bien un utilisateur admin dans la base de données
 func (wekan *Wekan) AssertPrivileged(ctx context.Context) error {

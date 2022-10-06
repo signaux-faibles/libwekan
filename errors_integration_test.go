@@ -15,6 +15,7 @@ func TestErrors_UpstreamDeadlineExceeded(t *testing.T) {
 	errs := []error{
 		badWekan.AddMemberToBoard(ctx, "", BoardMember{}),
 		badWekan.AddMemberToCard(ctx, "", ""),
+		badWekan.AddLabelToCard(ctx, "", ""),
 		badWekan.AssertPrivileged(ctx),
 		badWekan.CheckDocuments(ctx, UserID("")),
 		badWekan.DisableBoardMember(ctx, "", ""),

@@ -97,7 +97,7 @@ func TestCards_SelectCardsFromListID(t *testing.T) {
 	assert.Equal(t, []Card{card}, actualCards)
 }
 
-func TestUsers_AddCardMembership_WhenBoardIsTheSame(t *testing.T) {
+func TestCards_AddCardMembership_WhenBoardIsTheSame(t *testing.T) {
 	ass := assert.New(t)
 	// GIVEN
 	board, swimlanes, lists := createTestBoard(t, "", 1, 1)
@@ -116,7 +116,7 @@ func TestUsers_AddCardMembership_WhenBoardIsTheSame(t *testing.T) {
 	ass.Contains(actualCard.Members, member.ID)
 }
 
-func TestUsers_AddCardMembership_WhenBoardIsNotTheSame(t *testing.T) {
+func TestCards_AddCardMembership_WhenBoardIsNotTheSame(t *testing.T) {
 	ass := assert.New(t)
 	// GIVEN
 	memberBoard, _, _ := createTestBoard(t, "", 1, 1)
@@ -137,7 +137,7 @@ func TestUsers_AddCardMembership_WhenBoardIsNotTheSame(t *testing.T) {
 	ass.NotContains(actualCard.Members, cardMember.ID)
 }
 
-func TestUsers_RemoveMemberFromCard_WhenUserIsMember(t *testing.T) {
+func TestCards_RemoveMemberFromCard_WhenUserIsMember(t *testing.T) {
 	ass := assert.New(t)
 	// GIVEN
 	board, swimlanes, lists := createTestBoard(t, "", 1, 1)
@@ -157,7 +157,7 @@ func TestUsers_RemoveMemberFromCard_WhenUserIsMember(t *testing.T) {
 	ass.NotContains(actualCard.Members, card.ID)
 }
 
-func TestUsers_RemoveMemberFromCard_WhenUserIsNotMember(t *testing.T) {
+func TestCards_RemoveMemberFromCard_WhenUserIsNotMember(t *testing.T) {
 	ass := assert.New(t)
 	// GIVEN
 	board, swimlanes, lists := createTestBoard(t, "", 1, 1)
@@ -174,4 +174,59 @@ func TestUsers_RemoveMemberFromCard_WhenUserIsNotMember(t *testing.T) {
 	actualCard, _ := wekan.GetCardFromID(ctx, card.ID)
 	ass.IsType(NothingDoneError{}, err)
 	ass.NotContains(actualCard.Members, card.ID)
+}
+
+func TestCards_AddLabelToCard_whenLabelIsOnBard(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
+	board, swimlanes, lists := createTestBoard(t, "", 1, 1)
+	card := createTestCard(t, wekan.adminUserID, &board.ID, &(swimlanes[0].ID), &(lists[0].ID))
+	boardLabel := NewBoardLabel(t.Name()+"_BoardLabel", "red")
+	wekan.InsertBoardLabel(ctx, board, boardLabel)
+
+	// WHEN
+	err := wekan.AddLabelToCard(ctx, card.ID, boardLabel.ID)
+	ass.NoError(err)
+
+	// THEN
+	actualCard, _ := wekan.GetCardFromID(ctx, card.ID)
+	ass.Contains(actualCard.LabelIDs, boardLabel.ID)
+}
+
+func TestCards_AddLabelToCard_whenLabelIsNotOnBard(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
+	boardWithoutLabel, swimlanes, lists := createTestBoard(t, "_withoutLabel", 1, 1)
+	card := createTestCard(t, wekan.adminUserID, &boardWithoutLabel.ID, &(swimlanes[0].ID), &(lists[0].ID))
+
+	boardLabel := NewBoardLabel(t.Name()+"_BoardLabel", "red")
+	boardWithLabel, _, _ := createTestBoard(t, "_withoutLabel", 1, 1)
+	wekan.InsertBoardLabel(ctx, boardWithLabel, boardLabel)
+
+	// WHEN
+	err := wekan.AddLabelToCard(ctx, card.ID, boardLabel.ID)
+
+	// THEN
+	ass.IsType(err, BoardLabelNotFoundError{})
+	actualCard, _ := wekan.GetCardFromID(ctx, card.ID)
+	ass.NotContains(actualCard.LabelIDs, boardLabel.ID)
+}
+
+func TestCards_AddLabelToCard_whenLabelAlreadyOnBard(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
+	board, swimlanes, lists := createTestBoard(t, "", 1, 1)
+	card := createTestCard(t, wekan.adminUserID, &board.ID, &(swimlanes[0].ID), &(lists[0].ID))
+	boardLabel := NewBoardLabel(t.Name()+"_BoardLabel", "red")
+	wekan.InsertBoardLabel(ctx, board, boardLabel)
+	wekan.AddLabelToCard(ctx, card.ID, boardLabel.ID)
+
+	// WHEN
+	err := wekan.AddLabelToCard(ctx, card.ID, boardLabel.ID)
+
+	// THEN
+	ass.ErrorAs(err, &NothingDoneError{})
+	actualCard, _ := wekan.GetCardFromID(ctx, card.ID)
+	ass.Contains(actualCard.LabelIDs, boardLabel.ID)
+	ass.Len(actualCard.LabelIDs, 1)
 }

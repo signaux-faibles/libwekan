@@ -20,7 +20,7 @@ type Swimlane struct {
 	ModifiedAt time.Time  `bson:"modifiedAt"`
 }
 
-func buildSwimlane(boardID BoardID, swimlaneType string, title string, sort int) Swimlane {
+func BuildSwimlane(boardID BoardID, swimlaneType string, title string, sort int) Swimlane {
 	swimlane := Swimlane{
 		ID:         SwimlaneID(newId()),
 		Title:      title,
@@ -36,13 +36,13 @@ func buildSwimlane(boardID BoardID, swimlaneType string, title string, sort int)
 }
 
 func buildCardTemplateSwimlane(boardId BoardID) Swimlane {
-	return buildSwimlane(boardId, "template-container", "Card Templates", 1)
+	return BuildSwimlane(boardId, "template-container", "Card Templates", 1)
 }
 func buildListTemplateSwimlane(boardId BoardID) Swimlane {
-	return buildSwimlane(boardId, "template-container", "List Templates", 2)
+	return BuildSwimlane(boardId, "template-container", "List Templates", 2)
 }
 func buildBoardTemplateSwimlane(boardId BoardID) Swimlane {
-	return buildSwimlane(boardId, "template-container", "Board Templates", 3)
+	return BuildSwimlane(boardId, "template-container", "Board Templates", 3)
 }
 
 func (wekan *Wekan) InsertSwimlane(ctx context.Context, swimlane Swimlane) error {

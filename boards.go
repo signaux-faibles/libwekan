@@ -318,7 +318,7 @@ func (wekan *Wekan) EnsureUserIsBoardAdmin(ctx context.Context, boardID BoardID,
 	return nil
 }
 
-func buildBoard(title string, slug string, boardType string) Board {
+func BuildBoard(title string, slug string, boardType string) Board {
 	board := Board{
 		ID:         BoardID(newId()),
 		Title:      BoardTitle(title),

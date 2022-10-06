@@ -173,3 +173,35 @@ func (wekan *Wekan) InsertCard(ctx context.Context, card Card) error {
 	}
 	return nil
 }
+
+func (wekan *Wekan) AddLabelToCard(ctx context.Context, cardID CardID, labelID BoardLabelID) error {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
+		return err
+	}
+	card, err := cardID.GetDocument(ctx, wekan)
+	if err != nil {
+		return err
+	}
+	board, err := card.BoardID.GetDocument(ctx, wekan)
+	if err != nil {
+		return err
+	}
+
+	label := board.GetLabelByID(labelID)
+	if label == (BoardLabel{}) {
+		return BoardLabelNotFoundError{labelID, board}
+	}
+	stats, err := wekan.db.Collection("cards").UpdateOne(ctx, bson.M{"_id": cardID},
+		bson.M{
+			"$addToSet": bson.M{
+				"labelIds": labelID,
+			},
+		})
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	if stats.ModifiedCount == 0 {
+		return NothingDoneError{}
+	}
+	return nil
+}

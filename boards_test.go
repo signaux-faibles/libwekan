@@ -136,12 +136,12 @@ func TestBoards_GetLabelByID_whenBoardLabelDoesntExists(t *testing.T) {
 
 func createTestBoard(t *testing.T, suffix string, swimlanesCount int, listsCount int) (Board, []Swimlane, []List) {
 	ctx := context.Background()
-	board := buildBoard(t.Name()+suffix, t.Name()+suffix, "board")
+	board := BuildBoard(t.Name()+suffix, t.Name()+suffix, "board")
 	wekan.InsertBoard(ctx, board)
 	var swimlanes []Swimlane
 	var lists []List
 	for i := 0; i < swimlanesCount; i++ {
-		swimlane := buildSwimlane(board.ID, "swimlane", t.Name()+"swimlane", i)
+		swimlane := BuildSwimlane(board.ID, "swimlane", t.Name()+"swimlane", i)
 		swimlanes = append(swimlanes, swimlane)
 		wekan.InsertSwimlane(ctx, swimlane)
 	}

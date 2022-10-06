@@ -178,6 +178,7 @@ func TestWekan_AssertPrivileged(t *testing.T) {
 		badAdminWekan.AssertPrivileged(ctx),
 		badAdminWekan.AddMemberToBoard(ctx, "", BoardMember{}),
 		badAdminWekan.AddMemberToCard(ctx, "", ""),
+		badAdminWekan.AddLabelToCard(ctx, "", ""),
 		badAdminWekan.DisableBoardMember(ctx, "", ""),
 		badAdminWekan.DisableUser(ctx, User{}),
 		badAdminWekan.DisableUsers(ctx, Users{User{}}),

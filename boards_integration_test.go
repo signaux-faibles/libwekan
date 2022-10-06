@@ -14,7 +14,7 @@ import (
 func TestBoards_createBoard(t *testing.T) {
 	ass := assert.New(t)
 	// GIVEN
-	board := buildBoard("la board à toto", "la-board-a-toto", "board")
+	board := BuildBoard("la board à toto", "la-board-a-toto", "board")
 
 	// WHEN
 	err := wekan.InsertBoard(ctx, board)

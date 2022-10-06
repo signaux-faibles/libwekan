@@ -287,7 +287,7 @@ func (wekan *Wekan) InsertTemplates(ctx context.Context, templates UserTemplates
 }
 
 func (user *User) BuildTemplates() UserTemplates {
-	templateBoard := buildBoard("Template", "templates", "template-container")
+	templateBoard := BuildBoard("Template", "templates", "template-container")
 	cardTemplateSwimlane := buildCardTemplateSwimlane(templateBoard.ID)
 	listTemplateSwimlane := buildListTemplateSwimlane(templateBoard.ID)
 	boardTemplateSwimlane := buildBoardTemplateSwimlane(templateBoard.ID)
