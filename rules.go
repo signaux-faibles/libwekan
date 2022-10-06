@@ -215,7 +215,7 @@ func (wekan *Wekan) RemoveRuleWithID(ctx context.Context, ruleID RuleID) error {
 	}
 	rule, err := ruleID.GetDocument(ctx, wekan)
 	if err != nil {
-		return UnexpectedMongoError{err}
+		return err
 	}
 	_, err = wekan.db.Collection("actions").DeleteOne(ctx, bson.M{"_id": rule.Action.ID})
 	if err != nil {

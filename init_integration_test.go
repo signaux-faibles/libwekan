@@ -108,7 +108,7 @@ func TestGetUser_when_user_not_exist(t *testing.T) {
 	ass := assert.New(t)
 	user, err := wekan.GetUserFromUsername(context.TODO(), "unexistant user")
 	ass.NotNil(err)
-	ass.ErrorIs(err, err.(UnknownUserError))
+	ass.ErrorIs(err, err.(UserNotFoundError))
 	ass.Empty(user.ID)
 
 }

@@ -2,7 +2,7 @@ package libwekan
 
 import (
 	"context"
-
+	"errors"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -14,7 +14,7 @@ type Wekan struct {
 	db               *mongo.Database
 	adminUsername    Username
 	adminUserID      UserID
-	privileged       bool
+	privileged       *bool
 	slugDomainRegexp string
 }
 

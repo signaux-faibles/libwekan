@@ -134,7 +134,7 @@ func TestBoards_AddMemberToBoard_withUnknownUser(t *testing.T) {
 
 	// WHEN
 	err := wekan.AddMemberToBoard(ctx, board.ID, boardMember)
-	ass.IsType(UnknownUserError{}, err)
+	ass.IsType(UserNotFoundError{}, err)
 
 	// THEN
 	actualBoard, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
@@ -321,7 +321,7 @@ func TestBoards_InsertBoardLabel_whenBoardIsUnknown(t *testing.T) {
 
 	// THEN
 	err := wekan.InsertBoardLabel(ctx, board, boardLabel)
-	ass.Equal(UnknownBoardError{board}, err)
+	ass.Equal(BoardNotFoundError{board}, err)
 }
 
 //func TestBoard_SelectBoardsFromMemberID(t *testing.T) {

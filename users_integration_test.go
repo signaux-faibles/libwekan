@@ -145,7 +145,7 @@ func TestUsers_GetUsersFromUsernames_WhenSomeDoesntExist(t *testing.T) {
 	selectedExistingUsers, err := wekan.GetUsersFromUsernames(ctx, someNotExistingUsernames)
 
 	// THEN
-	ass.IsType(UnknownUserError{}, err)
+	ass.IsType(UserNotFoundError{}, err)
 	ass.Len(selectedExistingUsers, 0)
 }
 
@@ -181,7 +181,7 @@ func TestUsers_GetUsersFromIDs(t *testing.T) {
 	selectedExistingUsers, err := wekan.GetUsersFromIDs(ctx, someExistingUserIDs)
 
 	// THEN
-	ass.IsType(UnknownUserError{}, err)
+	ass.IsType(UserNotFoundError{}, err)
 	ass.Len(selectedExistingUsers, 0)
 }
 

@@ -136,7 +136,7 @@ func (wekan *Wekan) GetBoardFromID(ctx context.Context, id BoardID) (Board, erro
 	var board Board
 	if err := wekan.db.Collection("boards").FindOne(ctx, bson.M{"_id": id}).Decode(&board); err != nil {
 		if err == mongo.ErrNoDocuments {
-			return Board{}, UnknownBoardError{Board{ID: id}}
+			return Board{}, BoardNotFoundError{Board{ID: id}}
 		}
 		return Board{}, UnexpectedMongoError{err}
 	}
@@ -401,7 +401,7 @@ func (wekan *Wekan) InsertBoardLabel(ctx context.Context, board Board, boardLabe
 		return UnexpectedMongoError{err}
 	}
 	if stats.ModifiedCount != 1 {
-		return UnknownBoardError{board}
+		return BoardNotFoundError{board}
 	}
 	return err
 }

@@ -140,7 +140,7 @@ func (wekan *Wekan) GetUserFromUsername(ctx context.Context, username Username) 
 	}).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return User{}, UnknownUserError{key: string("username = " + username)}
+			return User{}, UserNotFoundError{key: string("username = " + username)}
 		}
 		return User{}, UnexpectedMongoError{err}
 	}
@@ -155,7 +155,7 @@ func (wekan *Wekan) GetUserFromID(ctx context.Context, id UserID) (User, error) 
 	}).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return User{}, UnknownUserError{key: string("id = " + id)}
+			return User{}, UserNotFoundError{key: string("id = " + id)}
 		}
 		return User{}, UnexpectedMongoError{err}
 	}
@@ -185,7 +185,7 @@ func (wekan *Wekan) GetUsersFromUsernames(ctx context.Context, usernames []Usern
 		usernameSetString := mapSlice(usernameSet, Username.toString)
 		_, missing, _ := intersect(usernameSetString, selectedUsernamesString)
 		sort.Strings(missing)
-		return Users{}, UnknownUserError{key: fmt.Sprintf("usernames in (%s)", strings.Join(missing, ", "))}
+		return Users{}, UserNotFoundError{key: fmt.Sprintf("usernames in (%s)", strings.Join(missing, ", "))}
 	}
 	return users, nil
 }
@@ -221,7 +221,7 @@ func (wekan *Wekan) GetUsersFromIDs(ctx context.Context, userIDs []UserID) ([]Us
 		userIDSetString := mapSlice(userIDSet, UserID.toString)
 		_, missing, _ := intersect(userIDSetString, selectedUsernamesString)
 		sort.Strings(missing)
-		return Users{}, UnknownUserError{key: fmt.Sprintf("ids in (%s)", strings.Join(missing, ", "))}
+		return Users{}, UserNotFoundError{key: fmt.Sprintf("ids in (%s)", strings.Join(missing, ", "))}
 	}
 	return users, nil
 }
@@ -245,7 +245,7 @@ func (wekan *Wekan) GetUsers(ctx context.Context) (Users, error) {
 
 func (wekan *Wekan) UsernameExists(ctx context.Context, username Username) (bool, error) {
 	_, err := wekan.GetUserFromUsername(ctx, username)
-	if _, ok := err.(UnknownUserError); ok {
+	if _, ok := err.(UserNotFoundError); ok {
 		return false, nil
 	}
 	return err == nil, err
@@ -467,7 +467,6 @@ func (wekan *Wekan) RemoveMemberFromCard(ctx context.Context, cardID CardID, mem
 			"members": memberID,
 		},
 	})
-
 	if stats.ModifiedCount == 0 {
 		return NothingDoneError{}
 	}
