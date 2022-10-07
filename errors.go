@@ -35,11 +35,14 @@ func boardNotFoundWithSlug(slug BoardSlug) error {
 }
 
 func boardNotFoundWithId(boardID BoardID) error {
-	return BoardNotFoundError{msg: fmt.Sprintf("boardID : '%s'", boardID)}
+	return BoardNotFoundError{msg: fmt.Sprintf("le boardID : '%s'", boardID)}
+}
+
+func boardNotFoundWithTitle(boardTitle BoardTitle) error {
+	return BoardNotFoundError{msg: fmt.Sprintf("le titre : '%s'", boardTitle)}
 }
 
 func (e BoardNotFoundError) Error() string {
-	//return fmt.Sprintf("aucun tableau n'a été trouvé :  avec les paramètres {BoardID: '%s', Title: '%s', Slug: '%s'}", e.board.ID, e.board.Title, e.board.Slug)
 	return fmt.Sprintf("aucun tableau n'a été trouvé avec %s", e.msg)
 }
 

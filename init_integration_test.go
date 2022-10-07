@@ -186,12 +186,6 @@ func TestWekan_AssertPrivileged(t *testing.T) {
 		badAdminWekan.EnableBoardMember(ctx, "", ""),
 		badAdminWekan.EnableUser(ctx, User{}),
 		badAdminWekan.EnableUsers(ctx, Users{User{}}),
-		badAdminWekan.EnsureMemberInCard(ctx, "", ""),
-		badAdminWekan.EnsureMemberOutOfCard(ctx, "", ""),
-		badAdminWekan.EnsureRuleExists(ctx, User{}, Board{}, BoardLabel{}),
-		badAdminWekan.EnsureUserIsBoardAdmin(ctx, "", ""),
-		badAdminWekan.EnsureUserIsActiveBoardMember(ctx, "", ""),
-		badAdminWekan.EnsureUserIsInactiveBoardMember(ctx, "", ""),
 		badAdminWekan.InsertBoard(ctx, Board{}),
 		badAdminWekan.InsertBoardLabel(ctx, Board{}, BoardLabel{}),
 		badAdminWekan.InsertAction(ctx, Action{}),
@@ -205,6 +199,18 @@ func TestWekan_AssertPrivileged(t *testing.T) {
 		badAdminWekan.RemoveMemberFromCard(ctx, "", ""),
 		badAdminWekan.RemoveRuleWithID(ctx, ""),
 	}
+	_, err := badAdminWekan.EnsureMemberInCard(ctx, "", "")
+	errs = append(errs, err)
+	_, err = badAdminWekan.EnsureMemberOutOfCard(ctx, "", "")
+	errs = append(errs, err)
+	_, err = badAdminWekan.EnsureRuleExists(ctx, User{}, Board{}, BoardLabel{})
+	errs = append(errs, err)
+	_, err = badAdminWekan.EnsureUserIsBoardAdmin(ctx, "", "")
+	errs = append(errs, err)
+	_, err = badAdminWekan.EnsureUserIsActiveBoardMember(ctx, "", "")
+	errs = append(errs, err)
+	_, err = badAdminWekan.EnsureUserIsInactiveBoardMember(ctx, "", "")
+	errs = append(errs, err)
 
 	for i, err := range errs {
 		ass.IsType(NotPrivilegedError{}, err, "echec pour la fonction %d", i)

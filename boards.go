@@ -119,17 +119,19 @@ func (wekan *Wekan) GetBoardFromSlug(ctx context.Context, slug BoardSlug) (Board
 		if err == mongo.ErrNoDocuments {
 			return Board{}, boardNotFoundWithSlug(slug)
 		}
+		return Board{}, UnexpectedMongoError{err}
 	}
-	//  return Board{}, UnexpectedMongoError{err}
-	//}
 	return board, nil
 }
 
-// GetBoardFromTitle GetBoardFromID retourne l'objet board à partir du champ title
-func (wekan *Wekan) GetBoardFromTitle(ctx context.Context, title string) (Board, error) {
+// GetBoardFromTitle retourne l'objet board à partir du champ title
+func (wekan *Wekan) GetBoardFromTitle(ctx context.Context, title BoardTitle) (Board, error) {
 	var board Board
 	err := wekan.db.Collection("boards").FindOne(ctx, bson.M{"title": title}).Decode(&board)
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return Board{}, boardNotFoundWithTitle(title)
+		}
 		return Board{}, UnexpectedMongoError{err}
 	}
 	return board, nil
@@ -298,16 +300,16 @@ func (wekan *Wekan) EnsureUserIsInactiveBoardMember(ctx context.Context, boardID
 	return false, nil
 }
 
-func (wekan *Wekan) EnsureUserIsBoardAdmin(ctx context.Context, boardID BoardID, userID UserID) error {
+func (wekan *Wekan) EnsureUserIsBoardAdmin(ctx context.Context, boardID BoardID, userID UserID) (bool, error) {
 	if err := wekan.AssertPrivileged(ctx); err != nil {
-		return err
+		return false, err
 	}
 
 	_, err := wekan.EnsureUserIsActiveBoardMember(ctx, boardID, userID)
 	if err != nil {
-		return err
+		return false, err
 	}
-	_, err = wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": boardID},
+	stats, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": boardID},
 		bson.M{
 			"$set": bson.M{"members.$[member].isAdmin": true},
 		},
@@ -317,9 +319,9 @@ func (wekan *Wekan) EnsureUserIsBoardAdmin(ctx context.Context, boardID BoardID,
 		},
 	)
 	if err != nil {
-		return UnexpectedMongoError{err}
+		return false, UnexpectedMongoError{err}
 	}
-	return nil
+	return stats.ModifiedCount != 0, nil
 }
 
 func BuildBoard(title string, slug string, boardType string) Board {

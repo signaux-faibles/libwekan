@@ -13,7 +13,7 @@ import (
 func TestErrors_UpstreamDeadlineExceeded(t *testing.T) {
 	badWekan := newTestBadWekan("notAWekanDB")
 	errs := []error{
-		badWekan.AddMemberToBoard(ctx, "", BoardMember{}),
+		badWekan.AddMemberToBoard(ctx, "", BoardMember{}), // 0
 		badWekan.AddMemberToCard(ctx, "", ""),
 		badWekan.AddLabelToCard(ctx, "", ""),
 		badWekan.AssertPrivileged(ctx),
@@ -24,12 +24,6 @@ func TestErrors_UpstreamDeadlineExceeded(t *testing.T) {
 		badWekan.EnableBoardMember(ctx, "", ""),
 		badWekan.EnableUser(ctx, User{}),
 		badWekan.EnableUsers(ctx, Users{User{}}),
-		badWekan.EnsureMemberInCard(ctx, "", ""),
-		badWekan.EnsureMemberOutOfCard(ctx, "", ""),
-		badWekan.EnsureRuleExists(ctx, User{}, Board{}, BoardLabel{}),
-		badWekan.EnsureUserIsActiveBoardMember(ctx, "", ""),
-		badWekan.EnsureUserIsInactiveBoardMember(ctx, "", ""),
-		badWekan.EnsureUserIsInactiveBoardMember(ctx, "", ""),
 		badWekan.InsertAction(ctx, Action{}),
 		badWekan.InsertBoard(ctx, Board{}),
 		badWekan.InsertBoardLabel(ctx, Board{}, BoardLabel{}),
@@ -51,7 +45,7 @@ func TestErrors_UpstreamDeadlineExceeded(t *testing.T) {
 		SwimlaneID("").Check(ctx, &badWekan),
 	}
 	var err error
-	_, err = ActivityID("").GetDocument(ctx, &badWekan)
+	_, err = ActivityID("").GetDocument(ctx, &badWekan) // 30
 	errs = append(errs, err)
 	_, err = BoardID("").GetDocument(ctx, &badWekan)
 	errs = append(errs, err)
@@ -112,6 +106,21 @@ func TestErrors_UpstreamDeadlineExceeded(t *testing.T) {
 	_, err = badWekan.SelectRuleFromID(ctx, "")
 	errs = append(errs, err)
 	_, err = badWekan.SelectRulesFromBoardID(ctx, "")
+	errs = append(errs, err)
+	_, err = badWekan.EnsureMemberInCard(ctx, "", "")
+	errs = append(errs, err)
+	_, err = badWekan.EnsureMemberOutOfCard(ctx, "", "")
+	errs = append(errs, err)
+	_, err = badWekan.EnsureUserIsBoardAdmin(ctx, "", "")
+	errs = append(errs, err)
+	_, err = badWekan.EnsureRuleExists(ctx, User{}, Board{}, BoardLabel{})
+	errs = append(errs, err)
+	_, err = badWekan.EnsureUserIsActiveBoardMember(ctx, "", "")
+	errs = append(errs, err)
+	_, err = badWekan.EnsureUserIsInactiveBoardMember(ctx, "", "")
+	errs = append(errs, err)
+	_, err = badWekan.EnsureUserIsInactiveBoardMember(ctx, "", "")
+	errs = append(errs, err)
 	for i, err := range errs {
 		assert.ErrorAs(t, err, &UnexpectedMongoError{}, "l'étape %d a échoué", i)
 		assert.ErrorIs(t, err, context.DeadlineExceeded, "l'étape %d a échoué", i)

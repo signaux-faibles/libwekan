@@ -16,7 +16,7 @@ func TestRules_InsertRule_whenLabelDoesntExist(t *testing.T) {
 	ass.Nil(err)
 	insertedUser := createTestUser(t, "")
 	ass.Nil(err)
-	err = wekan.EnsureUserIsActiveBoardMember(ctx, board.ID, insertedUser.ID)
+	_, err = wekan.EnsureUserIsActiveBoardMember(ctx, board.ID, insertedUser.ID)
 	ass.Nil(err)
 	updatedBoard, err := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
 	ass.Nil(err)

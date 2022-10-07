@@ -96,7 +96,7 @@ func TestBoards_getBoardFromTitle(t *testing.T) {
 	slug := BoardSlug("tableau-crp-bfc")
 
 	// WHEN
-	board, err := wekan.GetBoardFromTitle(ctx, string(title))
+	board, err := wekan.GetBoardFromTitle(ctx, title)
 
 	// THEN
 	ass.Nil(err)
@@ -257,12 +257,13 @@ func TestBoards_EnsureUserIsActiveBoardMember(t *testing.T) {
 	insertedUser := createTestUser(t, "")
 
 	// WHEN
-	err := wekan.EnsureUserIsActiveBoardMember(ctx, board.ID, insertedUser.ID)
+	modified, err := wekan.EnsureUserIsActiveBoardMember(ctx, board.ID, insertedUser.ID)
 	ass.Nil(err)
 
 	// THEN
 	updatedBoard, err := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
 	ass.Nil(err)
+	ass.True(modified)
 	ass.True(updatedBoard.UserIsMember(insertedUser))
 	ass.True(updatedBoard.UserIsActiveMember(insertedUser))
 }
@@ -321,7 +322,7 @@ func TestBoards_InsertBoardLabel_whenBoardIsUnknown(t *testing.T) {
 
 	// THEN
 	err := wekan.InsertBoardLabel(ctx, board, boardLabel)
-	ass.Equal(BoardNotFoundError{board}, err)
+	ass.ErrorAs(err, &BoardNotFoundError{})
 }
 
 //func TestBoard_SelectBoardsFromMemberID(t *testing.T) {
@@ -399,11 +400,12 @@ func TestBoards_EnsureUserIsInactiveBoardMember_WhenUserIsActive(t *testing.T) {
 	wekan.AddMemberToBoard(ctx, board.ID, BoardMember{UserID: user.ID, IsActive: true})
 
 	// WHEN
-	err := wekan.EnsureUserIsInactiveBoardMember(ctx, board.ID, user.ID)
+	modified, err := wekan.EnsureUserIsInactiveBoardMember(ctx, board.ID, user.ID)
 	ass.Nil(err)
 
 	// THEN
 	actualBoard, _ := wekan.GetBoardFromID(ctx, board.ID)
+	ass.True(modified)
 	ass.False(actualBoard.UserIsActiveMember(user))
 }
 
@@ -413,9 +415,10 @@ func TestBoards_EnsureUserIsInactiveBoardMember_WhenUserDoesntExist(t *testing.T
 	board, _, _ := createTestBoard(t, "", 1, 1)
 	userID := UserID(t.Name() + "notAUserID")
 	// WHEN
-	err := wekan.EnsureUserIsInactiveBoardMember(ctx, board.ID, userID)
+	modified, err := wekan.EnsureUserIsInactiveBoardMember(ctx, board.ID, userID)
 
 	// THEN
+	ass.False(modified)
 	ass.IsType(UserNotFoundError{}, err)
 }
 
@@ -427,9 +430,10 @@ func TestBoards_EnsureUserIsInactiveBoardMember_WhenBoardDoesntExist(t *testing.
 	wekan.AddMemberToBoard(ctx, badBoardID, BoardMember{UserID: user.ID, IsActive: true})
 
 	// WHEN
-	err := wekan.EnsureUserIsInactiveBoardMember(ctx, badBoardID, user.ID)
+	modified, err := wekan.EnsureUserIsInactiveBoardMember(ctx, badBoardID, user.ID)
 
 	// THEN
+	ass.False(modified)
 	ass.IsType(BoardNotFoundError{}, err)
 }
 

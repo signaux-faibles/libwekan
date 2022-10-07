@@ -21,10 +21,15 @@ func TestErrors_UserNotFoundError(t *testing.T) {
 }
 
 func TestErrors_BoardNotFoundError(t *testing.T) {
-	t.Error("not implemented")
-	//e := BoardNotFoundError{Board{ID: "ID", Title: "Title", Slug: "Slug"}}
-	//expected := fmt.Sprintf("la board est inconnue (BoardID: %s, Title: %s, Slug: %s", e.board.ID, e.board.Title, e.board.Slug)
-	//assert.EqualError(t, e, expected)
+	e := boardNotFoundWithSlug("test")
+	expected := "aucun tableau n'a été trouvé avec le slug : 'test'"
+	assert.EqualError(t, e, expected)
+	e = boardNotFoundWithId("test")
+	expected = "aucun tableau n'a été trouvé avec le boardID : 'test'"
+	assert.EqualError(t, e, expected)
+	e = boardNotFoundWithTitle("test")
+	expected = "aucun tableau n'a été trouvé avec le titre : 'test'"
+	assert.EqualError(t, e, expected)
 }
 
 func TestErrors_NotPrivilegedError(t *testing.T) {
