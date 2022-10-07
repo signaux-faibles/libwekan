@@ -14,18 +14,37 @@ func (e UserAlreadyExistsError) Error() string {
 
 type UserNotFoundError struct {
 	key string
+	err error
 }
 
 func (e UserNotFoundError) Error() string {
 	return fmt.Sprintf("l'utilisateur n'est pas connu (%s)", e.key)
 }
 
+func (e UserNotFoundError) Unwrap() error {
+	return e.err
+}
+
 type BoardNotFoundError struct {
-	board Board
+	msg string
+	err error
+}
+
+func boardNotFoundWithSlug(slug BoardSlug) error {
+	return BoardNotFoundError{msg: fmt.Sprintf("le slug : '%s'", slug)}
+}
+
+func boardNotFoundWithId(boardID BoardID) error {
+	return BoardNotFoundError{msg: fmt.Sprintf("boardID : '%s'", boardID)}
 }
 
 func (e BoardNotFoundError) Error() string {
-	return fmt.Sprintf("la board est inconnue (BoardID: %s, Title: %s, Slug: %s", e.board.ID, e.board.Title, e.board.Slug)
+	//return fmt.Sprintf("aucun tableau n'a été trouvé :  avec les paramètres {BoardID: '%s', Title: '%s', Slug: '%s'}", e.board.ID, e.board.Title, e.board.Slug)
+	return fmt.Sprintf("aucun tableau n'a été trouvé avec %s", e.msg)
+}
+
+func (e BoardNotFoundError) Unwrap() error {
+	return e.err
 }
 
 type NotPrivilegedError struct {

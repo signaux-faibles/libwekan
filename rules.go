@@ -232,19 +232,16 @@ func (wekan *Wekan) RemoveRuleWithID(ctx context.Context, ruleID RuleID) error {
 	return nil
 }
 
-func (wekan *Wekan) EnsureRuleExists(ctx context.Context, user User, board Board, boardLabel BoardLabel) error {
+func (wekan *Wekan) EnsureRuleExists(ctx context.Context, user User, board Board, boardLabel BoardLabel) (bool, error) {
 	boardRules, err := wekan.SelectRulesFromBoardID(ctx, board.ID)
 	if err != nil {
-		return err
+		return false, err
 	}
 	existingRules := boardRules.selectBoardLabelName(boardLabel.ID).selectUser(user.Username)
-	if len(existingRules) <= 0 {
+	if len(existingRules) == 0 {
 		rule := board.BuildRule(user, boardLabel.Name)
-		return wekan.InsertRule(ctx, rule)
+		err = wekan.InsertRule(ctx, rule)
+		return err == nil, err
 	}
-	return nil
-}
-
-func (rule Rule) String() string {
-	return fmt.Sprintf("%s / %s", rule.Action.Username, rule.Trigger.LabelID)
+	return false, nil
 }

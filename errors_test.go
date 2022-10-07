@@ -15,15 +15,16 @@ func TestErrors_UserAlreadyExistsError(t *testing.T) {
 }
 
 func TestErrors_UserNotFoundError(t *testing.T) {
-	e := UserNotFoundError{"test"}
+	e := UserNotFoundError{key: "test"}
 	expected := fmt.Sprintf("l'utilisateur n'est pas connu (%s)", e.key)
 	assert.EqualError(t, e, expected)
 }
 
 func TestErrors_BoardNotFoundError(t *testing.T) {
-	e := BoardNotFoundError{Board{ID: "ID", Title: "Title", Slug: "Slug"}}
-	expected := fmt.Sprintf("la board est inconnue (BoardID: %s, Title: %s, Slug: %s", e.board.ID, e.board.Title, e.board.Slug)
-	assert.EqualError(t, e, expected)
+	t.Error("not implemented")
+	//e := BoardNotFoundError{Board{ID: "ID", Title: "Title", Slug: "Slug"}}
+	//expected := fmt.Sprintf("la board est inconnue (BoardID: %s, Title: %s, Slug: %s", e.board.ID, e.board.Title, e.board.Slug)
+	//assert.EqualError(t, e, expected)
 }
 
 func TestErrors_NotPrivilegedError(t *testing.T) {

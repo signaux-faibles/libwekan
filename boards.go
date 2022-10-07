@@ -116,8 +116,12 @@ func (wekan *Wekan) GetBoardFromSlug(ctx context.Context, slug BoardSlug) (Board
 	var board Board
 	err := wekan.db.Collection("boards").FindOne(ctx, bson.M{"slug": slug}).Decode(&board)
 	if err != nil {
-		return Board{}, UnexpectedMongoError{err}
+		if err == mongo.ErrNoDocuments {
+			return Board{}, boardNotFoundWithSlug(slug)
+		}
 	}
+	//  return Board{}, UnexpectedMongoError{err}
+	//}
 	return board, nil
 }
 
@@ -136,7 +140,7 @@ func (wekan *Wekan) GetBoardFromID(ctx context.Context, id BoardID) (Board, erro
 	var board Board
 	if err := wekan.db.Collection("boards").FindOne(ctx, bson.M{"_id": id}).Decode(&board); err != nil {
 		if err == mongo.ErrNoDocuments {
-			return Board{}, BoardNotFoundError{Board{ID: id}}
+			return Board{}, boardNotFoundWithId(id)
 		}
 		return Board{}, UnexpectedMongoError{err}
 	}
@@ -254,44 +258,44 @@ func (wekan *Wekan) DisableBoardMember(ctx context.Context, boardID BoardID, use
 }
 
 // EnsureUserIsActiveBoardMember fait en sorte de rendre l'utilisateur participant et actif à une board
-func (wekan *Wekan) EnsureUserIsActiveBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
+func (wekan *Wekan) EnsureUserIsActiveBoardMember(ctx context.Context, boardID BoardID, userID UserID) (bool, error) {
 	if err := wekan.AssertPrivileged(ctx); err != nil {
-		return err
+		return false, err
 	}
 	board, err := boardID.GetDocument(ctx, wekan)
 	if err != nil {
-		return err
+		return false, err
 	}
 	user, err := userID.GetDocument(ctx, wekan)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if board.UserIsActiveMember(user) {
-		return nil // l'utilisateur est déjà membre actif pas d'action requise
+		return false, nil // l'utilisateur est déjà membre actif pas d'action requise
 	}
 	if board.UserIsMember(user) {
-		return wekan.EnableBoardMember(ctx, board.ID, user.ID)
+		return true, wekan.EnableBoardMember(ctx, board.ID, user.ID)
 	}
-	return wekan.AddMemberToBoard(ctx, board.ID, BoardMember{user.ID, false, true, false, false, false})
+	return true, wekan.AddMemberToBoard(ctx, board.ID, BoardMember{user.ID, false, true, false, false, false})
 }
 
 // EnsureUserIsInactiveBoardMember fait en sorte de désactiver un utilisateur sur une board lorsqu'il est participant
-func (wekan *Wekan) EnsureUserIsInactiveBoardMember(ctx context.Context, boardID BoardID, userID UserID) error {
+func (wekan *Wekan) EnsureUserIsInactiveBoardMember(ctx context.Context, boardID BoardID, userID UserID) (bool, error) {
 	if err := wekan.AssertPrivileged(ctx); err != nil {
-		return err
+		return false, err
 	}
 	board, err := boardID.GetDocument(ctx, wekan)
 	if err != nil {
-		return err
+		return false, err
 	}
 	user, err := userID.GetDocument(ctx, wekan)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if board.UserIsActiveMember(user) {
-		return wekan.DisableBoardMember(ctx, board.ID, user.ID)
+		return true, wekan.DisableBoardMember(ctx, board.ID, user.ID)
 	}
-	return nil
+	return false, nil
 }
 
 func (wekan *Wekan) EnsureUserIsBoardAdmin(ctx context.Context, boardID BoardID, userID UserID) error {
@@ -299,7 +303,7 @@ func (wekan *Wekan) EnsureUserIsBoardAdmin(ctx context.Context, boardID BoardID,
 		return err
 	}
 
-	err := wekan.EnsureUserIsActiveBoardMember(ctx, boardID, userID)
+	_, err := wekan.EnsureUserIsActiveBoardMember(ctx, boardID, userID)
 	if err != nil {
 		return err
 	}
@@ -401,7 +405,7 @@ func (wekan *Wekan) InsertBoardLabel(ctx context.Context, board Board, boardLabe
 		return UnexpectedMongoError{err}
 	}
 	if stats.ModifiedCount != 1 {
-		return BoardNotFoundError{board}
+		return boardNotFoundWithId(board.ID)
 	}
 	return err
 }
