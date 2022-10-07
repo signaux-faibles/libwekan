@@ -30,7 +30,7 @@ func uniq[Element comparable](array []Element) []Element {
 	for _, element := range array {
 		m[element] = struct{}{}
 	}
-	var set []Element
+	var set = []Element{}
 	for element := range m {
 		set = append(set, element)
 	}
