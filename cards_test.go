@@ -1,38 +1,9 @@
 package libwekan
 
 import (
-	"context"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
-
-func createTestCard(t *testing.T, userID UserID, boardID *BoardID, swimlaneID *SwimlaneID, listID *ListID) Card {
-	ctx := context.Background()
-	var board Board
-	var swimlanes []Swimlane
-	var lists []List
-
-	if boardID == nil || swimlaneID == nil || listID == nil {
-		board, swimlanes, lists = createTestBoard(t, "", 1, 1)
-		swimlaneID = &swimlanes[0].ID
-		listID = &lists[0].ID
-	} else {
-		board, _ = wekan.GetBoardFromID(ctx, *boardID)
-		swimlanes, _ = wekan.GetSwimlanesFromBoardID(ctx, *boardID)
-		lists, _ = wekan.SelectListsFromBoardID(ctx, *boardID)
-		swimlane := getElement(swimlanes, func(swimlane Swimlane) bool { return swimlane.ID == *swimlaneID })
-		list := getElement(lists, func(list List) bool { return list.ID == *listID })
-		if swimlane == nil || list == nil {
-			return Card{}
-		}
-	}
-
-	title := t.Name() + "Title"
-	description := t.Name() + "Description"
-	card := BuildCard(board.ID, *listID, *swimlaneID, title, description, userID)
-	wekan.InsertCard(ctx, card)
-	return card
-}
 
 func getElement[Element any](elements []Element, fn func(element Element) bool) *Element {
 	for _, element := range elements {
