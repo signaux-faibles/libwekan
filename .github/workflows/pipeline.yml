@@ -32,6 +32,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: v1.45.2
+          args: -tags integration
 
       - name: Run Codacy Analysis CLI
         uses: codacy/codacy-analysis-cli-action@v4
