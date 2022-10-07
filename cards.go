@@ -79,6 +79,8 @@ func BuildCard(boardID BoardID, listID ListID, swimlaneID SwimlaneID, title stri
 		ListID:           listID,
 		BoardID:          boardID,
 		SwimlaneID:       swimlaneID,
+		Members:          []UserID{},
+		LabelIDs:         []BoardLabelID{},
 		Type:             "card",
 		CreatedAt:        toMongoTime(time.Now()),
 		ModifiedAt:       toMongoTime(time.Now()),
@@ -90,6 +92,15 @@ func BuildCard(boardID BoardID, listID ListID, swimlaneID SwimlaneID, title stri
 		LinkIDGantt:      []string{},
 		StartAt:          toMongoTime(time.Now()),
 	}
+}
+
+func (cardID CardID) Check(ctx context.Context, wekan *Wekan) error {
+	_, err := wekan.GetCardFromID(ctx, cardID)
+	return err
+}
+
+func (cardID CardID) GetDocument(ctx context.Context, wekan *Wekan) (Card, error) {
+	return wekan.GetCardFromID(ctx, cardID)
 }
 
 func (card *Card) AddMember(memberID UserID) {
@@ -146,9 +157,51 @@ func (wekan *Wekan) GetCardFromID(ctx context.Context, cardID CardID) (Card, err
 }
 
 func (wekan *Wekan) InsertCard(ctx context.Context, card Card) error {
-	_, err := wekan.db.Collection("cards").InsertOne(ctx, card)
+	if err := wekan.AssertPrivileged(ctx); err != nil {
+		return err
+	}
+	if err := wekan.CheckDocuments(
+		ctx,
+		card.BoardID,
+		card.ListID,
+		card.SwimlaneID,
+	); err != nil {
+		return err
+	}
+	if _, err := wekan.db.Collection("cards").InsertOne(ctx, card); err != nil {
+		return UnexpectedMongoError{err}
+	}
+	return nil
+}
+
+func (wekan *Wekan) AddLabelToCard(ctx context.Context, cardID CardID, labelID BoardLabelID) error {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
+		return err
+	}
+	card, err := cardID.GetDocument(ctx, wekan)
+	if err != nil {
+		return err
+	}
+	board, err := card.BoardID.GetDocument(ctx, wekan)
+	if err != nil {
+		return err
+	}
+
+	label := board.GetLabelByID(labelID)
+	if label == (BoardLabel{}) {
+		return BoardLabelNotFoundError{labelID, board}
+	}
+	stats, err := wekan.db.Collection("cards").UpdateOne(ctx, bson.M{"_id": cardID},
+		bson.M{
+			"$addToSet": bson.M{
+				"labelIds": labelID,
+			},
+		})
 	if err != nil {
 		return UnexpectedMongoError{err}
+	}
+	if stats.ModifiedCount == 0 {
+		return NothingDoneError{}
 	}
 	return nil
 }

@@ -2,7 +2,7 @@ package libwekan
 
 import (
 	"context"
-
+	"errors"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -14,7 +14,7 @@ type Wekan struct {
 	db               *mongo.Database
 	adminUsername    Username
 	adminUserID      UserID
-	privileged       bool
+	privileged       *bool
 	slugDomainRegexp string
 }
 
@@ -33,26 +33,33 @@ func Init(ctx context.Context, uri string, databaseName string, adminUsername Us
 		adminUsername:    adminUsername,
 		slugDomainRegexp: slugDomainRegexp,
 	}
-
-	if err != nil {
-		return Wekan{}, err
-	}
-
 	return w, nil
 }
 
-func (wekan *Wekan) AssertHasAdmin(ctx context.Context) error {
-	//if !wekan.IsPrivileged() {
-	//	return false
-	//}
+func (wekan *Wekan) Ping(ctx context.Context) error {
+	return wekan.client.Ping(ctx, nil)
+}
+
+// AssertPrivileged s'assure que l'utilisateur déclaré dans la propriété
+// Wekan.adminUsername est bien un utilisateur admin dans la base de données
+func (wekan *Wekan) AssertPrivileged(ctx context.Context) error {
+	if wekan.privileged != nil {
+		if *wekan.privileged {
+			return nil
+		}
+		return NotPrivilegedError{wekan.adminUserID, errors.New("L'utilisateur n'est pas administration")}
+	}
 	admin, err := wekan.GetUserFromUsername(ctx, wekan.adminUsername)
 	if err != nil {
-		return err
-	}
-	if !admin.IsAdmin {
-		return UserIsNotAdminError{admin.ID}
+		return NotPrivilegedError{"inconnu", err}
 	}
 	wekan.adminUserID = admin.ID
+	wekan.privileged = &admin.IsAdmin
+	//if !admin.IsAdmin {
+	//	return ForbiddenOperationError{
+	//		NotPrivilegedError{admin.ID, errors.New("L'utilisateur n'est pas administration")},
+	//	}
+	//}
 	return nil
 }
 
@@ -64,37 +71,20 @@ func (wekan *Wekan) AdminID() UserID {
 	return wekan.adminUserID
 }
 
-func (wekan *Wekan) IsPrivileged() bool {
-	return wekan.privileged
+//
+//func (wekan *Wekan) IsPrivileged() bool {
+//	return *wekan.privileged
+//}
+
+type Document interface {
+	Check(context.Context, *Wekan) error
 }
 
-//func (wekan *Wekan) AdminUser(ctx context.Context) (User, error) {
-//	admin, err := wekan.GetUserFromUsername(ctx, wekan.adminUsername)
-//	if _, ok := err.(UnknownUserError); ok {
-//		return User{}, err
-//	}
-//	if !admin.IsAdmin {
-//		return User{}, UserIsNotAdminError{admin.ID}
-//	}
-//	return admin, nil
-//}
-
-//func (wekan *Wekan) CheckAdminUserIsAdmin(ctx context.Context) error {
-//	if wekan.adminUserID != "" {
-//		return nil
-//	}
-//	adminUser, err := wekan.AdminUser(ctx)
-//	if err != nil {
-//		return err
-//	}
-//	wekan.adminUserID = adminUser.ID
-//	return nil
-//}
-
-func (wekan *Wekan) Ping(ctx context.Context) error {
-	err := wekan.client.Ping(ctx, nil)
-	if err != nil {
-		return UnreachableMongoError{err}
+func (wekan *Wekan) CheckDocuments(ctx context.Context, documents ...Document) error {
+	for _, document := range documents {
+		if err := document.Check(ctx, wekan); err != nil {
+			return err
+		}
 	}
 	return nil
 }

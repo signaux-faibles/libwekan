@@ -12,44 +12,67 @@ func (e UserAlreadyExistsError) Error() string {
 	return fmt.Sprintf("l'utilisateur existe déjà (UserID: %s, Username: %s)", e.user.ID, e.user.Username)
 }
 
-type UnknownUserError struct {
+type UserNotFoundError struct {
 	key string
+	err error
 }
 
-func (e UnknownUserError) Error() string {
+func (e UserNotFoundError) Error() string {
 	return fmt.Sprintf("l'utilisateur n'est pas connu (%s)", e.key)
 }
 
-type UnknownBoardError struct {
-	board Board
+func (e UserNotFoundError) Unwrap() error {
+	return e.err
 }
 
-func (e UnknownBoardError) Error() string {
-	return fmt.Sprintf("la board est inconnue (BoardID: %s, Title: %s, Slug: %s", e.board.ID, e.board.Title, e.board.Slug)
+type BoardNotFoundError struct {
+	msg string
+	err error
 }
 
-//type UnknownRuleError struct {
-//	rule Rule
-//}
-//
-//func (e UnknownRuleError) Error() string {
-//	return fmt.Sprintf("Rule introuvable (RuleID: %s)", e.rule.ID)
-//}
+func boardNotFoundWithSlug(slug BoardSlug) error {
+	return BoardNotFoundError{msg: fmt.Sprintf("le slug : '%s'", slug)}
+}
 
-type UserIsNotAdminError struct {
+func boardNotFoundWithId(boardID BoardID) error {
+	return BoardNotFoundError{msg: fmt.Sprintf("le boardID : '%s'", boardID)}
+}
+
+func boardNotFoundWithTitle(boardTitle BoardTitle) error {
+	return BoardNotFoundError{msg: fmt.Sprintf("le titre : '%s'", boardTitle)}
+}
+
+func (e BoardNotFoundError) Error() string {
+	return fmt.Sprintf("aucun tableau n'a été trouvé avec %s", e.msg)
+}
+
+func (e BoardNotFoundError) Unwrap() error {
+	return e.err
+}
+
+type NotPrivilegedError struct {
+	id  UserID
+	err error
+}
+
+func (e NotPrivilegedError) Unwrap() error {
+	return e.err
+}
+
+func (e NotPrivilegedError) Error() string {
+	return fmt.Sprintf("l'utilisateur n'est pas admin: id = %s", e.id)
+}
+
+type ProtectedUserError struct {
 	id UserID
 }
 
-func (e UserIsNotAdminError) Error() string {
-	return fmt.Sprintf("l'utilisateur n'est pas admin: id = %s", e.id)
+func (e ProtectedUserError) Error() string {
+	return fmt.Sprintf("cet action est interdite sur cet utilisateur (%s)", e.id)
 }
 
 type AdminUserIsNotAdminError struct {
 	username Username
-}
-
-func (e AdminUserIsNotAdminError) Error() string {
-	return fmt.Sprintf("l'utilisateur n'est pas admin: username = %s", e.username)
 }
 
 type InsertEmptyRuleError struct {
@@ -68,12 +91,25 @@ func (e BoardLabelAlreadyExistsError) Error() string {
 	return fmt.Sprintf("un objet BoardLabel existe déjà dans la board (%s) avec le même nom (%s)", e.board.ID, e.boardLabel.Name)
 }
 
+type BoardLabelNotFoundError struct {
+	boardLabelID BoardLabelID
+	board        Board
+}
+
+func (e BoardLabelNotFoundError) Error() string {
+	return fmt.Sprintf("l'objet BoardLabel (id=%s) n'a pas été trouvé dans la board (%s)", e.boardLabelID, e.board.ID)
+}
+
 type UnexpectedMongoError struct {
-	Err error
+	err error
 }
 
 func (e UnexpectedMongoError) Error() string {
-	return e.Err.Error()
+	return "une erreur est survenue lors de l'exécution de la requête"
+}
+
+func (e UnexpectedMongoError) Unwrap() error {
+	return e.err
 }
 
 type AlreadySetActivityError struct {
@@ -109,13 +145,16 @@ func (e InvalidMongoConfigurationError) Unwrap() error {
 }
 
 type ForbiddenOperationError struct {
-	message string
+	err error
 }
 
 func (e ForbiddenOperationError) Error() string {
-	return e.message
+	return "operation interdite"
 }
-func (e ForbiddenOperationError) Forbidden() {}
+
+func (e ForbiddenOperationError) Unwrap() error {
+	return e.err
+}
 
 type NotImplemented struct {
 	method string
@@ -124,7 +163,6 @@ type NotImplemented struct {
 func (e NotImplemented) Error() string {
 	return "not implemented : " + e.method
 }
-func (e NotImplemented) NotImplemented() {}
 
 type CardNotFoundError struct {
 	cardID CardID
@@ -161,5 +199,21 @@ func (e TriggerNotFoundError) Error() string {
 type NothingDoneError struct{}
 
 func (e NothingDoneError) Error() string {
-	return "le traitement n'a aucun effet"
+	return "le traitement n'a eu aucun effet"
+}
+
+type UnknownActivityError struct {
+	key string
+}
+
+func (e UnknownActivityError) Error() string {
+	return fmt.Sprintf("l'activité n'existe pas (ID: %s)", e.key)
+}
+
+type UserIsNotMemberError struct {
+	userID UserID
+}
+
+func (e UserIsNotMemberError) Error() string {
+	return fmt.Sprintf("cette action nécessite que l'utilisateur soit membre (id=%s)", e.userID)
 }

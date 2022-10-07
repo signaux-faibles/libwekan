@@ -132,11 +132,19 @@ func TestBoards_GetLabelByID_whenBoardLabelDoesntExists(t *testing.T) {
 	ass.Empty(label)
 }
 
-func TestBoards_DisableBoardMember_cant_disable_admin(t *testing.T) {
-	ass := assert.New(t)
-	dummyWekan := Wekan{
-		adminUserID: "zero+zero",
+// NewBoardLabel retourne un objet BoardLabel
+func Test_BuildBoardLabel(t *testing.T) {
+	id := t.Name() + "ID"
+	name := t.Name() + "Name"
+	color := t.Name() + "Color"
+
+	expected := BoardLabel{
+		ID:    BoardLabelID(id),
+		Name:  BoardLabelName(name),
+		Color: color,
 	}
-	err := dummyWekan.DisableBoardMember(ctx, "fakeBoardId", dummyWekan.adminUserID)
-	ass.ErrorIs(err, err.(ForbiddenOperationError))
+	boardLabel := NewBoardLabel(name, expected.Color)
+
+	assert.Equal(t, expected.Name, boardLabel.Name)
+	assert.Equal(t, expected.Color, boardLabel.Color)
 }

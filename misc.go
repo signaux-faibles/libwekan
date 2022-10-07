@@ -86,7 +86,7 @@ func contains[Element comparable](elements []Element, element Element) bool {
 	return false
 }
 
-func selectSlice[Element comparable](slice []Element, filter func(Element) bool) []Element {
+func selectSlice[Element any](slice []Element, filter func(Element) bool) []Element {
 	var accepted []Element
 	for _, element := range slice {
 		if filter(element) {

@@ -46,6 +46,15 @@ type Action struct {
 	ModifiedAt  time.Time `bson:"modifiedAt"`
 }
 
+func (ruleID RuleID) GetDocument(ctx context.Context, wekan *Wekan) (Rule, error) {
+	return wekan.SelectRuleFromID(ctx, ruleID)
+}
+
+func (ruleID RuleID) Check(ctx context.Context, wekan *Wekan) error {
+	_, err := wekan.SelectRuleFromID(ctx, ruleID)
+	return err
+}
+
 func (board Board) BuildTrigger(label BoardLabel) Trigger {
 	return Trigger{
 		ID:           TriggerID(newId()),
@@ -105,7 +114,7 @@ func (rules Rules) selectBoardLabelName(boardLabelID BoardLabelID) Rules {
 }
 
 func (wekan *Wekan) InsertRule(ctx context.Context, rule Rule) error {
-	if err := wekan.AssertHasAdmin(ctx); err != nil {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
 		return err
 	}
 
@@ -130,7 +139,7 @@ func (wekan *Wekan) InsertRule(ctx context.Context, rule Rule) error {
 }
 
 func (wekan *Wekan) InsertAction(ctx context.Context, action Action) error {
-	if err := wekan.AssertHasAdmin(ctx); err != nil {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
 		return err
 	}
 
@@ -142,7 +151,7 @@ func (wekan *Wekan) InsertAction(ctx context.Context, action Action) error {
 }
 
 func (wekan *Wekan) InsertTrigger(ctx context.Context, trigger Trigger) error {
-	if err := wekan.AssertHasAdmin(ctx); err != nil {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
 		return err
 	}
 
@@ -182,24 +191,31 @@ func (wekan *Wekan) SelectRuleFromID(ctx context.Context, ruleID RuleID) (Rule, 
 		return Rule{}, UnexpectedMongoError{err}
 	}
 	if err := wekan.db.Collection("actions").FindOne(ctx, bson.M{"_id": rule.ActionID}).Decode(&rule.Action); err != nil {
-		if err == mongo.ErrNoDocuments {
+		if err != mongo.ErrNoDocuments {
+			return Rule{}, UnexpectedMongoError{err}
+		}
+		if rule.ActionID != nil {
 			return Rule{}, ActionNotFoundError{*rule.ActionID}
 		}
-		return Rule{}, UnexpectedMongoError{err}
 	}
 	if err := wekan.db.Collection("triggers").FindOne(ctx, bson.M{"_id": rule.TriggerID}).Decode(&rule.Trigger); err != nil {
-		if err == mongo.ErrNoDocuments {
+		if err != mongo.ErrNoDocuments {
+			return Rule{}, UnexpectedMongoError{err}
+		}
+		if rule.TriggerID != nil {
 			return Rule{}, TriggerNotFoundError{*rule.TriggerID}
 		}
-		return Rule{}, UnexpectedMongoError{err}
 	}
 	return rule, nil
 }
 
 func (wekan *Wekan) RemoveRuleWithID(ctx context.Context, ruleID RuleID) error {
-	rule, err := wekan.SelectRuleFromID(ctx, ruleID)
+	if err := wekan.AssertPrivileged(ctx); err != nil {
+		return err
+	}
+	rule, err := ruleID.GetDocument(ctx, wekan)
 	if err != nil {
-		return UnexpectedMongoError{err}
+		return err
 	}
 	_, err = wekan.db.Collection("actions").DeleteOne(ctx, bson.M{"_id": rule.Action.ID})
 	if err != nil {
@@ -216,15 +232,16 @@ func (wekan *Wekan) RemoveRuleWithID(ctx context.Context, ruleID RuleID) error {
 	return nil
 }
 
-func (wekan *Wekan) EnsureRuleExists(ctx context.Context, user User, board Board, boardLabel BoardLabel) error {
+func (wekan *Wekan) EnsureRuleExists(ctx context.Context, user User, board Board, boardLabel BoardLabel) (bool, error) {
 	boardRules, err := wekan.SelectRulesFromBoardID(ctx, board.ID)
 	if err != nil {
-		return err
+		return false, err
 	}
 	existingRules := boardRules.selectBoardLabelName(boardLabel.ID).selectUser(user.Username)
-	if len(existingRules) <= 0 {
+	if len(existingRules) == 0 {
 		rule := board.BuildRule(user, boardLabel.Name)
-		return wekan.InsertRule(ctx, rule)
+		err = wekan.InsertRule(ctx, rule)
+		return err == nil, err
 	}
-	return nil
+	return false, nil
 }

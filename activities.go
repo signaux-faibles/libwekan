@@ -2,6 +2,8 @@ package libwekan
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 )
 
@@ -25,6 +27,15 @@ type Activity struct {
 	SwimlaneName   string       `bson:"swimlaneName,omitempty"`
 	CreatedAt      time.Time    `bson:"createdAt"`
 	ModifiedAt     time.Time    `bson:"modifiedAt"`
+}
+
+func (activityID ActivityID) Check(ctx context.Context, wekan *Wekan) error {
+	_, err := wekan.GetActivityFromID(ctx, activityID)
+	return err
+}
+
+func (activityID ActivityID) GetDocument(ctx context.Context, wekan *Wekan) (Activity, error) {
+	return wekan.GetActivityFromID(ctx, activityID)
 }
 
 func (activity Activity) withIDandDates(t time.Time) (Activity, error) {
@@ -136,4 +147,41 @@ func (wekan *Wekan) insertActivity(ctx context.Context, activity Activity) (Acti
 		return Activity{}, UnexpectedMongoError{err}
 	}
 	return insertable, nil
+}
+
+func (wekan *Wekan) GetActivityFromID(ctx context.Context, activityID ActivityID) (Activity, error) {
+	var activity Activity
+	err := wekan.db.Collection("activities").FindOne(ctx, bson.M{"_id": activityID}).Decode(&activity)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return Activity{}, UnknownActivityError{string(activityID)}
+		}
+		return Activity{}, UnexpectedMongoError{err}
+	}
+	return activity, nil
+}
+
+func (wekan *Wekan) SelectActivityFromID(ctx context.Context, activityID ActivityID) (Activity, error) {
+	var activity Activity
+	err := wekan.db.Collection("activities").FindOne(ctx, bson.M{"_id": activityID}).Decode(&activity)
+	if err != nil {
+		return Activity{}, UnexpectedMongoError{err}
+	}
+	return activity, nil
+}
+
+func (wekan *Wekan) SelectActivitiesFromQuery(ctx context.Context, query bson.M) ([]Activity, error) {
+	var activities []Activity
+	cur, err := wekan.db.Collection("activities").Find(ctx, query)
+	if err != nil {
+		return nil, UnexpectedMongoError{err}
+	}
+	if err := cur.All(ctx, &activities); err != nil {
+		return nil, UnexpectedMongoError{err}
+	}
+	return activities, nil
+}
+
+func (wekan *Wekan) SelectActivitiesFromBoardID(ctx context.Context, boardID BoardID) ([]Activity, error) {
+	return wekan.SelectActivitiesFromQuery(ctx, bson.M{"boardId": boardID})
 }
