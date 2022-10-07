@@ -1,8 +1,6 @@
 package libwekan
 
 import (
-	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -132,26 +130,6 @@ func TestBoards_GetLabelByID_whenBoardLabelDoesntExists(t *testing.T) {
 	board := Board{}
 	label := board.GetLabelByID("anotherID")
 	ass.Empty(label)
-}
-
-func createTestBoard(t *testing.T, suffix string, swimlanesCount int, listsCount int) (Board, []Swimlane, []List) {
-	ctx := context.Background()
-	board := BuildBoard(t.Name()+suffix, t.Name()+suffix, "board")
-	wekan.InsertBoard(ctx, board)
-	var swimlanes []Swimlane
-	var lists []List
-	for i := 0; i < swimlanesCount; i++ {
-		swimlane := BuildSwimlane(board.ID, "swimlane", t.Name()+"swimlane", i)
-		swimlanes = append(swimlanes, swimlane)
-		wekan.InsertSwimlane(ctx, swimlane)
-	}
-	for i := 0; i < listsCount; i++ {
-		title := fmt.Sprintf("%sList%d", t.Name(), i)
-		list := BuildList(board.ID, title, i)
-		lists = append(lists, list)
-		wekan.InsertList(ctx, list)
-	}
-	return board, swimlanes, lists
 }
 
 // NewBoardLabel retourne un objet BoardLabel

@@ -4,6 +4,8 @@
 package libwekan
 
 import (
+	"context"
+	"fmt"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"testing"
@@ -460,4 +462,24 @@ func TestBoards_DisableBoardMember_cant_disable_admin(t *testing.T) {
 	err = wekan.DisableBoardMember(ctx, "fakeBoardId", admin.ID)
 	ass.IsType(ForbiddenOperationError{}, err)
 	ass.ErrorIs(err, ProtectedUserError{admin.ID})
+}
+
+func createTestBoard(t *testing.T, suffix string, swimlanesCount int, listsCount int) (Board, []Swimlane, []List) {
+	ctx := context.Background()
+	board := BuildBoard(t.Name()+suffix, t.Name()+suffix, "board")
+	wekan.InsertBoard(ctx, board)
+	var swimlanes []Swimlane
+	var lists []List
+	for i := 0; i < swimlanesCount; i++ {
+		swimlane := BuildSwimlane(board.ID, "swimlane", t.Name()+"swimlane", i)
+		swimlanes = append(swimlanes, swimlane)
+		wekan.InsertSwimlane(ctx, swimlane)
+	}
+	for i := 0; i < listsCount; i++ {
+		title := fmt.Sprintf("%sList%d", t.Name(), i)
+		list := BuildList(board.ID, title, i)
+		lists = append(lists, list)
+		wekan.InsertList(ctx, list)
+	}
+	return board, swimlanes, lists
 }
