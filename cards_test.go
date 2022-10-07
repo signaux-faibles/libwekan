@@ -5,15 +5,6 @@ import (
 	"testing"
 )
 
-func getElement[Element any](elements []Element, fn func(element Element) bool) *Element {
-	for _, element := range elements {
-		if fn(element) {
-			return &element
-		}
-	}
-	return nil
-}
-
 func TestCard_AddMember(t *testing.T) {
 	card := BuildCard(
 		BoardID(t.Name()+"boardID"),

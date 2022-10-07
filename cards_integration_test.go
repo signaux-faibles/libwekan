@@ -11,6 +11,15 @@ import (
 	"testing"
 )
 
+func getElement[Element any](elements []Element, fn func(element Element) bool) *Element {
+	for _, element := range elements {
+		if fn(element) {
+			return &element
+		}
+	}
+	return nil
+}
+
 func createTestCard(t *testing.T, userID UserID, boardID *BoardID, swimlaneID *SwimlaneID, listID *ListID) Card {
 	ctx := context.Background()
 	var board Board

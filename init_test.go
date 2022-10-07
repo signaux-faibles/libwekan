@@ -1,12 +1,9 @@
 package libwekan
 
 import (
-	"context"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
-
-var ctx = context.Background()
 
 func TestWekan_AdminUsername(t *testing.T) {
 	// GIVEN

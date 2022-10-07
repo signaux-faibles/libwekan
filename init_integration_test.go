@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// var dbClient *mongo.Client
+var ctx = context.Background()
 var wekan Wekan
 var cwd, _ = os.Getwd()
 
