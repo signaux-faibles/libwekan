@@ -356,7 +356,7 @@ func (wekan *Wekan) EnableUser(ctx context.Context, user User) error {
 		return err
 	}
 
-	_, err := wekan.db.Collection("users").UpdateOne(ctx, bson.M{"_id": user.ID}, bson.M{
+	stats, err := wekan.db.Collection("users").UpdateOne(ctx, bson.M{"_id": user.ID}, bson.M{
 		"$set": bson.M{
 			"loginDisabled": false,
 		},
@@ -376,7 +376,13 @@ func (wekan *Wekan) EnableUser(ctx context.Context, user User) error {
 				Filters: bson.A{bson.M{"member.userId": user.ID}}},
 		},
 	)
-	return err
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	if stats.ModifiedCount == 0 {
+		return NothingDoneError{}
+	}
+	return nil
 }
 
 func (wekan *Wekan) InsertUsers(ctx context.Context, users Users) error {
@@ -414,13 +420,13 @@ func (wekan *Wekan) DisableUser(ctx context.Context, user User) error {
 	}
 
 	// désactivation de l'utilisateur dans la collection users
-	_, err := wekan.db.Collection("users").UpdateOne(ctx, bson.M{"_id": user.ID}, bson.M{
+	stats, err := wekan.db.Collection("users").UpdateOne(ctx, bson.M{"_id": user.ID}, bson.M{
 		"$set": bson.M{
 			"loginDisabled": true,
 		},
 	})
 	if err != nil {
-		return err
+		return UnexpectedMongoError{err}
 	}
 
 	// désactivation du BoardMember sur toutes les boards où il est présent
@@ -435,6 +441,9 @@ func (wekan *Wekan) DisableUser(ctx context.Context, user User) error {
 		}
 	}
 
+	if stats.ModifiedCount == 0 {
+		return NothingDoneError{}
+	}
 	return nil
 }
 
