@@ -20,7 +20,7 @@ func TestRules_InsertRule_whenLabelDoesntExist(t *testing.T) {
 	ass.Nil(err)
 	updatedBoard, err := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
 	ass.Nil(err)
-	rule := updatedBoard.BuildRule(insertedUser, "toto")
+	rule := updatedBoard.BuildRuleAddMember(insertedUser, "toto")
 	ass.Empty(rule)
 	err = wekan.InsertRule(ctx, rule)
 	ass.IsType(InsertEmptyRuleError{}, err)
@@ -33,7 +33,7 @@ func TestRulesInsertRule_whenUserIsNotMember(t *testing.T) {
 	insertedUser := createTestUser(t, "")
 	ass.Nil(err)
 	ass.False(board.UserIsMember(insertedUser))
-	rule := board.BuildRule(insertedUser, "toto")
+	rule := board.BuildRuleAddMember(insertedUser, "toto")
 	ass.Empty(rule)
 	err = wekan.InsertRule(ctx, rule)
 	ass.IsType(InsertEmptyRuleError{}, err)
@@ -55,7 +55,7 @@ func TestRules_InsertRule_whenEverythingsFine(t *testing.T) {
 	wekan.InsertBoardLabel(ctx, tableauSansEtiquette, testBoardLabel)
 	tableauAvecEtiquette, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
 
-	regleAAjouter := tableauAvecEtiquette.BuildRule(userDeTest, BoardLabelName(t.Name()))
+	regleAAjouter := tableauAvecEtiquette.BuildRuleAddMember(userDeTest, BoardLabelName(t.Name()))
 	ass.NotEmpty(regleAAjouter)
 
 	// WHEN
@@ -146,7 +146,7 @@ func TestRules_SelectRulesFromBoardID(t *testing.T) {
 	tableauCodefiNoardAvecEtiquette, _ := wekan.GetBoardFromSlug(ctx, "tableau-codefi-nord")
 
 	// creation d'une regle pour cette étiquette et ce tableau
-	rule := tableauCodefiNoardAvecEtiquette.BuildRule(testUser, BoardLabelName(t.Name()))
+	rule := tableauCodefiNoardAvecEtiquette.BuildRuleAddMember(testUser, BoardLabelName(t.Name()))
 	wekan.InsertRule(ctx, rule)
 
 	// WHEN
@@ -206,7 +206,7 @@ func createRule(t *testing.T, board Board, user User) Rule {
 	wekan.InsertBoardLabel(ctx, board, testBoardLabel)
 	tableauAvecEtiquette, _ := wekan.GetBoardFromSlug(ctx, board.Slug)
 
-	regleAAjouter := tableauAvecEtiquette.BuildRule(user, BoardLabelName(t.Name()))
+	regleAAjouter := tableauAvecEtiquette.BuildRuleAddMember(user, BoardLabelName(t.Name()))
 
 	// WHEN
 	wekan.InsertRule(ctx, regleAAjouter)

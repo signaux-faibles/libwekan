@@ -55,7 +55,7 @@ func (ruleID RuleID) Check(ctx context.Context, wekan *Wekan) error {
 	return err
 }
 
-func (board Board) BuildTrigger(label BoardLabel) Trigger {
+func (board Board) BuildTriggerAddedLabel(label BoardLabel) Trigger {
 	return Trigger{
 		ID:           TriggerID(newId()),
 		ActivityType: "addedLabel",
@@ -68,7 +68,20 @@ func (board Board) BuildTrigger(label BoardLabel) Trigger {
 	}
 }
 
-func (board Board) BuildAction(username Username) Action {
+func (board Board) BuildTriggerRemovedLabel(label BoardLabel) Trigger {
+	return Trigger{
+		ID:           TriggerID(newId()),
+		ActivityType: "removedLabel",
+		BoardID:      board.ID,
+		LabelID:      label.ID,
+		Description:  fmt.Sprintf("quand l'étiquette %s est retirée de la carte par *", label.Name),
+		UserID:       "*",
+		CreatedAt:    time.Now(),
+		ModifiedAt:   time.Now(),
+	}
+}
+
+func (board Board) BuildActionAddMember(username Username) Action {
 	return Action{
 		ID:          ActionID(newId()),
 		ActionType:  "addMember",
@@ -80,7 +93,19 @@ func (board Board) BuildAction(username Username) Action {
 	}
 }
 
-func (board Board) BuildRule(user User, labelName BoardLabelName) Rule {
+func (board Board) BuildActionRemoveMember(username Username) Action {
+	return Action{
+		ID:          ActionID(newId()),
+		ActionType:  "removeMember",
+		Username:    username,
+		BoardID:     board.ID,
+		Description: fmt.Sprintf("%s est exclu de la carte", username),
+		CreatedAt:   time.Now(),
+		ModifiedAt:  time.Now(),
+	}
+}
+
+func (board Board) BuildRuleAddMember(user User, labelName BoardLabelName) Rule {
 	label := board.GetLabelByName(labelName)
 	if label == (BoardLabel{}) {
 		return Rule{}
@@ -89,11 +114,36 @@ func (board Board) BuildRule(user User, labelName BoardLabelName) Rule {
 		return Rule{}
 	}
 
-	action := board.BuildAction(user.Username)
-	trigger := board.BuildTrigger(label)
+	action := board.BuildActionAddMember(user.Username)
+	trigger := board.BuildTriggerAddedLabel(label)
 	rule := Rule{
 		ID:         RuleID(newId()),
 		Title:      fmt.Sprintf("Ajout %s (étiquette %s) ", user.Username, label.Name),
+		TriggerID:  &trigger.ID,
+		ActionID:   &action.ID,
+		BoardID:    board.ID,
+		CreatedAt:  time.Now(),
+		ModifiedAt: time.Now(),
+		Action:     action,
+		Trigger:    trigger,
+	}
+	return rule
+}
+
+func (board Board) BuildRuleRemoveMember(user User, labelName BoardLabelName) Rule {
+	label := board.GetLabelByName(labelName)
+	if label == (BoardLabel{}) {
+		return Rule{}
+	}
+	if !board.UserIsActiveMember(user) {
+		return Rule{}
+	}
+
+	action := board.BuildActionRemoveMember(user.Username)
+	trigger := board.BuildTriggerRemovedLabel(label)
+	rule := Rule{
+		ID:         RuleID(newId()),
+		Title:      fmt.Sprintf("Suppression %s (étiquette %s) ", user.Username, label.Name),
 		TriggerID:  &trigger.ID,
 		ActionID:   &action.ID,
 		BoardID:    board.ID,
@@ -109,8 +159,20 @@ func (rules Rules) selectUser(username Username) Rules {
 	return selectSlice(rules, func(rule Rule) bool { return rule.Action.Username == username })
 }
 
-func (rules Rules) selectBoardLabelName(boardLabelID BoardLabelID) Rules {
+func (rules Rules) SelectBoardLabelName(boardLabelID BoardLabelID) Rules {
 	return selectSlice(rules, func(rule Rule) bool { return rule.Trigger.LabelID == boardLabelID })
+}
+
+func (rules Rules) SelectRemoveMemberFromTaskforceRule() Rules {
+	return selectSlice(rules, func(rule Rule) bool {
+		return rule.Action.ActionType == "removeMember" && rule.Trigger.ActivityType == "removedLabel"
+	})
+}
+
+func (rules Rules) SelectAddMemberToTaskforceRule() Rules {
+	return selectSlice(rules, func(rule Rule) bool {
+		return rule.Action.ActionType == "addMember" && rule.Trigger.ActivityType == "addedLabel"
+	})
 }
 
 func (wekan *Wekan) InsertRule(ctx context.Context, rule Rule) error {
@@ -232,14 +294,28 @@ func (wekan *Wekan) RemoveRuleWithID(ctx context.Context, ruleID RuleID) error {
 	return nil
 }
 
-func (wekan *Wekan) EnsureRuleExists(ctx context.Context, user User, board Board, boardLabel BoardLabel) (bool, error) {
+func (wekan *Wekan) EnsureRuleAddTaskforceMemberExists(ctx context.Context, user User, board Board, boardLabel BoardLabel) (bool, error) {
 	boardRules, err := wekan.SelectRulesFromBoardID(ctx, board.ID)
 	if err != nil {
 		return false, err
 	}
-	existingRules := boardRules.selectBoardLabelName(boardLabel.ID).selectUser(user.Username)
+	existingRules := boardRules.SelectBoardLabelName(boardLabel.ID).selectUser(user.Username).SelectAddMemberToTaskforceRule()
 	if len(existingRules) == 0 {
-		rule := board.BuildRule(user, boardLabel.Name)
+		rule := board.BuildRuleAddMember(user, boardLabel.Name)
+		err = wekan.InsertRule(ctx, rule)
+		return err == nil, err
+	}
+	return false, nil
+}
+
+func (wekan *Wekan) EnsureRuleRemoveTaskforceMemberExists(ctx context.Context, user User, board Board, boardLabel BoardLabel) (bool, error) {
+	boardRules, err := wekan.SelectRulesFromBoardID(ctx, board.ID)
+	if err != nil {
+		return false, err
+	}
+	existingRules := boardRules.SelectBoardLabelName(boardLabel.ID).selectUser(user.Username).SelectRemoveMemberFromTaskforceRule()
+	if len(existingRules) == 0 {
+		rule := board.BuildRuleRemoveMember(user, boardLabel.Name)
 		err = wekan.InsertRule(ctx, rule)
 		return err == nil, err
 	}
