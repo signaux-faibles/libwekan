@@ -356,18 +356,8 @@ func (wekan *Wekan) EnableUser(ctx context.Context, user User) error {
 		return err
 	}
 
-	stats, err := wekan.db.Collection("users").UpdateOne(ctx, bson.M{"_id": user.ID}, bson.M{
-		"$set": bson.M{
-			"loginDisabled": false,
-		},
-	})
-
-	if err != nil {
-		return err
-	}
-
 	// enable BoardMember on template board
-	_, err = wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": user.Profile.TemplatesBoardId},
+	_, err := wekan.db.Collection("boards").UpdateOne(ctx, bson.M{"_id": user.Profile.TemplatesBoardId},
 		bson.M{
 			"$set": bson.M{"members.$[member].isActive": true},
 		},
@@ -376,6 +366,24 @@ func (wekan *Wekan) EnableUser(ctx context.Context, user User) error {
 				Filters: bson.A{bson.M{"member.userId": user.ID}}},
 		},
 	)
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+
+	stats, err := wekan.db.Collection("users").UpdateOne(ctx,
+		bson.M{
+			"_id":           user.ID,
+			"loginDisabled": true,
+		},
+		bson.M{
+			"$set": bson.M{
+				"loginDisabled": false,
+			},
+		})
+
+	if err == mongo.ErrNoDocuments {
+		return NothingDoneError{}
+	}
 	if err != nil {
 		return UnexpectedMongoError{err}
 	}
