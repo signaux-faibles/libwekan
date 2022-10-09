@@ -71,7 +71,7 @@ func TestRulesInsertRuleRemoveMember_whenUserIsNotMember(t *testing.T) {
 func TestRules_InsertAddMemberRule_whenEverythingsFine(t *testing.T) {
 	ass := assert.New(t)
 	// GIVEN
-	tableauSansEtiquette, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
+	tableauSansEtiquette, _, _ := createTestBoard(t, "", 1, 1)
 	userDeTest := createTestUser(t, "")
 	wekan.EnsureUserIsActiveBoardMember(ctx, tableauSansEtiquette.ID, userDeTest.ID)
 
@@ -82,7 +82,7 @@ func TestRules_InsertAddMemberRule_whenEverythingsFine(t *testing.T) {
 		Color: "blue",
 	}
 	wekan.InsertBoardLabel(ctx, tableauSansEtiquette, testBoardLabel)
-	tableauAvecEtiquette, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
+	tableauAvecEtiquette, _ := tableauSansEtiquette.ID.GetDocument(ctx, &wekan)
 
 	regleAAjouter := tableauAvecEtiquette.BuildRuleAddMember(userDeTest, BoardLabelName(t.Name()))
 	ass.NotEmpty(regleAAjouter)
@@ -105,7 +105,7 @@ func TestRules_InsertAddMemberRule_whenEverythingsFine(t *testing.T) {
 func TestRules_InsertRemoveMemberRule_whenEverythingsFine(t *testing.T) {
 	ass := assert.New(t)
 	// GIVEN
-	tableauSansEtiquette, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
+	tableauSansEtiquette, _, _ := createTestBoard(t, "", 1, 1)
 	userDeTest := createTestUser(t, "")
 	wekan.EnsureUserIsActiveBoardMember(ctx, tableauSansEtiquette.ID, userDeTest.ID)
 
@@ -116,7 +116,7 @@ func TestRules_InsertRemoveMemberRule_whenEverythingsFine(t *testing.T) {
 		Color: "blue",
 	}
 	wekan.InsertBoardLabel(ctx, tableauSansEtiquette, testBoardLabel)
-	tableauAvecEtiquette, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
+	tableauAvecEtiquette, _ := tableauSansEtiquette.ID.GetDocument(ctx, &wekan)
 
 	regleAAjouter := tableauAvecEtiquette.BuildRuleRemoveMember(userDeTest, BoardLabelName(t.Name()))
 	ass.NotEmpty(regleAAjouter)
@@ -139,7 +139,7 @@ func TestRules_InsertRemoveMemberRule_whenEverythingsFine(t *testing.T) {
 func TestRules_EnsureRuleAddTaskforceMemberExists(t *testing.T) {
 	ass := assert.New(t)
 	// GIVEN
-	tableauSansEtiquette, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
+	tableauSansEtiquette, _, _ := createTestBoard(t, "", 1, 1)
 	userDeTest := createTestUser(t, "")
 	wekan.EnsureUserIsActiveBoardMember(ctx, tableauSansEtiquette.ID, userDeTest.ID)
 
@@ -150,7 +150,7 @@ func TestRules_EnsureRuleAddTaskforceMemberExists(t *testing.T) {
 		Color: "blue",
 	}
 	wekan.InsertBoardLabel(ctx, tableauSansEtiquette, testBoardLabel)
-	tableauAvecEtiquette, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
+	tableauAvecEtiquette, _ := tableauSansEtiquette.ID.GetDocument(ctx, &wekan)
 
 	// WHEN
 	modified, err := wekan.EnsureRuleAddTaskforceMemberExists(ctx, userDeTest, tableauAvecEtiquette, testBoardLabel)
@@ -168,7 +168,7 @@ func TestRules_EnsureRuleAddTaskforceMemberExists(t *testing.T) {
 func TestRules_EnsureRuleRemoveTaskforceMemberExists(t *testing.T) {
 	ass := assert.New(t)
 	// GIVEN
-	tableauSansEtiquette, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
+	tableauSansEtiquette, _, _ := createTestBoard(t, "", 1, 1)
 	userDeTest := createTestUser(t, "")
 	wekan.EnsureUserIsActiveBoardMember(ctx, tableauSansEtiquette.ID, userDeTest.ID)
 
@@ -179,7 +179,7 @@ func TestRules_EnsureRuleRemoveTaskforceMemberExists(t *testing.T) {
 		Color: "blue",
 	}
 	wekan.InsertBoardLabel(ctx, tableauSansEtiquette, testBoardLabel)
-	tableauAvecEtiquette, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
+	tableauAvecEtiquette, _ := tableauSansEtiquette.ID.GetDocument(ctx, &wekan)
 
 	// WHEN
 	modified, err := wekan.EnsureRuleRemoveTaskforceMemberExists(ctx, userDeTest, tableauAvecEtiquette, testBoardLabel)
@@ -197,7 +197,7 @@ func TestRules_EnsureRuleRemoveTaskforceMemberExists(t *testing.T) {
 func TestRules_EnsureRuleAddTaskforceMemberExists_WhenRuleAlreadyExists(t *testing.T) {
 	ass := assert.New(t)
 	// GIVEN
-	tableauSansEtiquette, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
+	tableauSansEtiquette, _, _ := createTestBoard(t, "", 1, 1)
 	userDeTest := createTestUser(t, "")
 	wekan.EnsureUserIsActiveBoardMember(ctx, tableauSansEtiquette.ID, userDeTest.ID)
 
@@ -208,7 +208,7 @@ func TestRules_EnsureRuleAddTaskforceMemberExists_WhenRuleAlreadyExists(t *testi
 		Color: "blue",
 	}
 	wekan.InsertBoardLabel(ctx, tableauSansEtiquette, testBoardLabel)
-	tableauAvecEtiquette, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
+	tableauAvecEtiquette, _ := tableauSansEtiquette.ID.GetDocument(ctx, &wekan)
 	wekan.EnsureRuleAddTaskforceMemberExists(ctx, userDeTest, tableauAvecEtiquette, testBoardLabel)
 
 	// WHEN
@@ -227,7 +227,7 @@ func TestRules_EnsureRuleAddTaskforceMemberExists_WhenRuleAlreadyExists(t *testi
 func TestRules_EnsureRuleRemoveTaskforceMemberExists_WhenRuleAlreadyExists(t *testing.T) {
 	ass := assert.New(t)
 	// GIVEN
-	tableauSansEtiquette, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
+	tableauSansEtiquette, _, _ := createTestBoard(t, "", 1, 1)
 	userDeTest := createTestUser(t, "")
 	wekan.EnsureUserIsActiveBoardMember(ctx, tableauSansEtiquette.ID, userDeTest.ID)
 
@@ -238,7 +238,7 @@ func TestRules_EnsureRuleRemoveTaskforceMemberExists_WhenRuleAlreadyExists(t *te
 		Color: "blue",
 	}
 	wekan.InsertBoardLabel(ctx, tableauSansEtiquette, testBoardLabel)
-	tableauAvecEtiquette, _ := wekan.GetBoardFromSlug(ctx, "tableau-crp-bfc")
+	tableauAvecEtiquette, _ := tableauSansEtiquette.ID.GetDocument(ctx, &wekan)
 	wekan.EnsureRuleRemoveTaskforceMemberExists(ctx, userDeTest, tableauAvecEtiquette, testBoardLabel)
 
 	// WHEN
