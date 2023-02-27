@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/ory/dockertest/v3 v3.9.1
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.2
 	go.mongodb.org/mongo-driver v1.10.3
 )
 
