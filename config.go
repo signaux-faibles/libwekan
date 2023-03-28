@@ -2,6 +2,7 @@ package libwekan
 
 import (
 	"context"
+	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -42,8 +43,8 @@ func buildConfigPipeline(slugDomainRegexp string) []bson.M {
 					}}},
 				{"$project": bson.M{
 					"_id": 0,
-					"v":   "$$ROOT",
 					"k":   "$_id",
+					"v":   "$$ROOT",
 				}},
 			},
 			"as": "swimlanes",
@@ -61,8 +62,8 @@ func buildConfigPipeline(slugDomainRegexp string) []bson.M {
 					}}},
 				{"$project": bson.M{
 					"_id": 0,
-					"v":   "$$ROOT",
 					"k":   "$_id",
+					"v":   "$$ROOT",
 				}},
 			},
 			"as": "lists",
@@ -80,11 +81,11 @@ func buildConfigPipeline(slugDomainRegexp string) []bson.M {
 					}}},
 				{"$project": bson.M{
 					"_id": 0,
-					"v":   "$$ROOT",
 					"k":   "$_id",
+					"v":   "$$ROOT",
 				}},
 			},
-			"as": "lists",
+			"as": "customFields",
 		},
 	}
 
@@ -102,7 +103,7 @@ func buildConfigPipeline(slugDomainRegexp string) []bson.M {
 		},
 	}
 
-	babaBoards := bson.M{
+	prepareBoardsFoArrayToObject := bson.M{
 		"$project": bson.M{
 			"_id": 0,
 			"k":   "$_id",
@@ -151,7 +152,7 @@ func buildConfigPipeline(slugDomainRegexp string) []bson.M {
 		lookupLists,
 		lookupCustomFields,
 		buildBoardConfig,
-		babaBoards,
+		prepareBoardsFoArrayToObject,
 		groupByBoard,
 		formatBoards,
 		lookupUsers,
@@ -170,6 +171,7 @@ func (wekan *Wekan) SelectConfig(ctx context.Context) (Config, error) {
 	cur.Next(ctx)
 	err = cur.Decode(&config)
 	if err != nil {
+		fmt.Println(err)
 		return Config{}, UnexpectedMongoDecodeError{err}
 	}
 	err = cur.Close(ctx)

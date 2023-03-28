@@ -17,7 +17,7 @@ type Board struct {
 	Permission                 string        `bson:"permission"`
 	Sort                       float64       `bson:"sort"`
 	Archived                   bool          `bson:"archived"`
-	CreatedAt                  time.Time     `bson:"createAt"`
+	CreatedAt                  time.Time     `bson:"createdAt"`
 	ModifiedAt                 time.Time     `bson:"modifiedAt"`
 	Stars                      int           `bson:"stars"`
 	Labels                     []BoardLabel  `bson:"labels"`
