@@ -112,6 +112,18 @@ func (e UnexpectedMongoError) Unwrap() error {
 	return e.err
 }
 
+type UnexpectedMongoDecodeError struct {
+	err error
+}
+
+func (e UnexpectedMongoDecodeError) Error() string {
+	return "une erreur est survenue lors du décodage du résultat de la requête"
+}
+
+func (e UnexpectedMongoDecodeError) Unwrap() error {
+	return e.err
+}
+
 type AlreadySetActivityError struct {
 	activityType string
 }
