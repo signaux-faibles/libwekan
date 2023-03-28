@@ -16,7 +16,7 @@ type Swimlane struct {
 	Type       string     `bson:"type"`
 	Archived   bool       `bson:"archived"`
 	CreatedAt  time.Time  `bson:"createdAt"`
-	UpdatedAt  time.Time  `bson:"updateAt"`
+	UpdatedAt  time.Time  `bson:"updatedAt"`
 	ModifiedAt time.Time  `bson:"modifiedAt"`
 }
 

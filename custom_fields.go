@@ -6,7 +6,7 @@ type CustomField struct {
 	ID                  CustomFieldID `bson:"_id"`
 	Name                string
 	Type                string
-	Settings            struct{}
+	Settings            CustomFieldSettings
 	ShowOnCard          bool
 	ShowLabelOnMiniCard bool
 	AutomaticallyOnCard bool
