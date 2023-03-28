@@ -33,43 +33,45 @@ type Vote struct {
 	AllowNonBoardMembers bool     `bson:"allowNonBoardMembers"`
 }
 
-type CustomField struct {
-	ID    string `json:"_id" bson:"_id"`
-	Value string `json:"value" bson:"value"`
+type CustomFieldID string
+
+type CardCustomField struct {
+	ID    CustomFieldID `json:"_id" bson:"_id"`
+	Value string        `json:"value" bson:"value"`
 }
 
 type Card struct {
-	ID               CardID         `bson:"_id"`
-	Title            string         `bson:"title"`
-	Members          []UserID       `bson:"members"`
-	LabelIDs         []BoardLabelID `bson:"labelIds"`
-	CustomFields     []CustomField  `bson:"customFields"`
-	ListID           ListID         `bson:"listId"`
-	BoardID          BoardID        `bson:"boardId"`
-	Sort             float64        `bson:"sort"`
-	SwimlaneID       SwimlaneID     `bson:"swimlaneId"`
-	Type             string         `bson:"type"`
-	Archived         bool           `bson:"archived"`
-	ParentID         CardID         `bson:"parentId,omitempty"`
-	CoverID          string         `bson:"coverId"`
-	CreatedAt        time.Time      `bson:"createdAt"`
-	ModifiedAt       time.Time      `bson:"modifiedAt"`
-	DateLastActivity time.Time      `bson:"dateLastActivity"`
-	Description      string         `bson:"description"`
-	RequestedBy      UserID         `bson:"requestedBy"`
-	AssignedBy       UserID         `bson:"assignedBy"`
-	Assignees        []UserID       `bson:"assignees"`
-	SpentTime        int            `bson:"spentTime"`
-	IsOverTime       bool           `bson:"isOvertime"`
-	UserID           UserID         `bson:"userId"`
-	SubtaskSort      int            `bson:"subtaskSort"`
-	LinkedID         CardID         `bson:"linkedId"`
-	Vote             Vote           `bson:"vote"`
-	Poker            Poker          `bson:"poker"`
-	TargetIDGantt    []string       `bson:"targetId_gantt"`
-	LinkTypeGantt    []string       `bson:"linkType_gantt"`
-	LinkIDGantt      []string       `bson:"linkId_gantt"`
-	StartAt          time.Time      `bson:"startAt"`
+	ID               CardID            `bson:"_id"`
+	Title            string            `bson:"title"`
+	Members          []UserID          `bson:"members"`
+	LabelIDs         []BoardLabelID    `bson:"labelIds"`
+	CustomFields     []CardCustomField `bson:"customFields"`
+	ListID           ListID            `bson:"listId"`
+	BoardID          BoardID           `bson:"boardId"`
+	Sort             float64           `bson:"sort"`
+	SwimlaneID       SwimlaneID        `bson:"swimlaneId"`
+	Type             string            `bson:"type"`
+	Archived         bool              `bson:"archived"`
+	ParentID         CardID            `bson:"parentId,omitempty"`
+	CoverID          string            `bson:"coverId"`
+	CreatedAt        time.Time         `bson:"createdAt"`
+	ModifiedAt       time.Time         `bson:"modifiedAt"`
+	DateLastActivity time.Time         `bson:"dateLastActivity"`
+	Description      string            `bson:"description"`
+	RequestedBy      UserID            `bson:"requestedBy"`
+	AssignedBy       UserID            `bson:"assignedBy"`
+	Assignees        []UserID          `bson:"assignees"`
+	SpentTime        int               `bson:"spentTime"`
+	IsOverTime       bool              `bson:"isOvertime"`
+	UserID           UserID            `bson:"userId"`
+	SubtaskSort      int               `bson:"subtaskSort"`
+	LinkedID         CardID            `bson:"linkedId"`
+	Vote             Vote              `bson:"vote"`
+	Poker            Poker             `bson:"poker"`
+	TargetIDGantt    []string          `bson:"targetId_gantt"`
+	LinkTypeGantt    []string          `bson:"linkType_gantt"`
+	LinkIDGantt      []string          `bson:"linkId_gantt"`
+	StartAt          time.Time         `bson:"startAt"`
 }
 
 func BuildCard(boardID BoardID, listID ListID, swimlaneID SwimlaneID, title string, description string, userID UserID) Card {

@@ -64,6 +64,13 @@ func TestErrors_UnexpectedMongoError(t *testing.T) {
 	assert.ErrorIs(t, e, mongo.ErrNoDocuments)
 }
 
+func TestErrors_UnexpectedMongoDecodeError(t *testing.T) {
+	e := UnexpectedMongoDecodeError{err: mongo.ErrNoDocuments}
+	expected := "une erreur est survenue lors du décodage du résultat de la requête"
+	assert.EqualError(t, e, expected)
+	assert.ErrorIs(t, e, mongo.ErrNoDocuments)
+}
+
 func TestErrors_AlreadySetActityError(t *testing.T) {
 	e := AlreadySetActivityError{"test"}
 	expected := fmt.Sprintf("l'activité est déjà définie: activityType = %s", e.activityType)
