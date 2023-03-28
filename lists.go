@@ -19,7 +19,7 @@ type List struct {
 	ID         ListID       `bson:"_id"`
 	Title      string       `bson:"title"`
 	BoardID    BoardID      `bson:"boardId"`
-	Sort       int          `bson:"sort"`
+	Sort       float64      `bson:"sort"`
 	Type       string       `bson:"type"`
 	Starred    bool         `bson:"starred"`
 	Archived   bool         `bson:"archived"`
@@ -31,7 +31,7 @@ type List struct {
 	WipLimit   ListWipLimit `bson:"wipLimit"`
 }
 
-func BuildList(boardID BoardID, title string, sort int) List {
+func BuildList(boardID BoardID, title string, sort float64) List {
 	return List{
 		ID:      ListID(newId()),
 		Title:   title,
