@@ -7,14 +7,20 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+type ConfigBoard struct {
+	Board        Board                         `bson:"board"`
+	Swimlanes    map[SwimlaneID]Swimlane       `bson:"swimlanes"`
+	Lists        map[ListID]List               `bson:"lists"`
+	CustomFields map[CustomFieldID]CustomField `bson:"customFields"`
+}
+
 type Config struct {
-	Boards map[BoardID]struct {
-		Board        Board                         `bson:"board"`
-		Swimlanes    map[SwimlaneID]Swimlane       `bson:"swimlanes"`
-		Lists        map[ListID]List               `bson:"lists"`
-		CustomFields map[CustomFieldID]CustomField `bson:"customFields"`
-	} `bson:"boards"`
-	Users map[UserID]User
+	Boards map[BoardID]ConfigBoard `bson:"boards"`
+	Users  map[UserID]User         `bson:"users"`
+}
+
+func (config *Config) Copy() Config {
+	return *config
 }
 
 func buildConfigPipeline(slugDomainRegexp string) []bson.M {
