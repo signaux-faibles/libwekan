@@ -63,6 +63,9 @@ func buildConfigPipeline(slugDomainRegexp string) []bson.M {
 			"let":  bson.M{"boardId": "$_id"},
 			"pipeline": []bson.M{
 				{"$match": bson.M{
+					"archived": false,
+				}},
+				{"$match": bson.M{
 					"$expr": bson.M{
 						"$eq": bson.A{"$boardId", "$$boardId"},
 					}}},
