@@ -23,6 +23,15 @@ func (config *Config) Copy() Config {
 	return *config
 }
 
+func (config *Config) GetUserByUsername(username Username) (User, bool) {
+	for _, user := range config.Users {
+		if user.Username == username {
+			return user, true
+		}
+	}
+	return User{}, false
+}
+
 func buildConfigPipeline(slugDomainRegexp string) []bson.M {
 	matchBoards := bson.M{
 		"$match": bson.M{
