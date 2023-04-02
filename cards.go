@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 )
 
@@ -144,6 +145,25 @@ func (wekan *Wekan) SelectCardsFromListID(ctx context.Context, listID ListID) ([
 	return wekan.SelectCardsFromQuery(ctx, bson.M{"listId": listID})
 }
 
+func (wekan *Wekan) SelectCardsFromPipeline(ctx context.Context, collection *mongo.Collection, pipeline bson.A) ([]Card, error) {
+	cur, err := collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, UnexpectedMongoError{err}
+	}
+	var cards []Card
+	err = cur.All(ctx, &cards)
+	if err != nil {
+		return nil, UnexpectedMongoDecodeError{err}
+	}
+	return cards, nil
+}
+
+func (wekan *Wekan) SelectCardsFromCustomTextField(ctx context.Context, name string, value string) ([]Card, error) {
+	collection := wekan.db.Collection("customFields")
+	pipeline := buildCardFromCustomTextFieldPipeline(name, value)
+	return wekan.SelectCardsFromPipeline(ctx, collection, pipeline)
+}
+
 func (wekan *Wekan) GetCardFromID(ctx context.Context, cardID CardID) (Card, error) {
 	cards, err := wekan.SelectCardsFromQuery(ctx, bson.M{"_id": cardID})
 	if err != nil {
@@ -206,4 +226,76 @@ func (wekan *Wekan) AddLabelToCard(ctx context.Context, cardID CardID, labelID B
 		return NothingDoneError{}
 	}
 	return nil
+}
+
+func buildCardFromCustomTextFieldPipeline(name string, value string) bson.A {
+	matchNameStage := bson.M{
+		"$match": bson.M{
+			"name": name,
+		}}
+	unwindBoardIdsStage := bson.M{
+		"$unwind": "$boardIds",
+	}
+
+	matchCardsBoardIds := bson.M{
+		"$match": bson.M{
+			"$expr": bson.M{
+				"$eq": bson.A{"$boardId", "$$boardId"},
+			},
+		},
+	}
+
+	unwindCardsCustomFields := bson.M{
+		"$unwind": "$customFields",
+	}
+
+	matchCardsCustomField := bson.M{
+		"$match": bson.M{
+			"$expr": bson.M{
+				"$and": bson.A{
+					bson.M{
+						"$eq": bson.A{"$customFields._id", "$$customFieldId"},
+					},
+					bson.M{
+						"$eq": bson.A{"$customFields.value", value},
+					},
+				},
+			},
+		},
+	}
+
+	lookupCardsPipeline := bson.A{
+		matchCardsBoardIds,
+		unwindCardsCustomFields,
+		matchCardsCustomField,
+	}
+
+	lookupCardsStage := bson.M{
+		"$lookup": bson.M{
+			"let": bson.M{
+				"boardId":       "$boardIds",
+				"customFieldId": "$_id",
+			},
+			"pipeline": lookupCardsPipeline,
+			"as":       "cards",
+		},
+	}
+
+	unwindCardsStage := bson.M{
+		"$unwind": "cards",
+	}
+
+	replaceRootStage := bson.M{
+		"$replaceRoot": bson.M{
+			"newRoot": "$cards",
+		},
+	}
+
+	return bson.A{
+		matchNameStage,
+		unwindBoardIdsStage,
+		lookupCardsStage,
+		unwindCardsStage,
+		replaceRootStage,
+	}
 }
