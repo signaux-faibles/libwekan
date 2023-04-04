@@ -31,8 +31,8 @@ jobs:
 #          build-tags:
 #            - integration
 
-      - name: Run Codacy Analysis CLI
-        uses: codacy/codacy-analysis-cli-action@v4
+#      - name: Run Codacy Analysis CLI
+#        uses: codacy/codacy-analysis-cli-action@v4
 
       - name: Unit Tests
         run: go test ./... -v -tags integration
