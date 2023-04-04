@@ -7,9 +7,12 @@ on:
     tags:
       - 'v*'
   release:
-    types: [published, edited]
+    types: [ published, edited ]
   pull_request:
     branches:
+
+permissions:
+  contents: read
 
 env:
   GOFLAGS: -mod=readonly
