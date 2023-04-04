@@ -71,9 +71,9 @@ func (e ProtectedUserError) Error() string {
 	return fmt.Sprintf("cet action est interdite sur cet utilisateur (%s)", e.id)
 }
 
-type AdminUserIsNotAdminError struct {
-	username Username
-}
+//type AdminUserIsNotAdminError struct {
+//	username Username
+//}
 
 type InsertEmptyRuleError struct {
 }
