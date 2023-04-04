@@ -1,6 +1,6 @@
 module github.com/signaux-faibles/libwekan
 
-go 1.18
+go 1.20
 
 require (
 	github.com/ory/dockertest/v3 v3.9.1
