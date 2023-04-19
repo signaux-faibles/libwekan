@@ -180,6 +180,9 @@ func buildConfigPipeline(slugDomainRegexp string) []bson.M {
 
 func (wekan *Wekan) SelectConfig(ctx context.Context) (Config, error) {
 	var config Config
+	if wekan.db == nil {
+		return Config{}, fmt.Errorf("impossible de sélectionner la configuration car la base de données n'est pas définie")
+	}
 	pipeline := buildConfigPipeline(wekan.slugDomainRegexp)
 
 	cur, err := wekan.db.Collection("boards").Aggregate(ctx, pipeline, nil)
