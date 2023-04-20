@@ -350,6 +350,11 @@ func BuildUser(email, initials, fullname string) User {
 	return newUser
 }
 
+func (user User) Admin(admin bool) User {
+	user.IsAdmin = admin
+	return user
+}
+
 // EnableUser active un utilisateur dans la base `users` et active la participation à son tableau templates
 func (wekan *Wekan) EnableUser(ctx context.Context, user User) error {
 	if err := wekan.AssertPrivileged(ctx); err != nil {
