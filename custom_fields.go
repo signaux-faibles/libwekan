@@ -3,7 +3,7 @@ package libwekan
 import "time"
 
 type CustomField struct {
-	ID                  CustomFieldID `bson:"_id"`
+	ID                  CardCustomFieldID `bson:"_id"`
 	Name                string
 	Type                string
 	Settings            CustomFieldSettings

@@ -3,8 +3,8 @@ package libwekan
 import (
 	"context"
 	"errors"
+	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 )
 
@@ -25,6 +25,7 @@ type Poker struct {
 	End                  *bool    `bson:"end"`
 	AllowNonBoardMembers bool     `bson:"allowNonBoardMembers"`
 }
+
 type Vote struct {
 	Question             string   `bson:"question"`
 	Positive             []string `bson:"positive"`
@@ -34,11 +35,11 @@ type Vote struct {
 	AllowNonBoardMembers bool     `bson:"allowNonBoardMembers"`
 }
 
-type CustomFieldID string
+type CardCustomFieldID string
 
 type CardCustomField struct {
-	ID    CustomFieldID `json:"_id" bson:"_id"`
-	Value string        `json:"value" bson:"value"`
+	ID    CardCustomFieldID `bson:"_id"`
+	Value string            `bson:"value"`
 }
 
 type Card struct {
@@ -73,6 +74,7 @@ type Card struct {
 	LinkTypeGantt    []string          `bson:"linkType_gantt"`
 	LinkIDGantt      []string          `bson:"linkId_gantt"`
 	StartAt          time.Time         `bson:"startAt"`
+	EndAt            *time.Time        `bson:"endAt"`
 }
 
 func BuildCard(boardID BoardID, listID ListID, swimlaneID SwimlaneID, title string, description string, userID UserID) Card {
@@ -145,9 +147,10 @@ func (wekan *Wekan) SelectCardsFromListID(ctx context.Context, listID ListID) ([
 	return wekan.SelectCardsFromQuery(ctx, bson.M{"listId": listID})
 }
 
-func (wekan *Wekan) SelectCardsFromPipeline(ctx context.Context, collection *mongo.Collection, pipeline bson.A) ([]Card, error) {
-	cur, err := collection.Aggregate(ctx, pipeline)
+func (wekan *Wekan) SelectCardsFromPipeline(ctx context.Context, collection string, pipeline bson.A) ([]Card, error) {
+	cur, err := wekan.db.Collection(collection).Aggregate(ctx, pipeline)
 	if err != nil {
+		fmt.Println(err)
 		return nil, UnexpectedMongoError{err}
 	}
 	var cards []Card
@@ -159,9 +162,8 @@ func (wekan *Wekan) SelectCardsFromPipeline(ctx context.Context, collection *mon
 }
 
 func (wekan *Wekan) SelectCardsFromCustomTextField(ctx context.Context, name string, value string) ([]Card, error) {
-	collection := wekan.db.Collection("customFields")
-	pipeline := buildCardFromCustomTextFieldPipeline(name, value)
-	return wekan.SelectCardsFromPipeline(ctx, collection, pipeline)
+	pipeline := BuildCardFromCustomTextFieldPipeline(name, value)
+	return wekan.SelectCardsFromPipeline(ctx, "customFields", pipeline)
 }
 
 func (wekan *Wekan) GetCardFromID(ctx context.Context, cardID CardID) (Card, error) {
@@ -228,7 +230,7 @@ func (wekan *Wekan) AddLabelToCard(ctx context.Context, cardID CardID, labelID B
 	return nil
 }
 
-func buildCardFromCustomTextFieldPipeline(name string, value string) bson.A {
+func BuildCardFromCustomTextFieldPipeline(name string, value string) bson.A {
 	matchNameStage := bson.M{
 		"$match": bson.M{
 			"name": name,
@@ -245,8 +247,15 @@ func buildCardFromCustomTextFieldPipeline(name string, value string) bson.A {
 		},
 	}
 
-	unwindCardsCustomFields := bson.M{
-		"$unwind": "$customFields",
+	duplicateCardsCustomFields := bson.M{
+		"$addFields": bson.M{"customField": "$customFields"},
+	}
+
+	unwindCardsCustomField := bson.M{
+		"$unwind": bson.M{
+			"path":                       "$customField",
+			"preserveNullAndEmptyArrays": true,
+		},
 	}
 
 	matchCardsCustomField := bson.M{
@@ -254,20 +263,28 @@ func buildCardFromCustomTextFieldPipeline(name string, value string) bson.A {
 			"$expr": bson.M{
 				"$and": bson.A{
 					bson.M{
-						"$eq": bson.A{"$customFields._id", "$$customFieldId"},
+						"$eq": bson.A{"$customField._id", "$$customFieldId"},
 					},
 					bson.M{
-						"$eq": bson.A{"$customFields.value", value},
+						"$eq": bson.A{"$customField.value", value},
 					},
 				},
 			},
 		},
 	}
 
+	removeCardsCustomField := bson.M{
+		"$project": bson.M{
+			"customField": false,
+		},
+	}
+
 	lookupCardsPipeline := bson.A{
 		matchCardsBoardIds,
-		unwindCardsCustomFields,
+		duplicateCardsCustomFields,
+		unwindCardsCustomField,
 		matchCardsCustomField,
+		removeCardsCustomField,
 	}
 
 	lookupCardsStage := bson.M{
@@ -276,13 +293,14 @@ func buildCardFromCustomTextFieldPipeline(name string, value string) bson.A {
 				"boardId":       "$boardIds",
 				"customFieldId": "$_id",
 			},
+			"from":     "cards",
 			"pipeline": lookupCardsPipeline,
 			"as":       "cards",
 		},
 	}
 
 	unwindCardsStage := bson.M{
-		"$unwind": "cards",
+		"$unwind": "$cards",
 	}
 
 	replaceRootStage := bson.M{
@@ -291,11 +309,13 @@ func buildCardFromCustomTextFieldPipeline(name string, value string) bson.A {
 		},
 	}
 
-	return bson.A{
+	pipeline := bson.A{
 		matchNameStage,
 		unwindBoardIdsStage,
 		lookupCardsStage,
 		unwindCardsStage,
 		replaceRootStage,
 	}
+
+	return pipeline
 }

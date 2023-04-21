@@ -8,10 +8,10 @@ import (
 )
 
 type ConfigBoard struct {
-	Board        Board                         `bson:"board"`
-	Swimlanes    map[SwimlaneID]Swimlane       `bson:"swimlanes"`
-	Lists        map[ListID]List               `bson:"lists"`
-	CustomFields map[CustomFieldID]CustomField `bson:"customFields"`
+	Board        Board                             `bson:"board"`
+	Swimlanes    map[SwimlaneID]Swimlane           `bson:"swimlanes"`
+	Lists        map[ListID]List                   `bson:"lists"`
+	CustomFields map[CardCustomFieldID]CustomField `bson:"customFields"`
 }
 
 type Config struct {
