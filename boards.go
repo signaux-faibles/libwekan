@@ -455,3 +455,12 @@ func (board Board) HasLabelName(name BoardLabelName) bool {
 	}
 	return false
 }
+
+func (board Board) HasLabelNames(names []BoardLabelName) bool {
+	for _, name := range names {
+		if !board.HasLabelName(name) {
+			return false
+		}
+	}
+	return true
+}
