@@ -412,6 +412,7 @@ func (wekan *Wekan) InsertBoardLabel(ctx context.Context, board Board, boardLabe
 	return err
 }
 
+// SelectBoardsFromMemberID retourne les boards où on trouve le memberID passé en paramètre
 func (wekan *Wekan) SelectBoardsFromMemberID(ctx context.Context, memberID UserID) ([]Board, error) {
 	var boards []Board
 	query := bson.M{
@@ -428,6 +429,7 @@ func (wekan *Wekan) SelectBoardsFromMemberID(ctx context.Context, memberID UserI
 	return boards, nil
 }
 
+// SelectDomainBoards retourne les boards correspondant à la slugDomainRegexp
 func (wekan *Wekan) SelectDomainBoards(ctx context.Context) ([]Board, error) {
 	var boards []Board
 	query := bson.M{
@@ -442,4 +444,14 @@ func (wekan *Wekan) SelectDomainBoards(ctx context.Context) ([]Board, error) {
 		return nil, UnexpectedMongoError{err}
 	}
 	return boards, nil
+}
+
+// HasLabelName est vrai lorsque la board dispose du labelName passé en paramètre
+func (board Board) HasLabelName(name BoardLabelName) bool {
+	for _, label := range board.Labels {
+		if label.Name == name {
+			return true
+		}
+	}
+	return false
 }

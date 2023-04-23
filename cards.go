@@ -2,9 +2,11 @@ package libwekan
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 )
 
@@ -148,6 +150,8 @@ func (wekan *Wekan) SelectCardsFromListID(ctx context.Context, listID ListID) ([
 }
 
 func (wekan *Wekan) SelectCardsFromPipeline(ctx context.Context, collection string, pipeline bson.A) ([]Card, error) {
+	a, _ := json.MarshalIndent(pipeline, "", " ")
+	fmt.Println(string(a))
 	cur, err := wekan.db.Collection(collection).Aggregate(ctx, pipeline)
 	if err != nil {
 		fmt.Println(err)
@@ -162,7 +166,7 @@ func (wekan *Wekan) SelectCardsFromPipeline(ctx context.Context, collection stri
 }
 
 func (wekan *Wekan) SelectCardsFromCustomTextField(ctx context.Context, name string, value string) ([]Card, error) {
-	pipeline := BuildCardFromCustomTextFieldPipeline(name, value)
+	pipeline := wekan.BuildCardFromCustomTextFieldPipeline(name, value)
 	return wekan.SelectCardsFromPipeline(ctx, "customFields", pipeline)
 }
 
@@ -230,7 +234,43 @@ func (wekan *Wekan) AddLabelToCard(ctx context.Context, cardID CardID, labelID B
 	return nil
 }
 
-func BuildCardFromCustomTextFieldPipeline(name string, value string) bson.A {
+func (wekan *Wekan) BuildDomainCardsPipeline() bson.A {
+	matchBoardsStage := bson.M{
+		"$match": bson.M{
+			"slug": bson.M{"$regex": wekan.slugDomainRegexp},
+		},
+	}
+
+	lookupCardsStage := bson.M{
+		"$lookup": bson.M{
+			"from": "cards",
+			"let":  bson.M{"boardId": "$_id"},
+			"pipeline": bson.A{
+				bson.M{"$match": bson.M{"$expr": bson.M{"$eq": bson.A{"$boardId", "$$boardId"}}}},
+			},
+			"as": "card",
+		},
+	}
+
+	unwindCardStage := bson.M{
+		"$unwind": "$card",
+	}
+
+	replaceRootStage := bson.M{
+		"$replaceRoot": bson.M{
+			"newRoot": "$card",
+		},
+	}
+
+	return bson.A{
+		matchBoardsStage,
+		lookupCardsStage,
+		unwindCardStage,
+		replaceRootStage,
+	}
+}
+
+func (wekan *Wekan) BuildCardFromCustomTextFieldPipeline(name string, value string) bson.A {
 	matchNameStage := bson.M{
 		"$match": bson.M{
 			"name": name,
@@ -238,6 +278,38 @@ func BuildCardFromCustomTextFieldPipeline(name string, value string) bson.A {
 	unwindBoardIdsStage := bson.M{
 		"$unwind": "$boardIds",
 	}
+
+	lookupBoardsPipeline := bson.A{
+		bson.M{
+			"$match": bson.M{
+				"$expr": bson.M{
+					"$eq": bson.A{"$_id", "$$boardId"},
+				},
+			},
+		}}
+
+	lookupBoardsStage := bson.M{
+		"$lookup": bson.M{
+			"from": "boards",
+			"let": bson.M{
+				"boardId": "$boardIds",
+			},
+			"pipeline": lookupBoardsPipeline,
+			"as":       "board",
+		},
+	}
+
+	unwindBoardsStage := bson.M{
+		"$unwind": "$board",
+	}
+
+	matchBoardsStage := bson.M{
+		"$match": bson.M{
+			"slug": bson.M{
+				"$regex": primitive.Regex{
+					Pattern: wekan.slugDomainRegexp,
+					Options: "i",
+				}}}}
 
 	matchCardsBoardIds := bson.M{
 		"$match": bson.M{
@@ -312,6 +384,9 @@ func BuildCardFromCustomTextFieldPipeline(name string, value string) bson.A {
 	pipeline := bson.A{
 		matchNameStage,
 		unwindBoardIdsStage,
+		lookupBoardsStage,
+		unwindBoardsStage,
+		matchBoardsStage,
 		lookupCardsStage,
 		unwindCardsStage,
 		replaceRootStage,

@@ -132,7 +132,6 @@ func TestBoards_GetLabelByID_whenBoardLabelDoesntExists(t *testing.T) {
 	ass.Empty(label)
 }
 
-// NewBoardLabel retourne un objet BoardLabel
 func Test_BuildBoardLabel(t *testing.T) {
 	id := t.Name() + "ID"
 	name := t.Name() + "Name"
@@ -147,4 +146,18 @@ func Test_BuildBoardLabel(t *testing.T) {
 
 	assert.Equal(t, expected.Name, boardLabel.Name)
 	assert.Equal(t, expected.Color, boardLabel.Color)
+}
+
+func TestBoard_HasLabelName_NotExistingLabel(t *testing.T) {
+	board := BuildBoard(t.Name(), t.Name(), "board")
+	assert.False(t, board.HasLabelName("notExistingLabel"))
+}
+
+func TestBoard_HasLabelName_ExistingLabel(t *testing.T) {
+	board := BuildBoard(t.Name(), t.Name(), "board")
+	name := BoardLabelName("testLabel")
+	boardLabel := NewBoardLabel(string(name), "red")
+	board.Labels = append(board.Labels, boardLabel)
+
+	assert.True(t, board.HasLabelName(name))
 }
