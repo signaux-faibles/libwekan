@@ -2,7 +2,6 @@ package libwekan
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
@@ -150,8 +149,6 @@ func (wekan *Wekan) SelectCardsFromListID(ctx context.Context, listID ListID) ([
 }
 
 func (wekan *Wekan) SelectCardsFromPipeline(ctx context.Context, collection string, pipeline bson.A) ([]Card, error) {
-	a, _ := json.MarshalIndent(pipeline, "", " ")
-	fmt.Println(string(a))
 	cur, err := wekan.db.Collection(collection).Aggregate(ctx, pipeline)
 	if err != nil {
 		fmt.Println(err)
@@ -234,7 +231,7 @@ func (wekan *Wekan) AddLabelToCard(ctx context.Context, cardID CardID, labelID B
 	return nil
 }
 
-func (wekan *Wekan) BuildDomainCardsPipeline() bson.A {
+func (wekan *Wekan) BuildDomainCardsPipeline() Pipeline {
 	matchBoardsStage := bson.M{
 		"$match": bson.M{
 			"slug": bson.M{"$regex": wekan.slugDomainRegexp},
@@ -262,7 +259,7 @@ func (wekan *Wekan) BuildDomainCardsPipeline() bson.A {
 		},
 	}
 
-	return bson.A{
+	return Pipeline{
 		matchBoardsStage,
 		lookupCardsStage,
 		unwindCardStage,
@@ -305,7 +302,7 @@ func (wekan *Wekan) BuildCardFromCustomTextFieldPipeline(name string, value stri
 
 	matchBoardsStage := bson.M{
 		"$match": bson.M{
-			"slug": bson.M{
+			"board.slug": bson.M{
 				"$regex": primitive.Regex{
 					Pattern: wekan.slugDomainRegexp,
 					Options: "i",

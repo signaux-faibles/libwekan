@@ -172,7 +172,7 @@ func TestBoard_HasLabelNames_ExistingLabels(t *testing.T) {
 
 	board.Labels = append(board.Labels, boardLabel1, boardLabel2)
 
-	assert.True(t, board.HasLabelNames([]BoardLabelName{name1, name2}))
+	assert.True(t, board.HasAllLabelNames([]BoardLabelName{name1, name2}))
 }
 
 func TestBoard_HasLabelNames_MissingLabels(t *testing.T) {
@@ -184,5 +184,5 @@ func TestBoard_HasLabelNames_MissingLabels(t *testing.T) {
 
 	board.Labels = append(board.Labels, boardLabel1)
 
-	assert.False(t, board.HasLabelNames([]BoardLabelName{name1, name2}))
+	assert.False(t, board.HasAllLabelNames([]BoardLabelName{name1, name2}))
 }

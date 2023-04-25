@@ -32,6 +32,19 @@ func (config *Config) GetUserByUsername(username Username) (User, bool) {
 	return User{}, false
 }
 
+func (config *Config) GetCardCustomFieldByName(card Card, name string) (string, bool) {
+	for _, customField := range card.CustomFields {
+		board, ok := config.Boards[card.BoardID]
+		if ok {
+			customFieldName := board.CustomFields[customField.ID]
+			if customFieldName.Name == name {
+				return customField.Value, true
+			}
+		}
+	}
+	return "", false
+}
+
 func buildConfigPipeline(slugDomainRegexp string) []bson.M {
 	matchBoards := bson.M{
 		"$match": bson.M{
