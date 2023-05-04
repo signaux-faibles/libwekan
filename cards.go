@@ -78,6 +78,11 @@ type Card struct {
 	EndAt            *time.Time        `bson:"endAt"`
 }
 
+type CardWithComments struct {
+	Card     Card      `bson:"card"`
+	Comments []Comment `bson:"comments"`
+}
+
 func BuildCard(boardID BoardID, listID ListID, swimlaneID SwimlaneID, title string, description string, userID UserID) Card {
 	return Card{
 		ID:               CardID(newId()),
@@ -148,6 +153,7 @@ func (wekan *Wekan) SelectCardsFromListID(ctx context.Context, listID ListID) ([
 	return wekan.SelectCardsFromQuery(ctx, bson.M{"listId": listID})
 }
 
+// SelectCardsWithCommentsFromPipeline retourne les objets correspondant au modèle Card à partir d'un pipeline mongodb
 func (wekan *Wekan) SelectCardsFromPipeline(ctx context.Context, collection string, pipeline bson.A) ([]Card, error) {
 	cur, err := wekan.db.Collection(collection).Aggregate(ctx, pipeline)
 	if err != nil {
@@ -155,6 +161,21 @@ func (wekan *Wekan) SelectCardsFromPipeline(ctx context.Context, collection stri
 		return nil, UnexpectedMongoError{err}
 	}
 	var cards []Card
+	err = cur.All(ctx, &cards)
+	if err != nil {
+		return nil, UnexpectedMongoDecodeError{err}
+	}
+	return cards, nil
+}
+
+// SelectCardsWithCommentsFromPipeline retourne les objets correspondant au modèle CardWithComments à partir d'un pipeline mongodb
+func (wekan *Wekan) SelectCardsWithCommentsFromPipeline(ctx context.Context, collection string, pipeline bson.A) ([]CardWithComments, error) {
+	cur, err := wekan.db.Collection(collection).Aggregate(ctx, pipeline)
+	if err != nil {
+		fmt.Println(err)
+		return nil, UnexpectedMongoError{err}
+	}
+	var cards []CardWithComments
 	err = cur.All(ctx, &cards)
 	if err != nil {
 		return nil, UnexpectedMongoDecodeError{err}
