@@ -456,7 +456,7 @@ func (board Board) HasLabelName(name BoardLabelName) bool {
 	return false
 }
 
-func (board Board) HasAllLabelNames(names []BoardLabelName) bool {
+func (board Board) HasAnyLabelNames(names []BoardLabelName) bool {
 	for _, name := range names {
 		if board.HasLabelName(name) {
 			return true
@@ -465,7 +465,7 @@ func (board Board) HasAllLabelNames(names []BoardLabelName) bool {
 	return false
 }
 
-func (board Board) HasAnyLabelNames(names []BoardLabelName) bool {
+func (board Board) HasAllLabelNames(names []BoardLabelName) bool {
 	for _, name := range names {
 		if !board.HasLabelName(name) {
 			return false
