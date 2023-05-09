@@ -154,7 +154,7 @@ func (wekan *Wekan) SelectCardsFromListID(ctx context.Context, listID ListID) ([
 }
 
 // SelectCardsWithCommentsFromPipeline retourne les objets correspondant au modèle Card à partir d'un pipeline mongodb
-func (wekan *Wekan) SelectCardsFromPipeline(ctx context.Context, collection string, pipeline bson.A) ([]Card, error) {
+func (wekan *Wekan) SelectCardsFromPipeline(ctx context.Context, collection string, pipeline Pipeline) ([]Card, error) {
 	cur, err := wekan.db.Collection(collection).Aggregate(ctx, pipeline)
 	if err != nil {
 		fmt.Println(err)
@@ -169,7 +169,7 @@ func (wekan *Wekan) SelectCardsFromPipeline(ctx context.Context, collection stri
 }
 
 // SelectCardsWithCommentsFromPipeline retourne les objets correspondant au modèle CardWithComments à partir d'un pipeline mongodb
-func (wekan *Wekan) SelectCardsWithCommentsFromPipeline(ctx context.Context, collection string, pipeline bson.A) ([]CardWithComments, error) {
+func (wekan *Wekan) SelectCardsWithCommentsFromPipeline(ctx context.Context, collection string, pipeline Pipeline) ([]CardWithComments, error) {
 	cur, err := wekan.db.Collection(collection).Aggregate(ctx, pipeline)
 	if err != nil {
 		fmt.Println(err)
@@ -288,7 +288,7 @@ func (wekan *Wekan) BuildDomainCardsPipeline() Pipeline {
 	}
 }
 
-func (wekan *Wekan) BuildCardFromCustomTextFieldPipeline(name string, value string) bson.A {
+func (wekan *Wekan) BuildCardFromCustomTextFieldPipeline(name string, value string) Pipeline {
 	matchNameStage := bson.M{
 		"$match": bson.M{
 			"name": name,
@@ -369,7 +369,7 @@ func (wekan *Wekan) BuildCardFromCustomTextFieldPipeline(name string, value stri
 		},
 	}
 
-	lookupCardsPipeline := bson.A{
+	lookupCardsPipeline := Pipeline{
 		matchCardsBoardIds,
 		duplicateCardsCustomFields,
 		unwindCardsCustomField,
@@ -399,7 +399,7 @@ func (wekan *Wekan) BuildCardFromCustomTextFieldPipeline(name string, value stri
 		},
 	}
 
-	pipeline := bson.A{
+	pipeline := Pipeline{
 		matchNameStage,
 		unwindBoardIdsStage,
 		lookupBoardsStage,
@@ -411,4 +411,24 @@ func (wekan *Wekan) BuildCardFromCustomTextFieldPipeline(name string, value stri
 	}
 
 	return pipeline
+}
+
+func (w *Wekan) UnarchiveCard(ctx context.Context, cardID CardID) error {
+	update, err := w.db.Collection("cards").UpdateOne(ctx, bson.M{
+		"_id": cardID,
+	}, bson.M{
+		"$set": bson.M{
+			"archived": false,
+		},
+	})
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	if update.MatchedCount == 0 {
+		return CardNotFoundError{cardID}
+	}
+	if update.ModifiedCount == 0 {
+		return NothingDoneError{}
+	}
+	return nil
 }
