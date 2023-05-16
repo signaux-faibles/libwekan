@@ -47,7 +47,7 @@ func (wekan *Wekan) AssertPrivileged(ctx context.Context) error {
 		if *wekan.privileged {
 			return nil
 		}
-		return NotPrivilegedError{wekan.adminUserID, errors.New("L'utilisateur n'est pas administration")}
+		return NotPrivilegedError{wekan.adminUserID, errors.New("l'utilisateur n'est pas administrateur")}
 	}
 	admin, err := wekan.GetUserFromUsername(ctx, wekan.adminUsername)
 	if err != nil {

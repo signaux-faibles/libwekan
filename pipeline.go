@@ -9,7 +9,7 @@ func (p *Pipeline) AppendStage(stage bson.M) {
 }
 
 func (p *Pipeline) PrependStage(stage bson.M) {
-	*p = append(Pipeline{stage}, (*p)...)
+	*p = append(Pipeline{stage}, *p...)
 }
 
 func (p *Pipeline) AppendPipeline(pipeline Pipeline) {
@@ -17,5 +17,5 @@ func (p *Pipeline) AppendPipeline(pipeline Pipeline) {
 }
 
 func (p *Pipeline) PrependPipeline(pipeline Pipeline) {
-	*p = append(pipeline, (*p)...)
+	*p = append(pipeline, *p...)
 }

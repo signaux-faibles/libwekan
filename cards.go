@@ -153,7 +153,7 @@ func (wekan *Wekan) SelectCardsFromListID(ctx context.Context, listID ListID) ([
 	return wekan.SelectCardsFromQuery(ctx, bson.M{"listId": listID})
 }
 
-// SelectCardsWithCommentsFromPipeline retourne les objets correspondant au modèle Card à partir d'un pipeline mongodb
+// SelectCardsFromPipeline retourne les objets correspondant au modèle Card à partir d'un pipeline mongodb
 func (wekan *Wekan) SelectCardsFromPipeline(ctx context.Context, collection string, pipeline Pipeline) ([]Card, error) {
 	cur, err := wekan.db.Collection(collection).Aggregate(ctx, pipeline)
 	if err != nil {
@@ -413,8 +413,8 @@ func (wekan *Wekan) BuildCardFromCustomTextFieldPipeline(name string, value stri
 	return pipeline
 }
 
-func (w *Wekan) UnarchiveCard(ctx context.Context, cardID CardID) error {
-	update, err := w.db.Collection("cards").UpdateOne(ctx, bson.M{
+func (wekan *Wekan) UnarchiveCard(ctx context.Context, cardID CardID) error {
+	update, err := wekan.db.Collection("cards").UpdateOne(ctx, bson.M{
 		"_id": cardID,
 	}, bson.M{
 		"$set": bson.M{

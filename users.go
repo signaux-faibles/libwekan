@@ -92,12 +92,12 @@ type UserProfile struct {
 type Username string
 type UserID string
 
-func (userID UserID) GetDocument(ctx context.Context, wekan *Wekan) (User, error) {
-	return wekan.GetUserFromID(ctx, userID)
+func (userId UserID) GetDocument(ctx context.Context, wekan *Wekan) (User, error) {
+	return wekan.GetUserFromID(ctx, userId)
 }
 
-func (userID UserID) Check(ctx context.Context, wekan *Wekan) error {
-	_, err := wekan.GetUserFromID(ctx, userID)
+func (userId UserID) Check(ctx context.Context, wekan *Wekan) error {
+	_, err := wekan.GetUserFromID(ctx, userId)
 	return err
 }
 
