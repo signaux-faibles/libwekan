@@ -471,13 +471,13 @@ func createTestBoard(t *testing.T, suffix string, swimlanesCount int, listsCount
 	var swimlanes []Swimlane
 	var lists []List
 	for i := 0; i < swimlanesCount; i++ {
-		swimlane := BuildSwimlane(board.ID, "swimlane", t.Name()+"swimlane", i)
+		swimlane := BuildSwimlane(board.ID, "swimlane", t.Name()+"swimlane", float64(i))
 		swimlanes = append(swimlanes, swimlane)
 		wekan.InsertSwimlane(ctx, swimlane)
 	}
 	for i := 0; i < listsCount; i++ {
 		title := fmt.Sprintf("%sList%d", t.Name(), i)
-		list := BuildList(board.ID, title, i)
+		list := BuildList(board.ID, title, float64(i))
 		lists = append(lists, list)
 		wekan.InsertList(ctx, list)
 	}

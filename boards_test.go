@@ -132,7 +132,6 @@ func TestBoards_GetLabelByID_whenBoardLabelDoesntExists(t *testing.T) {
 	ass.Empty(label)
 }
 
-// NewBoardLabel retourne un objet BoardLabel
 func Test_BuildBoardLabel(t *testing.T) {
 	id := t.Name() + "ID"
 	name := t.Name() + "Name"
@@ -147,4 +146,67 @@ func Test_BuildBoardLabel(t *testing.T) {
 
 	assert.Equal(t, expected.Name, boardLabel.Name)
 	assert.Equal(t, expected.Color, boardLabel.Color)
+}
+
+func TestBoard_HasLabelName_NotExistingLabel(t *testing.T) {
+	board := BuildBoard(t.Name(), t.Name(), "board")
+	assert.False(t, board.HasLabelName("notExistingLabel"))
+}
+
+func TestBoard_HasLabelName_ExistingLabel(t *testing.T) {
+	board := BuildBoard(t.Name(), t.Name(), "board")
+	name := BoardLabelName("testLabel")
+	boardLabel := NewBoardLabel(string(name), "red")
+	board.Labels = append(board.Labels, boardLabel)
+
+	assert.True(t, board.HasLabelName(name))
+}
+
+func TestBoard_HasAllLabelNames_ExistingLabels(t *testing.T) {
+	board := BuildBoard(t.Name(), t.Name(), "board")
+
+	name1 := BoardLabelName("testLabel 1")
+	name2 := BoardLabelName("testLabel 2")
+	boardLabel1 := NewBoardLabel(string(name1), "red")
+	boardLabel2 := NewBoardLabel(string(name2), "red")
+
+	board.Labels = append(board.Labels, boardLabel1, boardLabel2)
+
+	assert.True(t, board.HasAllLabelNames([]BoardLabelName{name1, name2}))
+}
+
+func TestBoard_HasAllLabelNames_MissingLabels(t *testing.T) {
+	board := BuildBoard(t.Name(), t.Name(), "board")
+
+	name1 := BoardLabelName("testLabel 1")
+	name2 := BoardLabelName("testLabel 2")
+	boardLabel1 := NewBoardLabel(string(name1), "red")
+
+	board.Labels = append(board.Labels, boardLabel1)
+
+	assert.False(t, board.HasAllLabelNames([]BoardLabelName{name1, name2}))
+}
+
+func TestBoard_HasAnyLabelNames_ExistingLabels(t *testing.T) {
+	board := BuildBoard(t.Name(), t.Name(), "board")
+
+	name1 := BoardLabelName("testLabel 1")
+	name2 := BoardLabelName("testLabel 2")
+	boardLabel1 := NewBoardLabel(string(name1), "red")
+
+	board.Labels = append(board.Labels, boardLabel1)
+
+	assert.True(t, board.HasAnyLabelNames([]BoardLabelName{name1, name2}))
+}
+
+func TestBoard_HasAnyLabelNames_MissingLabel(t *testing.T) {
+	board := BuildBoard(t.Name(), t.Name(), "board")
+
+	name1 := BoardLabelName("testLabel 1")
+	name2 := BoardLabelName("testLabel 2")
+	boardLabel1 := NewBoardLabel(string(name1), "red")
+
+	board.Labels = append(board.Labels, boardLabel1)
+
+	assert.False(t, board.HasAnyLabelNames([]BoardLabelName{name2}))
 }

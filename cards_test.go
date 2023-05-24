@@ -10,8 +10,8 @@ func TestCard_AddMember(t *testing.T) {
 		BoardID(t.Name()+"boardID"),
 		ListID(t.Name()+"boardID"),
 		SwimlaneID(t.Name()+"boardID"),
-		(t.Name() + "title"),
-		(t.Name() + "description"),
+		t.Name()+"title",
+		t.Name()+"description",
 		UserID(t.Name()+"userID"),
 	)
 	memberID := UserID(t.Name() + "memberID")
@@ -24,8 +24,8 @@ func TestCard_AddMember_Duplicate(t *testing.T) {
 		BoardID(t.Name()+"boardID"),
 		ListID(t.Name()+"boardID"),
 		SwimlaneID(t.Name()+"boardID"),
-		(t.Name() + "title"),
-		(t.Name() + "description"),
+		t.Name()+"title",
+		t.Name()+"description",
 		UserID(t.Name()+"userID"),
 	)
 	memberID := UserID(t.Name() + "memberID")

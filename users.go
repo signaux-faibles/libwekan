@@ -92,12 +92,12 @@ type UserProfile struct {
 type Username string
 type UserID string
 
-func (userID UserID) GetDocument(ctx context.Context, wekan *Wekan) (User, error) {
-	return wekan.GetUserFromID(ctx, userID)
+func (userId UserID) GetDocument(ctx context.Context, wekan *Wekan) (User, error) {
+	return wekan.GetUserFromID(ctx, userId)
 }
 
-func (userID UserID) Check(ctx context.Context, wekan *Wekan) error {
-	_, err := wekan.GetUserFromID(ctx, userID)
+func (userId UserID) Check(ctx context.Context, wekan *Wekan) error {
+	_, err := wekan.GetUserFromID(ctx, userId)
 	return err
 }
 
@@ -348,6 +348,11 @@ func BuildUser(email, initials, fullname string) User {
 	}
 
 	return newUser
+}
+
+func (user User) Admin(admin bool) User {
+	user.IsAdmin = admin
+	return user
 }
 
 // EnableUser active un utilisateur dans la base `users` et active la participation à son tableau templates

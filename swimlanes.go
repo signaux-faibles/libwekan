@@ -12,15 +12,15 @@ type Swimlane struct {
 	ID         SwimlaneID `bson:"_id"`
 	Title      string     `bson:"title"`
 	BoardID    BoardID    `bson:"boardId"`
-	Sort       int        `bson:"sort"`
+	Sort       float64    `bson:"sort"`
 	Type       string     `bson:"type"`
 	Archived   bool       `bson:"archived"`
 	CreatedAt  time.Time  `bson:"createdAt"`
-	UpdatedAt  time.Time  `bson:"updateAt"`
+	UpdatedAt  time.Time  `bson:"updatedAt"`
 	ModifiedAt time.Time  `bson:"modifiedAt"`
 }
 
-func BuildSwimlane(boardID BoardID, swimlaneType string, title string, sort int) Swimlane {
+func BuildSwimlane(boardID BoardID, swimlaneType string, title string, sort float64) Swimlane {
 	swimlane := Swimlane{
 		ID:         SwimlaneID(newId()),
 		Title:      title,
