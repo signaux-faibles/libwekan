@@ -60,7 +60,7 @@ func (e NotPrivilegedError) Unwrap() error {
 }
 
 func (e NotPrivilegedError) Error() string {
-	return fmt.Sprintf("l'utilisateur n'est pas admin: id = %s", e.id)
+	return fmt.Sprint("l'utilisateur n'est pas admin: id = "+e.id, e.err)
 }
 
 type ProtectedUserError struct {
@@ -70,10 +70,6 @@ type ProtectedUserError struct {
 func (e ProtectedUserError) Error() string {
 	return fmt.Sprintf("cet action est interdite sur cet utilisateur (%s)", e.id)
 }
-
-//type AdminUserIsNotAdminError struct {
-//	username Username
-//}
 
 type InsertEmptyRuleError struct {
 }
@@ -105,7 +101,7 @@ type UnexpectedMongoError struct {
 }
 
 func (e UnexpectedMongoError) Error() string {
-	return "une erreur est survenue lors de l'exécution de la requête"
+	return fmt.Sprint("erreur survenue lors de l'exécution de la requête : ", e.err)
 }
 
 func (e UnexpectedMongoError) Unwrap() error {
@@ -117,7 +113,7 @@ type UnexpectedMongoDecodeError struct {
 }
 
 func (e UnexpectedMongoDecodeError) Error() string {
-	return "une erreur est survenue lors du décodage du résultat de la requête"
+	return fmt.Sprint("erreur survenue lors du décodage du résultat de la requête : ", e.err)
 }
 
 func (e UnexpectedMongoDecodeError) Unwrap() error {
@@ -137,7 +133,7 @@ type UnreachableMongoError struct {
 }
 
 func (e UnreachableMongoError) Error() string {
-	return "la connexion a échoué"
+	return fmt.Sprint("la connexion a échoué : ", e.err)
 }
 
 func (e UnreachableMongoError) Unwrap() error {
@@ -149,7 +145,7 @@ type InvalidMongoConfigurationError struct {
 }
 
 func (e InvalidMongoConfigurationError) Error() string {
-	return "les paramètres de connexion sont invalides"
+	return fmt.Sprint("les paramètres de connexion sont invalides : ", e.err)
 }
 
 func (e InvalidMongoConfigurationError) Unwrap() error {
@@ -161,7 +157,7 @@ type ForbiddenOperationError struct {
 }
 
 func (e ForbiddenOperationError) Error() string {
-	return "operation interdite"
+	return fmt.Sprint("operation interdite : ", e.err)
 }
 
 func (e ForbiddenOperationError) Unwrap() error {

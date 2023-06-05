@@ -3,9 +3,10 @@ package libwekan
 import (
 	"errors"
 	"fmt"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/mongo"
-	"testing"
 )
 
 func TestErrors_UserAlreadyExistsError(t *testing.T) {
@@ -59,15 +60,15 @@ func TestErrors_BoardLabelAlreadyExistsError(t *testing.T) {
 
 func TestErrors_UnexpectedMongoError(t *testing.T) {
 	e := UnexpectedMongoError{err: mongo.ErrNoDocuments}
-	expected := "une erreur est survenue lors de l'exécution de la requête"
-	assert.EqualError(t, e, expected)
+	expected := "erreur survenue lors de l'exécution de la requête"
+	assert.ErrorContains(t, e, expected)
 	assert.ErrorIs(t, e, mongo.ErrNoDocuments)
 }
 
 func TestErrors_UnexpectedMongoDecodeError(t *testing.T) {
 	e := UnexpectedMongoDecodeError{err: mongo.ErrNoDocuments}
-	expected := "une erreur est survenue lors du décodage du résultat de la requête"
-	assert.EqualError(t, e, expected)
+	expected := "erreur survenue lors du décodage du résultat de la requête"
+	assert.ErrorContains(t, e, expected)
 	assert.ErrorIs(t, e, mongo.ErrNoDocuments)
 }
 
@@ -80,21 +81,21 @@ func TestErrors_AlreadySetActityError(t *testing.T) {
 func TestErrors_UnreachableMongoError(t *testing.T) {
 	e := UnreachableMongoError{mongo.ErrNilValue}
 	expected := "la connexion a échoué"
-	assert.EqualError(t, e, expected)
+	assert.ErrorContains(t, e, expected)
 	assert.ErrorIs(t, e, mongo.ErrNilValue)
 }
 
 func TestErrors_InvalidMongoConfigurationError(t *testing.T) {
 	e := InvalidMongoConfigurationError{mongo.ErrNilValue}
 	expected := "les paramètres de connexion sont invalides"
-	assert.EqualError(t, e, expected)
+	assert.ErrorContains(t, e, expected)
 	assert.ErrorIs(t, e, mongo.ErrNilValue)
 }
 
 func TestErrors_ForbiddenOperationError(t *testing.T) {
 	e := ForbiddenOperationError{UserIsNotMemberError{"test"}}
 	expected := "operation interdite"
-	assert.EqualError(t, e, expected)
+	assert.ErrorContains(t, e, expected)
 	assert.ErrorIs(t, e, UserIsNotMemberError{"test"})
 }
 
