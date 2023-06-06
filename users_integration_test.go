@@ -148,7 +148,8 @@ func TestUsers_GetUsersFromUsernames_WhenSomeDoesntExist(t *testing.T) {
 	ass.Len(selectedExistingUsers, 0)
 }
 
-func TestUsers_GetUsersFromIDs_WhenUsersExists(t *testing.T) {
+func TestUsers_GetUsersFromIDs(t *testing.T) {
+
 	ass := assert.New(t)
 	// GIVEN
 	var actualUserIDs []UserID
@@ -158,30 +159,39 @@ func TestUsers_GetUsersFromIDs_WhenUsersExists(t *testing.T) {
 	}
 	someExistingUserIDs := actualUserIDs[0:3]
 
-	// WHEN
-	selectedExistingUsers, err := wekan.GetUsersFromIDs(ctx, someExistingUserIDs)
-
-	// THEN
-	ass.Nil(err)
-	ass.Len(selectedExistingUsers, 3)
-}
-
-func TestUsers_GetUsersFromIDs(t *testing.T) {
-	ass := assert.New(t)
-	// GIVEN
-	var actualUserIDs []UserID
-	for _, suffix := range []string{"a", "b", "c", "d", "e"} {
-		user := createTestUser(t, suffix)
-		actualUserIDs = append(actualUserIDs, user.ID)
+	type args struct {
+		IDs []UserID
 	}
-	someExistingUserIDs := append(actualUserIDs[0:3], "iAmNotAnID")
+	type want struct {
+		errorType interface{}
+		counter   int
+	}
+	tests := []struct {
+		name string
+		args args
+		want want
+	}{
+		{"un tableau d'IDs d'utilisateurs existant", args{someExistingUserIDs}, want{nil, len(someExistingUserIDs)}},
+		{"un tableau d'IDs d'utilisateurs existant + 1 ID d'utilisateur non existant", args{append(someExistingUserIDs, "iAmNotAnID")}, want{UserNotFoundError{}, 0}},
+		{"un tableau d'IDs vide", args{[]UserID{}}, want{nil, 0}},
+		{"un tableau d'IDs nil", args{nil}, want{nil, 0}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 
-	// WHEN
-	selectedExistingUsers, err := wekan.GetUsersFromIDs(ctx, someExistingUserIDs)
+			// WHEN
+			selectedExistingUsers, err := wekan.GetUsersFromIDs(ctx, tt.args.IDs)
 
-	// THEN
-	ass.IsType(UserNotFoundError{}, err)
-	ass.Len(selectedExistingUsers, 0)
+			// THEN
+			if tt.want.errorType != nil {
+				ass.IsType(UserNotFoundError{}, err)
+			} else {
+				ass.NoError(err)
+			}
+			ass.Len(selectedExistingUsers, tt.want.counter)
+		})
+	}
+
 }
 
 // helpers internes aux tests
