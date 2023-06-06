@@ -189,9 +189,9 @@ func (wekan *Wekan) GetUsersFromUsernames(ctx context.Context, usernames []Usern
 // GetUsersFromIDs retourne les objets users correspondant aux usernames en une seule requête
 func (wekan *Wekan) GetUsersFromIDs(ctx context.Context, userIDs []UserID) ([]User, error) {
 	userIDSet := uniq(userIDs)
-	//if len(userIDs) <= 1 {
-	//	return Users{}, nil
-	//}
+	if len(userIDs) <= 0 {
+		return Users{}, nil
+	}
 	cur, err := wekan.db.Collection("users").Find(ctx, bson.M{
 		"_id": bson.M{"$in": userIDSet},
 	})
