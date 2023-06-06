@@ -2,11 +2,12 @@ package libwekan
 
 import (
 	"context"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 
+	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -224,7 +225,7 @@ func (wekan *Wekan) EnableBoardMember(ctx context.Context, boardID BoardID, user
 	if updateResults.ModifiedCount == 1 {
 		activity := newActivityAddBoardMember(wekan.adminUserID, userID, boardID)
 		_, err = wekan.insertActivity(context.Background(), activity)
-		return err
+		return errors.Wrap(err, "erreur pendant l'insertion d'une activité")
 	}
 	return nil
 }
@@ -266,11 +267,11 @@ func (wekan *Wekan) EnsureUserIsActiveBoardMember(ctx context.Context, boardID B
 	}
 	board, err := boardID.GetDocument(ctx, wekan)
 	if err != nil {
-		return false, err
+		return false, errors.Wrapf(err, "erreur pendant la récupération d'un document board ??? %s", boardID)
 	}
 	user, err := userID.GetDocument(ctx, wekan)
 	if err != nil {
-		return false, err
+		return false, errors.Wrapf(err, "erreur pendant la récupération d'un document user ??? %s", userID)
 	}
 	if board.UserIsActiveMember(user) {
 		return false, nil // l'utilisateur est déjà membre actif pas d'action requise
