@@ -289,6 +289,10 @@ func (wekan *Wekan) BuildDomainCardsPipeline() Pipeline {
 }
 
 func (wekan *Wekan) BuildCardFromCustomTextFieldPipeline(name string, value string) Pipeline {
+	return wekan.BuildCardFromCustomTextFieldsPipeline(name, []string{value})
+}
+
+func (wekan *Wekan) BuildCardFromCustomTextFieldsPipeline(name string, values []string) Pipeline {
 	matchNameStage := bson.M{
 		"$match": bson.M{
 			"name": name,
@@ -356,7 +360,7 @@ func (wekan *Wekan) BuildCardFromCustomTextFieldPipeline(name string, value stri
 						"$eq": bson.A{"$customField._id", "$$customFieldId"},
 					},
 					bson.M{
-						"$eq": bson.A{"$customField.value", value},
+						"$in": bson.A{"$customField.value", values},
 					},
 				},
 			},
@@ -431,4 +435,14 @@ func (wekan *Wekan) UnarchiveCard(ctx context.Context, cardID CardID) error {
 		return NothingDoneError{}
 	}
 	return nil
+}
+
+func (config *Config) CustomFieldWithName(card Card, name string) string {
+	configBoard := config.Boards[card.BoardID]
+	for _, customField := range card.CustomFields {
+		if configBoard.CustomFields[customField.ID].Name == name {
+			return customField.Value
+		}
+	}
+	return ""
 }
