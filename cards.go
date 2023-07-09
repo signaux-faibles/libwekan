@@ -289,6 +289,10 @@ func (wekan *Wekan) BuildDomainCardsPipeline() Pipeline {
 }
 
 func (wekan *Wekan) BuildCardFromCustomTextFieldPipeline(name string, value string) Pipeline {
+	return wekan.BuildCardFromCustomTextFieldsPipeline(name, []string{value})
+}
+
+func (wekan *Wekan) BuildCardFromCustomTextFieldsPipeline(name string, values []string) Pipeline {
 	matchNameStage := bson.M{
 		"$match": bson.M{
 			"name": name,
@@ -356,7 +360,7 @@ func (wekan *Wekan) BuildCardFromCustomTextFieldPipeline(name string, value stri
 						"$eq": bson.A{"$customField._id", "$$customFieldId"},
 					},
 					bson.M{
-						"$eq": bson.A{"$customField.value", value},
+						"$in": bson.A{"$customField.value", values},
 					},
 				},
 			},
@@ -429,6 +433,41 @@ func (wekan *Wekan) UnarchiveCard(ctx context.Context, cardID CardID) error {
 	}
 	if update.ModifiedCount == 0 {
 		return NothingDoneError{}
+	}
+	return nil
+}
+
+func (config *Config) CustomFieldWithName(card Card, name string) string {
+	configBoard := config.Boards[card.BoardID]
+	for _, customField := range card.CustomFields {
+		if configBoard.CustomFields[customField.ID].Name == name {
+			return customField.Value
+		}
+	}
+	return ""
+}
+
+// TODO: écrire un test
+func (wekan *Wekan) UpdateCardDescription(ctx context.Context, cardID CardID, description string) error {
+	stats, err := wekan.db.Collection("cards").UpdateOne(ctx,
+		bson.M{"_id": cardID},
+		bson.M{
+			"$set": bson.M{
+				"description": description,
+			},
+			"$currentDate": bson.M{
+				"modifiedAt": true,
+			},
+		},
+	)
+	if stats.MatchedCount == 0 {
+		return CardNotFoundError{cardID: cardID}
+	}
+	if stats.ModifiedCount == 0 {
+		return NothingDoneError{}
+	}
+	if err != nil {
+		return UnexpectedMongoError{err: err}
 	}
 	return nil
 }
