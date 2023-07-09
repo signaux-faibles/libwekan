@@ -446,3 +446,28 @@ func (config *Config) CustomFieldWithName(card Card, name string) string {
 	}
 	return ""
 }
+
+// TODO: écrire un test
+func (wekan *Wekan) UpdateCardDescription(ctx context.Context, cardID CardID, description string) error {
+	stats, err := wekan.db.Collection("cards").UpdateOne(ctx,
+		bson.M{"_id": cardID},
+		bson.M{
+			"$set": bson.M{
+				"description": description,
+			},
+			"$currentDate": bson.M{
+				"modifiedAt": true,
+			},
+		},
+	)
+	if stats.MatchedCount == 0 {
+		return CardNotFoundError{cardID: cardID}
+	}
+	if stats.ModifiedCount == 0 {
+		return NothingDoneError{}
+	}
+	if err != nil {
+		return UnexpectedMongoError{err: err}
+	}
+	return nil
+}
