@@ -324,11 +324,13 @@ func TestCards_UnarchiveCard(t *testing.T) {
 	//GIVEN
 	board, swimlanes, lists := createTestBoard(t, "", 1, 1)
 	card := createTestCard(t, wekan.adminUserID, &board.ID, &(swimlanes[0].ID), &(lists[0].ID))
+	wekan.ArchiveCard(ctx, card.ID)
 	archivedCard, err := wekan.GetCardFromID(ctx, card.ID)
 	ass.Nil(err)
 
 	//WHEN
-	wekan.UnarchiveCard(ctx, archivedCard.ID)
+	err = wekan.UnarchiveCard(ctx, archivedCard.ID)
+	ass.Nil(err)
 	actualCard, err := wekan.GetCardFromID(ctx, card.ID)
 	ass.Nil(err)
 
