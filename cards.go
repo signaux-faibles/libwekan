@@ -417,12 +417,42 @@ func (wekan *Wekan) BuildCardFromCustomTextFieldsPipeline(name string, values []
 	return pipeline
 }
 
+func (wekan *Wekan) ArchiveCard(ctx context.Context, cardID CardID) error {
+	update, err := wekan.db.Collection("cards").UpdateOne(ctx, bson.M{
+		"_id":      cardID,
+		"archived": false,
+	}, bson.M{
+		"$set": bson.M{
+			"archived": true,
+		},
+		"$currentDate": bson.M{
+			"modifiedAt":       true,
+			"dateLastActivity": true,
+		},
+	})
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	if update.MatchedCount == 0 {
+		return CardNotFoundError{cardID}
+	}
+	if update.ModifiedCount == 0 {
+		return NothingDoneError{}
+	}
+	return nil
+}
+
 func (wekan *Wekan) UnarchiveCard(ctx context.Context, cardID CardID) error {
 	update, err := wekan.db.Collection("cards").UpdateOne(ctx, bson.M{
-		"_id": cardID,
+		"_id":      cardID,
+		"archived": true,
 	}, bson.M{
 		"$set": bson.M{
 			"archived": false,
+		},
+		"$currentDate": bson.M{
+			"modifiedAt":       true,
+			"dateLastActivity": true,
 		},
 	})
 	if err != nil {
@@ -456,7 +486,8 @@ func (wekan *Wekan) UpdateCardDescription(ctx context.Context, cardID CardID, de
 				"description": description,
 			},
 			"$currentDate": bson.M{
-				"modifiedAt": true,
+				"modifiedAt":       true,
+				"dateLastActivity": true,
 			},
 		},
 	)
