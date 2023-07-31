@@ -16,7 +16,7 @@ type Users []User
 
 type User struct {
 	ID                   UserID       `bson:"_id"`
-	CreateAt             time.Time    `bson:"createAt"`
+	CreatedAt            time.Time    `bson:"createAt"`
 	Services             UserServices `bson:"services"`
 	Username             Username     `bson:"username"`
 	Emails               []UserEmail  `bson:"emails"`
@@ -299,8 +299,8 @@ func (user *User) BuildTemplates() UserTemplates {
 // BuildUser retourne un objet User à insérer/updater avec la fonction Wekan.UpsertUser
 func BuildUser(email, initials, fullname string) User {
 	newUser := User{
-		ID:       UserID(newId()),
-		CreateAt: time.Now(),
+		ID:        UserID(newId()),
+		CreatedAt: time.Now(),
 
 		Services: UserServices{
 			OIDC: UserServicesOIDC{

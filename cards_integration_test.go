@@ -20,6 +20,7 @@ func getElement[Element any](elements []Element, fn func(element Element) bool) 
 	return nil
 }
 
+// createTestCard crée un objet de type `Card`, l'insère dans la base de test et le retourne
 func createTestCard(t *testing.T, userID UserID, boardID *BoardID, swimlaneID *SwimlaneID, listID *ListID) Card {
 	ctx := context.Background()
 	var board Board
@@ -267,4 +268,134 @@ func TestCards_AddLabelToCard_whenLabelAlreadyOnBard(t *testing.T) {
 	actualCard, _ := wekan.GetCardFromID(ctx, card.ID)
 	ass.Contains(actualCard.LabelIDs, boardLabel.ID)
 	ass.Len(actualCard.LabelIDs, 1)
+}
+
+func TestCards_ArchiveCard(t *testing.T) {
+	ass := assert.New(t)
+
+	//GIVEN
+	board, swimlanes, lists := createTestBoard(t, "", 1, 1)
+	card := createTestCard(t, wekan.adminUserID, &board.ID, &(swimlanes[0].ID), &(lists[0].ID))
+
+	//WHEN
+	wekan.ArchiveCard(ctx, card.ID)
+	actualCard, err := wekan.GetCardFromID(ctx, card.ID)
+	ass.Nil(err)
+
+	//THEN
+	ass.Greater(actualCard.ModifiedAt, card.ModifiedAt)
+	ass.Greater(actualCard.DateLastActivity, card.DateLastActivity)
+	ass.True(actualCard.Archived)
+}
+
+func TestCards_ArchiveCard_whenCardAlreadyArchived(t *testing.T) {
+	ass := assert.New(t)
+
+	//GIVEN
+	board, swimlanes, lists := createTestBoard(t, "", 1, 1)
+	card := createTestCard(t, wekan.adminUserID, &board.ID, &(swimlanes[0].ID), &(lists[0].ID))
+	wekan.ArchiveCard(ctx, card.ID)
+	archivedCard, err := wekan.GetCardFromID(ctx, card.ID)
+	ass.Nil(err)
+
+	//WHEN
+	err = wekan.ArchiveCard(ctx, archivedCard.ID)
+
+	//THEN
+	ass.ErrorAs(err, &NothingDoneError{})
+}
+
+func TestCards_ArchiveCard_whenCardDoesNotExists(t *testing.T) {
+	ass := assert.New(t)
+
+	//GIVEN
+	unknownCardID := CardID(t.Name() + "not an actual ID")
+
+	//WHEN
+	err := wekan.ArchiveCard(ctx, unknownCardID)
+
+	//THEN
+	ass.ErrorAs(err, &CardNotFoundError{})
+}
+
+func TestCards_UnarchiveCard(t *testing.T) {
+	ass := assert.New(t)
+
+	//GIVEN
+	board, swimlanes, lists := createTestBoard(t, "", 1, 1)
+	card := createTestCard(t, wekan.adminUserID, &board.ID, &(swimlanes[0].ID), &(lists[0].ID))
+	archivedCard, err := wekan.GetCardFromID(ctx, card.ID)
+	ass.Nil(err)
+
+	//WHEN
+	wekan.UnarchiveCard(ctx, archivedCard.ID)
+	actualCard, err := wekan.GetCardFromID(ctx, card.ID)
+	ass.Nil(err)
+
+	//THEN
+	ass.Greater(actualCard.ModifiedAt, card.ModifiedAt)
+	ass.Greater(actualCard.DateLastActivity, card.DateLastActivity)
+	ass.False(actualCard.Archived)
+}
+
+func TestCards_UnarchiveCard_whenCardNotArchived(t *testing.T) {
+	ass := assert.New(t)
+
+	//GIVEN
+	board, swimlanes, lists := createTestBoard(t, "", 1, 1)
+	card := createTestCard(t, wekan.adminUserID, &board.ID, &(swimlanes[0].ID), &(lists[0].ID))
+
+	//WHEN
+	err := wekan.UnarchiveCard(ctx, card.ID)
+
+	//THEN
+	ass.ErrorAs(err, &NothingDoneError{})
+}
+
+func TestCards_UnarchiveCard_whenCardDoesNotExists(t *testing.T) {
+	ass := assert.New(t)
+
+	//GIVEN
+	unknownCardID := CardID(t.Name() + "not an actual ID")
+
+	//WHEN
+	err := wekan.UnarchiveCard(ctx, unknownCardID)
+
+	//THEN
+	ass.ErrorAs(err, &CardNotFoundError{})
+}
+
+func TestCards_UpdateCardDescription(t *testing.T) {
+	ass := assert.New(t)
+
+	//GIVEN
+	board, swimlanes, lists := createTestBoard(t, "", 1, 1)
+	card := createTestCard(t, wekan.adminUserID, &board.ID, &(swimlanes[0].ID), &(lists[0].ID))
+	description := "description originale"
+	wekan.UpdateCardDescription(ctx, card.ID, description)
+
+	// WHEN
+	newDescription := "nouvelle description"
+	err := wekan.UpdateCardDescription(ctx, card.ID, newDescription)
+	ass.Nil(err)
+
+	//THEN
+	actualCard, err := wekan.GetCardFromID(ctx, card.ID)
+	ass.Nil(err)
+	ass.Equal(newDescription, actualCard.Description)
+	ass.Greater(actualCard.ModifiedAt, card.ModifiedAt)
+	ass.Greater(actualCard.DateLastActivity, card.DateLastActivity)
+}
+
+func TestCards_UpdateCardDescription_WhenCardDoesntExists(t *testing.T) {
+	ass := assert.New(t)
+
+	//GIVEN
+	unknownCardID := CardID(t.Name() + "not an actual ID")
+
+	// WHEN
+	err := wekan.UpdateCardDescription(ctx, unknownCardID, "")
+
+	//THEN
+	ass.ErrorAs(err, &CardNotFoundError{})
 }
