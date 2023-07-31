@@ -302,7 +302,7 @@ func TestCards_ArchiveCard_whenCardAlreadyArchived(t *testing.T) {
 	err = wekan.ArchiveCard(ctx, archivedCard.ID)
 
 	//THEN
-	ass.ErrorAs(err, &NothingDoneError{})
+	ass.ErrorAs(err, &CardNotFoundError{})
 }
 
 func TestCards_ArchiveCard_whenCardDoesNotExists(t *testing.T) {
@@ -349,7 +349,7 @@ func TestCards_UnarchiveCard_whenCardNotArchived(t *testing.T) {
 	err := wekan.UnarchiveCard(ctx, card.ID)
 
 	//THEN
-	ass.ErrorAs(err, &NothingDoneError{})
+	ass.ErrorAs(err, &CardNotFoundError{})
 }
 
 func TestCards_UnarchiveCard_whenCardDoesNotExists(t *testing.T) {

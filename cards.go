@@ -419,7 +419,8 @@ func (wekan *Wekan) BuildCardFromCustomTextFieldsPipeline(name string, values []
 
 func (wekan *Wekan) ArchiveCard(ctx context.Context, cardID CardID) error {
 	update, err := wekan.db.Collection("cards").UpdateOne(ctx, bson.M{
-		"_id": cardID,
+		"_id":      cardID,
+		"archived": false,
 	}, bson.M{
 		"$set": bson.M{
 			"archived": true,
@@ -443,7 +444,8 @@ func (wekan *Wekan) ArchiveCard(ctx context.Context, cardID CardID) error {
 
 func (wekan *Wekan) UnarchiveCard(ctx context.Context, cardID CardID) error {
 	update, err := wekan.db.Collection("cards").UpdateOne(ctx, bson.M{
-		"_id": cardID,
+		"_id":      cardID,
+		"archived": true,
 	}, bson.M{
 		"$set": bson.M{
 			"archived": false,
