@@ -2,31 +2,32 @@ package libwekan
 
 import (
 	"context"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"time"
 )
 
 type ActivityID string
 type Activity struct {
-	ID             ActivityID   `bson:"_id"`
-	UserID         UserID       `bson:"userId,omitempty"`
-	Username       Username     `bson:"username,omitempty"`
-	Type           string       `bson:"type,omitempty"`
-	MemberID       UserID       `bson:"memberId,omitempty"`
-	ActivityType   string       `bson:"activityType,omitempty"`
-	ActivityTypeID string       `bson:"activityTypeID,omitempty"`
-	BoardID        BoardID      `bson:"boardId,omitempty"`
-	BoardLabelID   BoardLabelID `bson:"labelId,omitEmpty"`
-	CardTitle      string       `bson:"cardTitle,omitempty"`
-	ListID         ListID       `bson:"listId,omitempty"`
-	ListName       string       `bson:"listName,omitempty"`
-	CardID         CardID       `bson:"cardId,omitempty"`
+	ID             ActivityID   `bson:"_id" json:"_id,omitempty"`
+	UserID         UserID       `bson:"userId,omitempty" json:"userId,omitempty,omitempty"`
+	Username       Username     `bson:"username,omitempty" json:"username,omitempty,omitempty"`
+	Type           string       `bson:"type,omitempty" json:"type,omitempty,omitempty"`
+	MemberID       UserID       `bson:"memberId,omitempty" json:"memberId,omitempty,omitempty"`
+	ActivityType   string       `bson:"activityType,omitempty" json:"activityType,omitempty,omitempty"`
+	ActivityTypeID string       `bson:"activityTypeID,omitempty" json:"activityTypeID,omitempty,omitempty"`
+	BoardID        BoardID      `bson:"boardId,omitempty" json:"boardId,omitempty,omitempty"`
+	BoardLabelID   BoardLabelID `bson:"labelId,omitEmpty" json:"labelId,omitEmpty,omitempty"`
+	CardTitle      string       `bson:"cardTitle,omitempty" json:"cardTitle,omitempty,omitempty"`
+	ListID         ListID       `bson:"listId,omitempty" json:"listId,omitempty,omitempty"`
+	ListName       string       `bson:"listName,omitempty" json:"listName,omitempty,omitempty"`
+	CardID         CardID       `bson:"cardId,omitempty" json:"cardId,omitempty,omitempty"`
 	CommentID      CommentID    `bson:"commentId, omitempty"`
-	SwimlaneID     SwimlaneID   `bson:"swimlaneID,omitempty"`
-	SwimlaneName   string       `bson:"swimlaneName,omitempty"`
-	CreatedAt      time.Time    `bson:"createdAt"`
-	ModifiedAt     time.Time    `bson:"modifiedAt"`
+	SwimlaneID     SwimlaneID   `bson:"swimlaneID,omitempty" json:"swimlaneID,omitempty,omitempty"`
+	SwimlaneName   string       `bson:"swimlaneName,omitempty" json:"swimlaneName,omitempty,omitempty"`
+	CreatedAt      time.Time    `bson:"createdAt" json:"createdAt,omitempty"`
+	ModifiedAt     time.Time    `bson:"modifiedAt" json:"modifiedAt,omitempty"`
 }
 
 func (activityID ActivityID) Check(ctx context.Context, wekan *Wekan) error {

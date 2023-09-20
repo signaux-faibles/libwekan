@@ -13,22 +13,22 @@ import (
 
 // Board représente un objet de la collection `boards`
 type Board struct {
-	ID                         BoardID       `bson:"_id"`
-	Title                      BoardTitle    `bson:"title"`
-	Permission                 string        `bson:"permission"`
-	Sort                       float64       `bson:"sort"`
-	Archived                   bool          `bson:"archived"`
-	CreatedAt                  time.Time     `bson:"createdAt"`
-	ModifiedAt                 time.Time     `bson:"modifiedAt"`
-	Stars                      int           `bson:"stars"`
-	Labels                     []BoardLabel  `bson:"labels"`
-	Members                    []BoardMember `bson:"members"`
-	Color                      string        `bson:"color"`
-	SubtasksDefaultBoardId     *string       `bson:"subtasksDefaultBoardId"`
-	SubtasksDefaultListId      *string       `bson:"subtasksDefaultListId"`
-	DateSettingsDefaultBoardId *string       `bson:"dateSettingsDefaultBoardId"`
-	DateSettingsDefaultListId  *string       `bson:"dateSettingsDefaultListId"`
-	AllowsSubtasks             bool          `bson:"allowsSubtasks"`
+	ID                         BoardID       `bson:"_id" json:"_id,omitempty"`
+	Title                      BoardTitle    `bson:"title" json:"title,omitempty"`
+	Permission                 string        `bson:"permission" json:"permission,omitempty"`
+	Sort                       float64       `bson:"sort" json:"sort,omitempty"`
+	Archived                   bool          `bson:"archived" json:"archived,omitempty"`
+	CreatedAt                  time.Time     `bson:"createdAt" json:"createdAt,omitempty"`
+	ModifiedAt                 time.Time     `bson:"modifiedAt" json:"modifiedAt,omitempty"`
+	Stars                      int           `bson:"stars" json:"stars,omitempty"`
+	Labels                     []BoardLabel  `bson:"labels" json:"labels,omitempty"`
+	Members                    []BoardMember `bson:"members" json:"members,omitempty"`
+	Color                      string        `bson:"color" json:"color,omitempty"`
+	SubtasksDefaultBoardId     *string       `bson:"subtasksDefaultBoardId" json:"subtasksDefaultBoardId,omitempty"`
+	SubtasksDefaultListId      *string       `bson:"subtasksDefaultListId" json:"subtasksDefaultListId,omitempty"`
+	DateSettingsDefaultBoardId *string       `bson:"dateSettingsDefaultBoardId" json:"dateSettingsDefaultBoardId,omitempty"`
+	DateSettingsDefaultListId  *string       `bson:"dateSettingsDefaultListId" json:"dateSettingsDefaultListId,omitempty"`
+	AllowsSubtasks             bool          `bson:"allowsSubtasks" json:"allowsSubtasks,omitempty"`
 	AllowsAttachments          bool          `json:"allowsAttachments"`
 	AllowsChecklists           bool          `json:"allowsChecklists"`
 	AllowsComments             bool          `json:"allowsComments"`
@@ -44,30 +44,30 @@ type Board struct {
 	AllowsStartDate            bool          `json:"allowsStartDate"`
 	AllowsEndDate              bool          `json:"allowsEndDate"`
 	AllowsDueDate              bool          `json:"allowsDueDate"`
-	PresentParentTask          string        `bson:"presentParentTask"`
-	IsOvertime                 bool          `bson:"isOvertime"`
-	Type                       string        `bson:"type"`
-	Slug                       BoardSlug     `bson:"slug"`
-	Watchers                   []interface{} `bson:"watchers"`
-	AllowsCardNumber           bool          `bson:"allowsCardNumber"`
-	AllowsShowLists            bool          `bson:"allowsShowLists"`
+	PresentParentTask          string        `bson:"presentParentTask" json:"presentParentTask,omitempty"`
+	IsOvertime                 bool          `bson:"isOvertime" json:"isOvertime,omitempty"`
+	Type                       string        `bson:"type" json:"type,omitempty"`
+	Slug                       BoardSlug     `bson:"slug" json:"slug,omitempty"`
+	Watchers                   []interface{} `bson:"watchers" json:"watchers,omitempty"`
+	AllowsCardNumber           bool          `bson:"allowsCardNumber" json:"allowsCardNumber,omitempty"`
+	AllowsShowLists            bool          `bson:"allowsShowLists" json:"allowsShowLists,omitempty"`
 }
 
 type BoardLabelID string
 type BoardLabelName string
 type BoardLabel struct {
-	ID    BoardLabelID   `bson:"_id"`
-	Name  BoardLabelName `bson:"name"`
-	Color string         `bson:"color"`
+	ID    BoardLabelID   `bson:"_id" json:"_id,omitempty"`
+	Name  BoardLabelName `bson:"name" json:"name,omitempty"`
+	Color string         `bson:"color" json:"color,omitempty"`
 }
 
 type BoardMember struct {
-	UserID        UserID `bson:"userId"`
-	IsAdmin       bool   `bson:"isAdmin"`
-	IsActive      bool   `bson:"isActive"`
-	IsNoComments  bool   `bson:"isNoComments"`
-	IsCommentOnly bool   `bson:"isCommentOnly"`
-	IsWorker      bool   `bson:"isWorker"`
+	UserID        UserID `bson:"userId" json:"userId,omitempty"`
+	IsAdmin       bool   `bson:"isAdmin" json:"isAdmin,omitempty"`
+	IsActive      bool   `bson:"isActive" json:"isActive,omitempty"`
+	IsNoComments  bool   `bson:"isNoComments" json:"isNoComments,omitempty"`
+	IsCommentOnly bool   `bson:"isCommentOnly" json:"isCommentOnly,omitempty"`
+	IsWorker      bool   `bson:"isWorker" json:"isWorker,omitempty"`
 }
 
 type BoardID string

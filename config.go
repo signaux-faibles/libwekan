@@ -3,6 +3,7 @@ package libwekan
 import (
 	"context"
 	"fmt"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -10,15 +11,15 @@ import (
 type ConfigCustomFields map[CardCustomFieldID]CustomField
 
 type ConfigBoard struct {
-	Board        Board                   `bson:"board"`
-	Swimlanes    map[SwimlaneID]Swimlane `bson:"swimlanes"`
-	Lists        map[ListID]List         `bson:"lists"`
-	CustomFields ConfigCustomFields      `bson:"customFields"`
+	Board        Board                   `bson:"board" json:"board,omitempty"`
+	Swimlanes    map[SwimlaneID]Swimlane `bson:"swimlanes" json:"swimlanes,omitempty"`
+	Lists        map[ListID]List         `bson:"lists" json:"lists,omitempty"`
+	CustomFields ConfigCustomFields      `bson:"customFields" json:"customFields,omitempty"`
 }
 
 type Config struct {
-	Boards map[BoardID]ConfigBoard `bson:"boards"`
-	Users  map[UserID]User         `bson:"users"`
+	Boards map[BoardID]ConfigBoard `bson:"boards" json:"boards,omitempty"`
+	Users  map[UserID]User         `bson:"users" json:"users,omitempty"`
 }
 
 func (fields ConfigCustomFields) CustomFieldID(fieldName string) CardCustomFieldID {

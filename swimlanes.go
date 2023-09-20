@@ -2,22 +2,23 @@ package libwekan
 
 import (
 	"context"
-	"go.mongodb.org/mongo-driver/bson"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type SwimlaneID string
 
 type Swimlane struct {
-	ID         SwimlaneID `bson:"_id"`
-	Title      string     `bson:"title"`
-	BoardID    BoardID    `bson:"boardId"`
-	Sort       float64    `bson:"sort"`
-	Type       string     `bson:"type"`
-	Archived   bool       `bson:"archived"`
-	CreatedAt  time.Time  `bson:"createdAt"`
-	UpdatedAt  time.Time  `bson:"updatedAt"`
-	ModifiedAt time.Time  `bson:"modifiedAt"`
+	ID         SwimlaneID `bson:"_id" json:"_id,omitempty"`
+	Title      string     `bson:"title" json:"title,omitempty"`
+	BoardID    BoardID    `bson:"boardId" json:"boardId,omitempty"`
+	Sort       float64    `bson:"sort" json:"sort,omitempty"`
+	Type       string     `bson:"type" json:"type,omitempty"`
+	Archived   bool       `bson:"archived" json:"archived,omitempty"`
+	CreatedAt  time.Time  `bson:"createdAt" json:"createdAt,omitempty"`
+	UpdatedAt  time.Time  `bson:"updatedAt" json:"updatedAt,omitempty"`
+	ModifiedAt time.Time  `bson:"modifiedAt" json:"modifiedAt,omitempty"`
 }
 
 func BuildSwimlane(boardID BoardID, swimlaneType string, title string, sort float64) Swimlane {

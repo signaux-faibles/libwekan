@@ -2,33 +2,34 @@ package libwekan
 
 import (
 	"context"
-	"go.mongodb.org/mongo-driver/bson"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // ListID porte bien son nom
 type ListID string
 
 type ListWipLimit struct {
-	Value   int  `bson:"value"`
-	Enabled bool `bson:"enabled"`
-	Soft    bool `bson:"soft"`
+	Value   int  `bson:"value" json:"value,omitempty"`
+	Enabled bool `bson:"enabled" json:"enabled,omitempty"`
+	Soft    bool `bson:"soft" json:"soft,omitempty"`
 }
 
 type List struct {
-	ID         ListID       `bson:"_id"`
-	Title      string       `bson:"title"`
-	BoardID    BoardID      `bson:"boardId"`
-	Sort       float64      `bson:"sort"`
-	Type       string       `bson:"type"`
-	Starred    bool         `bson:"starred"`
-	Archived   bool         `bson:"archived"`
-	SwimlaneID string       `bson:"swimlaneId"`
-	Width      string       `bson:"width"`
-	CreatedAt  time.Time    `bson:"createdAt"`
-	UpdatedAt  time.Time    `bson:"updatedAt"`
-	ModifiedAt time.Time    `bson:"modifiedAt"`
-	WipLimit   ListWipLimit `bson:"wipLimit"`
+	ID         ListID       `bson:"_id" json:"_id,omitempty"`
+	Title      string       `bson:"title" json:"title,omitempty"`
+	BoardID    BoardID      `bson:"boardId" json:"boardId,omitempty"`
+	Sort       float64      `bson:"sort" json:"sort,omitempty"`
+	Type       string       `bson:"type" json:"type,omitempty"`
+	Starred    bool         `bson:"starred" json:"starred,omitempty"`
+	Archived   bool         `bson:"archived" json:"archived,omitempty"`
+	SwimlaneID string       `bson:"swimlaneId" json:"swimlaneId,omitempty"`
+	Width      string       `bson:"width" json:"width,omitempty"`
+	CreatedAt  time.Time    `bson:"createdAt" json:"createdAt,omitempty"`
+	UpdatedAt  time.Time    `bson:"updatedAt" json:"updatedAt,omitempty"`
+	ModifiedAt time.Time    `bson:"modifiedAt" json:"modifiedAt,omitempty"`
+	WipLimit   ListWipLimit `bson:"wipLimit" json:"wipLimit,omitempty"`
 }
 
 func BuildList(boardID BoardID, title string, sort float64) List {

@@ -15,16 +15,16 @@ import (
 type Users []User
 
 type User struct {
-	ID                   UserID       `bson:"_id"`
-	CreatedAt            time.Time    `bson:"createAt"`
-	Services             UserServices `bson:"services"`
-	Username             Username     `bson:"username"`
-	Emails               []UserEmail  `bson:"emails"`
-	Profile              UserProfile  `bson:"profile"`
-	AuthenticationMethod string       `bson:"authenticationMethod"`
-	ModifiedAt           time.Time    `bson:"modifiedAt"`
-	IsAdmin              bool         `bson:"isAdmin"`
-	LoginDisabled        bool         `bson:"loginDisabled"`
+	ID                   UserID       `bson:"_id" json:"_id,omitempty"`
+	CreatedAt            time.Time    `bson:"createAt" json:"createAt,omitempty"`
+	Services             UserServices `bson:"services" json:"services,omitempty"`
+	Username             Username     `bson:"username" json:"username,omitempty"`
+	Emails               []UserEmail  `bson:"emails" json:"emails,omitempty"`
+	Profile              UserProfile  `bson:"profile" json:"profile,omitempty"`
+	AuthenticationMethod string       `bson:"authenticationMethod" json:"authenticationMethod,omitempty"`
+	ModifiedAt           time.Time    `bson:"modifiedAt" json:"modifiedAt,omitempty"`
+	IsAdmin              bool         `bson:"isAdmin" json:"isAdmin,omitempty"`
+	LoginDisabled        bool         `bson:"loginDisabled" json:"loginDisabled,omitempty"`
 }
 
 type UserTemplates struct {
@@ -34,13 +34,13 @@ type UserTemplates struct {
 	BoardTemplateSwimlane Swimlane
 }
 type UserServicesOIDC struct {
-	ID           string   `bson:"id"`
-	Username     Username `bson:"username"`
-	Fullname     string   `bson:"fullname"`
-	AccessToken  string   `bson:"accessToken"`
-	ExpiresAt    int      `bson:"expiresAt"`
-	Email        string   `bson:"email"`
-	RefreshToken string   `bson:"refreshToken"`
+	ID           string   `bson:"id" json:"id,omitempty"`
+	Username     Username `bson:"username" json:"username,omitempty"`
+	Fullname     string   `bson:"fullname" json:"fullname,omitempty"`
+	AccessToken  string   `bson:"accessToken" json:"accessToken,omitempty"`
+	ExpiresAt    int      `bson:"expiresAt" json:"expiresAt,omitempty"`
+	Email        string   `bson:"email" json:"email,omitempty"`
+	RefreshToken string   `bson:"refreshToken" json:"refreshToken,omitempty"`
 }
 
 type UserServicesResume struct {
@@ -48,18 +48,18 @@ type UserServicesResume struct {
 }
 
 type UserServicesResumeLoginToken struct {
-	When        time.Time `bson:"when"`
-	HashedToken string    `bson:"hashedToken"`
+	When        time.Time `bson:"when" json:"when,omitempty"`
+	HashedToken string    `bson:"hashedToken" json:"hashedToken,omitempty"`
 }
 
 type UserServicesPassword struct {
-	Bcrypt string `bson:"bcrypt"`
+	Bcrypt string `bson:"bcrypt" json:"bcrypt,omitempty"`
 }
 
 type UserServices struct {
-	OIDC     UserServicesOIDC     `bson:"oidc"`
-	Resume   UserServicesResume   `bson:"resume"`
-	Password UserServicesPassword `bson:"password"`
+	OIDC     UserServicesOIDC     `bson:"oidc" json:"oidc,omitempty"`
+	Resume   UserServicesResume   `bson:"resume" json:"resume,omitempty"`
+	Password UserServicesPassword `bson:"password" json:"password,omitempty"`
 }
 
 type UserEmail struct {
@@ -68,25 +68,25 @@ type UserEmail struct {
 }
 
 type UserProfileNotification struct {
-	Activity string `bson:"activity"`
+	Activity string `bson:"activity" json:"activity,omitempty"`
 }
 
 type UserProfile struct {
-	Initials                 string                    `bson:"initials"`
-	Fullname                 string                    `bson:"fullname"`
-	BoardView                string                    `bson:"boardView"`
-	ListSortBy               string                    `bson:"-modifiedAt"`
-	TemplatesBoardId         BoardID                   `bson:"templatesBoardId"`
-	CardTemplatesSwimlaneId  SwimlaneID                `bson:"cardTemplatesSwimlaneId"`
-	ListTemplatesSwimlaneId  SwimlaneID                `bson:"listTemplatesSwimlaneId"`
-	BoardTemplatesSwimlaneId SwimlaneID                `bson:"boardTemplatesSwimlaneId"`
-	InvitedBoards            []string                  `bson:"invitedBoards"`
-	StarredBoards            []string                  `bson:"starredBoards"`
-	Language                 string                    `bson:"language"`
-	CardMaximized            bool                      `bson:"cardMaximized"`
-	EmailBuffer              []string                  `bson:"emailBuffer"`
-	Notifications            []UserProfileNotification `bson:"notifications"`
-	HiddenSystemMessages     bool                      `bson:"hiddenSystemMessages"`
+	Initials                 string                    `bson:"initials" json:"initials,omitempty"`
+	Fullname                 string                    `bson:"fullname" json:"fullname,omitempty"`
+	BoardView                string                    `bson:"boardView" json:"boardView,omitempty"`
+	ListSortBy               string                    `bson:"-modifiedAt" json:"-modifiedAt,omitempty"`
+	TemplatesBoardId         BoardID                   `bson:"templatesBoardId" json:"templatesBoardId,omitempty"`
+	CardTemplatesSwimlaneId  SwimlaneID                `bson:"cardTemplatesSwimlaneId" json:"cardTemplatesSwimlaneId,omitempty"`
+	ListTemplatesSwimlaneId  SwimlaneID                `bson:"listTemplatesSwimlaneId" json:"listTemplatesSwimlaneId,omitempty"`
+	BoardTemplatesSwimlaneId SwimlaneID                `bson:"boardTemplatesSwimlaneId" json:"boardTemplatesSwimlaneId,omitempty"`
+	InvitedBoards            []string                  `bson:"invitedBoards" json:"invitedBoards,omitempty"`
+	StarredBoards            []string                  `bson:"starredBoards" json:"starredBoards,omitempty"`
+	Language                 string                    `bson:"language" json:"language,omitempty"`
+	CardMaximized            bool                      `bson:"cardMaximized" json:"cardMaximized,omitempty"`
+	EmailBuffer              []string                  `bson:"emailBuffer" json:"emailBuffer,omitempty"`
+	Notifications            []UserProfileNotification `bson:"notifications" json:"notifications,omitempty"`
+	HiddenSystemMessages     bool                      `bson:"hiddenSystemMessages" json:"hiddenSystemMessages,omitempty"`
 }
 
 type Username string
