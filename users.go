@@ -45,7 +45,7 @@ type UserServicesOIDC struct {
 }
 
 type UserServicesResume struct {
-	LoginTokens []UserServicesResumeLoginToken
+	LoginTokens []UserServicesResumeLoginToken `json:"-"`
 }
 
 type UserServicesResumeLoginToken struct {
