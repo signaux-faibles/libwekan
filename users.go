@@ -33,14 +33,15 @@ type UserTemplates struct {
 	ListTemplateSwimlane  Swimlane
 	BoardTemplateSwimlane Swimlane
 }
+
 type UserServicesOIDC struct {
 	ID           string   `bson:"id" json:"id,omitempty"`
 	Username     Username `bson:"username" json:"username,omitempty"`
 	Fullname     string   `bson:"fullname" json:"fullname,omitempty"`
-	AccessToken  string   `bson:"accessToken" json:"accessToken,omitempty"`
-	ExpiresAt    int      `bson:"expiresAt" json:"expiresAt,omitempty"`
+	AccessToken  string   `bson:"accessToken" json:"-"`
+	ExpiresAt    int      `bson:"expiresAt" json:"-"`
 	Email        string   `bson:"email" json:"email,omitempty"`
-	RefreshToken string   `bson:"refreshToken" json:"refreshToken,omitempty"`
+	RefreshToken string   `bson:"refreshToken" json:"-"`
 }
 
 type UserServicesResume struct {
@@ -49,17 +50,17 @@ type UserServicesResume struct {
 
 type UserServicesResumeLoginToken struct {
 	When        time.Time `bson:"when" json:"when,omitempty"`
-	HashedToken string    `bson:"hashedToken" json:"hashedToken,omitempty"`
+	HashedToken string    `bson:"hashedToken" json:"-"`
 }
 
 type UserServicesPassword struct {
-	Bcrypt string `bson:"bcrypt" json:"bcrypt,omitempty"`
+	Bcrypt string `bson:"bcrypt" json:"-"`
 }
 
 type UserServices struct {
 	OIDC     UserServicesOIDC     `bson:"oidc" json:"oidc,omitempty"`
 	Resume   UserServicesResume   `bson:"resume" json:"resume,omitempty"`
-	Password UserServicesPassword `bson:"password" json:"password,omitempty"`
+	Password UserServicesPassword `bson:"password" json:"-"`
 }
 
 type UserEmail struct {
