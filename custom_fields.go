@@ -3,7 +3,7 @@ package libwekan
 import "time"
 
 type CustomField struct {
-	ID                  CardCustomFieldID `bson:"_id"`
+	ID                  CardCustomFieldID `bson:"_id" json:"_id,omitempty"`
 	Name                string
 	Type                string
 	Settings            CustomFieldSettings
@@ -18,7 +18,7 @@ type CustomField struct {
 
 type CustomFieldSettings struct {
 	DropdownItems []struct {
-		ID   string `bson:"_id"`
-		Name string `bson:"name"`
-	} `bson:"dropdownItems"`
+		ID   string `bson:"_id" json:"_id,omitempty"`
+		Name string `bson:"name" json:"name,omitempty"`
+	} `bson:"dropdownItems" json:"dropdownItems,omitempty"`
 }

@@ -3,47 +3,48 @@ package libwekan
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"time"
 )
 
 type Rules []Rule
 
 type RuleID string
 type Rule struct {
-	ID         RuleID     `bson:"_id"`
-	Title      string     `bson:"title"`
-	TriggerID  *TriggerID `bson:"triggerId"`
-	ActionID   *ActionID  `bson:"actionId"`
-	BoardID    BoardID    `bson:"boardId"`
-	CreatedAt  time.Time  `bson:"createdAt"`
-	ModifiedAt time.Time  `bson:"modifiedAt"`
-	Action     Action     `bson:"-"`
-	Trigger    Trigger    `bson:"-"`
+	ID         RuleID     `bson:"_id" json:"_id,omitempty"`
+	Title      string     `bson:"title" json:"title,omitempty"`
+	TriggerID  *TriggerID `bson:"triggerId" json:"triggerId,omitempty"`
+	ActionID   *ActionID  `bson:"actionId" json:"actionId,omitempty"`
+	BoardID    BoardID    `bson:"boardId" json:"boardId,omitempty"`
+	CreatedAt  time.Time  `bson:"createdAt" json:"createdAt,omitempty"`
+	ModifiedAt time.Time  `bson:"modifiedAt" json:"modifiedAt,omitempty"`
+	Action     Action     `bson:"-" json:"-"`
+	Trigger    Trigger    `bson:"-" json:"-"`
 }
 
 type TriggerID string
 type Trigger struct {
-	ID           TriggerID    `bson:"_id"`
-	ActivityType string       `bson:"activityType"`
-	BoardID      BoardID      `bson:"boardId"`
-	LabelID      BoardLabelID `bson:"labelId"`
-	Description  string       `bson:"desc"`
-	UserID       UserID       `bson:"userId"`
-	CreatedAt    time.Time    `bson:"createdAt"`
-	ModifiedAt   time.Time    `bson:"modifiedAt"`
+	ID           TriggerID    `bson:"_id" json:"_id,omitempty"`
+	ActivityType string       `bson:"activityType" json:"activityType,omitempty"`
+	BoardID      BoardID      `bson:"boardId" json:"boardId,omitempty"`
+	LabelID      BoardLabelID `bson:"labelId" json:"labelId,omitempty"`
+	Description  string       `bson:"desc" json:"desc,omitempty"`
+	UserID       UserID       `bson:"userId" json:"userId,omitempty"`
+	CreatedAt    time.Time    `bson:"createdAt" json:"createdAt,omitempty"`
+	ModifiedAt   time.Time    `bson:"modifiedAt" json:"modifiedAt,omitempty"`
 }
 
 type ActionID string
 type Action struct {
-	ID          ActionID  `bson:"_id"`
-	ActionType  string    `bson:"actionType"`
-	Username    Username  `bson:"username"`
-	BoardID     BoardID   `bson:"boardId"`
-	Description string    `bson:"desc"`
-	CreatedAt   time.Time `bson:"createdAt"`
-	ModifiedAt  time.Time `bson:"modifiedAt"`
+	ID          ActionID  `bson:"_id" json:"_id,omitempty"`
+	ActionType  string    `bson:"actionType" json:"actionType,omitempty"`
+	Username    Username  `bson:"username" json:"username,omitempty"`
+	BoardID     BoardID   `bson:"boardId" json:"boardId,omitempty"`
+	Description string    `bson:"desc" json:"desc,omitempty"`
+	CreatedAt   time.Time `bson:"createdAt" json:"createdAt,omitempty"`
+	ModifiedAt  time.Time `bson:"modifiedAt" json:"modifiedAt,omitempty"`
 }
 
 func (ruleID RuleID) GetDocument(ctx context.Context, wekan *Wekan) (Rule, error) {

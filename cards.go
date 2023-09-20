@@ -4,83 +4,84 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"time"
 )
 
 type CardID string
 
 type Poker struct {
-	Question             bool     `bson:"question"`
-	One                  []string `bson:"one"`
-	Two                  []string `bson:"two"`
-	Three                []string `bson:"three"`
-	Five                 []string `bson:"five"`
-	Eight                []string `bson:"eight"`
-	Thirteen             []string `bson:"thirteen"`
-	Twenty               []string `bson:"twenty"`
-	Forty                []string `bson:"forty"`
-	OneHundred           []string `bson:"oneHundred"`
-	Unsure               []string `bson:"unsure"`
-	End                  *bool    `bson:"end"`
-	AllowNonBoardMembers bool     `bson:"allowNonBoardMembers"`
+	Question             bool     `bson:"question" json:"question,omitempty"`
+	One                  []string `bson:"one" json:"one,omitempty"`
+	Two                  []string `bson:"two" json:"two,omitempty"`
+	Three                []string `bson:"three" json:"three,omitempty"`
+	Five                 []string `bson:"five" json:"five,omitempty"`
+	Eight                []string `bson:"eight" json:"eight,omitempty"`
+	Thirteen             []string `bson:"thirteen" json:"thirteen,omitempty"`
+	Twenty               []string `bson:"twenty" json:"twenty,omitempty"`
+	Forty                []string `bson:"forty" json:"forty,omitempty"`
+	OneHundred           []string `bson:"oneHundred" json:"oneHundred,omitempty"`
+	Unsure               []string `bson:"unsure" json:"unsure,omitempty"`
+	End                  *bool    `bson:"end" json:"end,omitempty"`
+	AllowNonBoardMembers bool     `bson:"allowNonBoardMembers" json:"allowNonBoardMembers,omitempty"`
 }
 
 type Vote struct {
-	Question             string   `bson:"question"`
-	Positive             []string `bson:"positive"`
-	Negative             []string `bson:"negative"`
-	End                  *bool    `bson:"end"`
-	Public               bool     `bson:"public"`
-	AllowNonBoardMembers bool     `bson:"allowNonBoardMembers"`
+	Question             string   `bson:"question" json:"question,omitempty"`
+	Positive             []string `bson:"positive" json:"positive,omitempty"`
+	Negative             []string `bson:"negative" json:"negative,omitempty"`
+	End                  *bool    `bson:"end" json:"end,omitempty"`
+	Public               bool     `bson:"public" json:"public,omitempty"`
+	AllowNonBoardMembers bool     `bson:"allowNonBoardMembers" json:"allowNonBoardMembers,omitempty"`
 }
 
 type CardCustomFieldID string
 
 type CardCustomField struct {
-	ID    CardCustomFieldID `bson:"_id"`
-	Value string            `bson:"value"`
+	ID    CardCustomFieldID `bson:"_id" json:"_id,omitempty"`
+	Value string            `bson:"value" json:"value,omitempty"`
 }
 
 type Card struct {
-	ID               CardID            `bson:"_id"`
-	Title            string            `bson:"title"`
-	Members          []UserID          `bson:"members"`
-	LabelIDs         []BoardLabelID    `bson:"labelIds"`
-	CustomFields     []CardCustomField `bson:"customFields"`
-	ListID           ListID            `bson:"listId"`
-	BoardID          BoardID           `bson:"boardId"`
-	Sort             float64           `bson:"sort"`
-	SwimlaneID       SwimlaneID        `bson:"swimlaneId"`
-	Type             string            `bson:"type"`
-	Archived         bool              `bson:"archived"`
-	ParentID         CardID            `bson:"parentId,omitempty"`
-	CoverID          string            `bson:"coverId"`
-	CreatedAt        time.Time         `bson:"createdAt"`
-	ModifiedAt       time.Time         `bson:"modifiedAt"`
-	DateLastActivity time.Time         `bson:"dateLastActivity"`
-	Description      string            `bson:"description"`
-	RequestedBy      UserID            `bson:"requestedBy"`
-	AssignedBy       UserID            `bson:"assignedBy"`
-	Assignees        []UserID          `bson:"assignees"`
-	SpentTime        int               `bson:"spentTime"`
-	IsOverTime       bool              `bson:"isOvertime"`
-	UserID           UserID            `bson:"userId"`
-	SubtaskSort      int               `bson:"subtaskSort"`
-	LinkedID         CardID            `bson:"linkedId"`
-	Vote             Vote              `bson:"vote"`
-	Poker            Poker             `bson:"poker"`
-	TargetIDGantt    []string          `bson:"targetId_gantt"`
-	LinkTypeGantt    []string          `bson:"linkType_gantt"`
-	LinkIDGantt      []string          `bson:"linkId_gantt"`
-	StartAt          time.Time         `bson:"startAt"`
-	EndAt            *time.Time        `bson:"endAt"`
+	ID               CardID            `bson:"_id" json:"_id,omitempty"`
+	Title            string            `bson:"title" json:"title,omitempty"`
+	Members          []UserID          `bson:"members" json:"members,omitempty"`
+	LabelIDs         []BoardLabelID    `bson:"labelIds" json:"labelIds,omitempty"`
+	CustomFields     []CardCustomField `bson:"customFields" json:"customFields,omitempty"`
+	ListID           ListID            `bson:"listId" json:"listId,omitempty"`
+	BoardID          BoardID           `bson:"boardId" json:"boardId,omitempty"`
+	Sort             float64           `bson:"sort" json:"sort,omitempty"`
+	SwimlaneID       SwimlaneID        `bson:"swimlaneId" json:"swimlaneId,omitempty"`
+	Type             string            `bson:"type" json:"type,omitempty"`
+	Archived         bool              `bson:"archived" json:"archived,omitempty"`
+	ParentID         CardID            `bson:"parentId,omitempty" json:"parentId,omitempty,omitempty"`
+	CoverID          string            `bson:"coverId" json:"coverId,omitempty"`
+	CreatedAt        time.Time         `bson:"createdAt" json:"createdAt,omitempty"`
+	ModifiedAt       time.Time         `bson:"modifiedAt" json:"modifiedAt,omitempty"`
+	DateLastActivity time.Time         `bson:"dateLastActivity" json:"dateLastActivity,omitempty"`
+	Description      string            `bson:"description" json:"description,omitempty"`
+	RequestedBy      UserID            `bson:"requestedBy" json:"requestedBy,omitempty"`
+	AssignedBy       UserID            `bson:"assignedBy" json:"assignedBy,omitempty"`
+	Assignees        []UserID          `bson:"assignees" json:"assignees,omitempty"`
+	SpentTime        int               `bson:"spentTime" json:"spentTime,omitempty"`
+	IsOverTime       bool              `bson:"isOvertime" json:"isOvertime,omitempty"`
+	UserID           UserID            `bson:"userId" json:"userId,omitempty"`
+	SubtaskSort      int               `bson:"subtaskSort" json:"subtaskSort,omitempty"`
+	LinkedID         CardID            `bson:"linkedId" json:"linkedId,omitempty"`
+	Vote             Vote              `bson:"vote" json:"vote,omitempty"`
+	Poker            Poker             `bson:"poker" json:"poker,omitempty"`
+	TargetIDGantt    []string          `bson:"targetId_gantt" json:"targetId_gantt,omitempty"`
+	LinkTypeGantt    []string          `bson:"linkType_gantt" json:"linkType_gantt,omitempty"`
+	LinkIDGantt      []string          `bson:"linkId_gantt" json:"linkId_gantt,omitempty"`
+	StartAt          time.Time         `bson:"startAt" json:"startAt,omitempty"`
+	EndAt            *time.Time        `bson:"endAt" json:"endAt,omitempty"`
 }
 
 type CardWithComments struct {
-	Card     Card      `bson:"card"`
-	Comments []Comment `bson:"comments"`
+	Card     Card      `bson:"card" json:"card,omitempty"`
+	Comments []Comment `bson:"comments" json:"comments,omitempty"`
 }
 
 func BuildCard(boardID BoardID, listID ListID, swimlaneID SwimlaneID, title string, description string, userID UserID) Card {
