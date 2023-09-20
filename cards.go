@@ -56,7 +56,7 @@ type Card struct {
 	SwimlaneID       SwimlaneID        `bson:"swimlaneId" json:"swimlaneId,omitempty"`
 	Type             string            `bson:"type" json:"type,omitempty"`
 	Archived         bool              `bson:"archived" json:"archived,omitempty"`
-	ParentID         CardID            `bson:"parentId,omitempty" json:"parentId,omitempty,omitempty"`
+	ParentID         CardID            `bson:"parentId,omitempty" json:"parentId,omitempty"`
 	CoverID          string            `bson:"coverId" json:"coverId,omitempty"`
 	CreatedAt        time.Time         `bson:"createdAt" json:"createdAt,omitempty"`
 	ModifiedAt       time.Time         `bson:"modifiedAt" json:"modifiedAt,omitempty"`
