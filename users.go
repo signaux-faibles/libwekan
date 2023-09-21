@@ -65,7 +65,7 @@ type UserServices struct {
 
 type UserEmail struct {
 	Address  string `json:"address"`
-	Verified bool
+	Verified bool   `json:"verified"`
 }
 
 type UserProfileNotification struct {
@@ -76,7 +76,7 @@ type UserProfile struct {
 	Initials                 string                    `bson:"initials" json:"initials,omitempty"`
 	Fullname                 string                    `bson:"fullname" json:"fullname,omitempty"`
 	BoardView                string                    `bson:"boardView" json:"boardView,omitempty"`
-	ListSortBy               string                    `bson:"-modifiedAt" json:"-modifiedAt,omitempty"`
+	ListSortBy               string                    `bson:"-modifiedAt" json:"-"`
 	TemplatesBoardId         BoardID                   `bson:"templatesBoardId" json:"templatesBoardId,omitempty"`
 	CardTemplatesSwimlaneId  SwimlaneID                `bson:"cardTemplatesSwimlaneId" json:"cardTemplatesSwimlaneId,omitempty"`
 	ListTemplatesSwimlaneId  SwimlaneID                `bson:"listTemplatesSwimlaneId" json:"listTemplatesSwimlaneId,omitempty"`
