@@ -218,7 +218,13 @@ func (wekan *Wekan) InsertCard(ctx context.Context, card Card) error {
 	if _, err := wekan.db.Collection("cards").InsertOne(ctx, card); err != nil {
 		return UnexpectedMongoError{err}
 	}
-	return nil
+
+	activity, err := wekan.newActivityCreateCardFromCard(ctx, card)
+	if err != nil {
+		return err
+	}
+	_, err = wekan.insertActivity(ctx, activity)
+	return err
 }
 
 func (wekan *Wekan) AddLabelToCard(ctx context.Context, cardID CardID, labelID BoardLabelID) error {

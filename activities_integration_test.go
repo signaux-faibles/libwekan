@@ -20,7 +20,7 @@ func TestActivities_insertActivity_whenEverythingsFine(t *testing.T) {
 	ass.Nil(err)
 
 	// THEN
-	selectedActivity, err := wekan.SelectActivityFromID(ctx, insertedActivity.ID)
+	selectedActivity, err := wekan.GetActivityFromID(ctx, insertedActivity.ID)
 	ass.Nil(err)
 	ass.Equal(insertedActivity, selectedActivity)
 }

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type ActivityID string
@@ -124,6 +123,18 @@ func newActivityAddedLabel(userID UserID, boardLabelID BoardLabelID, boardID Boa
 	}
 }
 
+func (wekan *Wekan) newActivityCreateCardFromCard(ctx context.Context, card Card) (Activity, error) {
+	list, err := wekan.GetListFromID(ctx, card.ListID)
+	if err != nil {
+		return Activity{}, err
+	}
+	swimlane, err := wekan.GetSwimlaneFromID(ctx, card.SwimlaneID)
+	if err != nil {
+		return Activity{}, err
+	}
+	return newActivityCreateCard(card.UserID, list, card, swimlane), nil
+}
+
 func newActivityCreateCard(userID UserID, list List, card Card, swimlane Swimlane) Activity {
 	return Activity{
 		UserID:       userID,
@@ -150,19 +161,20 @@ func (wekan *Wekan) insertActivity(ctx context.Context, activity Activity) (Acti
 	return insertable, nil
 }
 
-func (wekan *Wekan) GetActivityFromID(ctx context.Context, activityID ActivityID) (Activity, error) {
-	var activity Activity
-	err := wekan.db.Collection("activities").FindOne(ctx, bson.M{"_id": activityID}).Decode(&activity)
+func (wekan *Wekan) GetActivitiesFromCardID(ctx context.Context, cardID CardID) ([]Activity, error) {
+	var activities []Activity
+	cur, err := wekan.db.Collection("activities").Find(ctx, bson.M{"cardId": cardID})
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return Activity{}, UnknownActivityError{string(activityID)}
-		}
-		return Activity{}, UnexpectedMongoError{err}
+		return nil, UnexpectedMongoError{err}
 	}
-	return activity, nil
+	err = cur.All(ctx, &activities)
+	if err != nil {
+		return nil, UnexpectedMongoError{err}
+	}
+	return activities, nil
 }
 
-func (wekan *Wekan) SelectActivityFromID(ctx context.Context, activityID ActivityID) (Activity, error) {
+func (wekan *Wekan) GetActivityFromID(ctx context.Context, activityID ActivityID) (Activity, error) {
 	var activity Activity
 	err := wekan.db.Collection("activities").FindOne(ctx, bson.M{"_id": activityID}).Decode(&activity)
 	if err != nil {

@@ -61,6 +61,23 @@ func TestCards_InsertCard_withGetCardFromID(t *testing.T) {
 	ass.Equal(card, actualCard)
 }
 
+func TestCards_InsertCard_withGetActivitiesFromCardID(t *testing.T) {
+	ass := assert.New(t)
+
+	// GIVEN
+	card := createTestCard(t, createTestUser(t, "").ID, nil, nil, nil)
+	// WHEN
+	actualActivities, err := wekan.GetActivitiesFromCardID(ctx, card.ID)
+	ass.Nil(err)
+
+	// THEN
+	ass.Len(actualActivities, 1)
+	ass.Equal(card.ID, actualActivities[0].CardID)
+	ass.Equal(card.BoardID, actualActivities[0].BoardID)
+	ass.Equal(card.ListID, actualActivities[0].ListID)
+	ass.Equal(card.SwimlaneID, actualActivities[0].SwimlaneID)
+}
+
 func TestCards_GetCardsFromID_whenCardDoesntExists(t *testing.T) {
 	_, err := wekan.GetCardFromID(ctx, CardID(t.Name()+"CatchMeIfYouCan"))
 	assert.IsType(t, CardNotFoundError{}, err)
