@@ -67,7 +67,7 @@ func TestCards_InsertCard_withGetActivitiesFromCardID(t *testing.T) {
 	// GIVEN
 	card := createTestCard(t, createTestUser(t, "").ID, nil, nil, nil)
 	// WHEN
-	actualActivities, err := wekan.GetActivitiesFromCardID(ctx, card.ID)
+	actualActivities, err := wekan.SelectActivitiesFromCardID(ctx, card.ID)
 	ass.Nil(err)
 
 	// THEN
@@ -431,7 +431,7 @@ func TestCards_MoveCard_whenEverythingsFine(t *testing.T) {
 	err = wekan.EnsureMoveCardList(ctx, card.ID, newList.ID, wekan.AdminID())
 	ass.NoError(err)
 	newCard, _ := card.ID.GetDocument(ctx, &wekan)
-	activities, _ := wekan.GetActivitiesFromCardID(ctx, card.ID)
+	activities, _ := wekan.SelectActivitiesFromCardID(ctx, card.ID)
 
 	// THEN
 	ass.Equal(newList.ID, newCard.ListID)
@@ -448,7 +448,7 @@ func TestCards_MoveCard_whenListDoesntExists(t *testing.T) {
 
 	// WHEN
 	err := wekan.EnsureMoveCardList(ctx, card.ID, notList.ID, wekan.AdminID())
-	activities, _ := wekan.GetActivitiesFromCardID(ctx, card.ID)
+	activities, _ := wekan.SelectActivitiesFromCardID(ctx, card.ID)
 
 	// THEN
 	ass.ErrorAs(err, &ListNotFoundError{})
@@ -462,7 +462,7 @@ func TestCards_MoveCard_whenCardDoesntMove(t *testing.T) {
 
 	// WHEN
 	err := wekan.EnsureMoveCardList(ctx, card.ID, card.ListID, wekan.AdminID())
-	activities, _ := wekan.GetActivitiesFromCardID(ctx, card.ID)
+	activities, _ := wekan.SelectActivitiesFromCardID(ctx, card.ID)
 
 	// THEN
 	ass.NoError(err)

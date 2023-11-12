@@ -197,7 +197,7 @@ func (wekan *Wekan) insertActivity(ctx context.Context, activity Activity) (Acti
 	return insertable, nil
 }
 
-func (wekan *Wekan) GetActivitiesFromCardID(ctx context.Context, cardID CardID) ([]Activity, error) {
+func (wekan *Wekan) SelectActivitiesFromCardID(ctx context.Context, cardID CardID) ([]Activity, error) {
 	var activities []Activity
 	filter := bson.M{"cardId": cardID}
 	sort := options.Find().SetSort(bson.M{"createdAt": 1})
