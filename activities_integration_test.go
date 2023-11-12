@@ -105,8 +105,8 @@ func TestActivities_GetActivityFromID_WhenActivityDoesntExist(t *testing.T) {
 	// THEN
 	ass.Empty(actualActivityFromMethod)
 	ass.Empty(actualActivityFromID)
-	ass.IsType(UnknownActivityError{}, errFromMethod)
-	ass.IsType(UnknownActivityError{}, errFromID)
+	ass.IsType(ActivityNotFoundError{}, errFromMethod)
+	ass.IsType(ActivityNotFoundError{}, errFromID)
 }
 
 func TestActivities_CheckActivityFromID(t *testing.T) {
@@ -128,5 +128,5 @@ func TestActivities_CheckActivityFromID_WhenActivityDoesntExist(t *testing.T) {
 	activityID := ActivityID(t.Name() + "absent")
 
 	// THEN
-	ass.IsType(UnknownActivityError{}, activityID.Check(ctx, &wekan))
+	ass.IsType(ActivityNotFoundError{}, activityID.Check(ctx, &wekan))
 }

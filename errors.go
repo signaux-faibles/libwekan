@@ -218,11 +218,11 @@ func (e NothingDoneError) Error() string {
 	return "le traitement n'a eu aucun effet"
 }
 
-type UnknownActivityError struct {
+type ActivityNotFoundError struct {
 	key string
 }
 
-func (e UnknownActivityError) Error() string {
+func (e ActivityNotFoundError) Error() string {
 	return fmt.Sprintf("l'activité n'existe pas (ID: %s)", e.key)
 }
 

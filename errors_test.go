@@ -135,7 +135,7 @@ func TestErrors_NothingDoneError(t *testing.T) {
 	assert.EqualError(t, e, expected)
 }
 func TestErrors_UnknownActivityError(t *testing.T) {
-	e := UnknownActivityError{"test"}
+	e := ActivityNotFoundError{"test"}
 	expected := fmt.Sprintf("l'activité n'existe pas (ID: %s)", e.key)
 	assert.EqualError(t, e, expected)
 }

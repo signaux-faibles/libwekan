@@ -2,6 +2,7 @@ package libwekan
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 
@@ -215,6 +216,9 @@ func (wekan *Wekan) GetActivityFromID(ctx context.Context, activityID ActivityID
 	var activity Activity
 	err := wekan.db.Collection("activities").FindOne(ctx, bson.M{"_id": activityID}).Decode(&activity)
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return Activity{}, ActivityNotFoundError{string(activityID)}
+		}
 		return Activity{}, UnexpectedMongoError{err}
 	}
 	return activity, nil
