@@ -199,7 +199,7 @@ func (wekan *Wekan) insertActivity(ctx context.Context, activity Activity) (Acti
 func (wekan *Wekan) GetActivitiesFromCardID(ctx context.Context, cardID CardID) ([]Activity, error) {
 	var activities []Activity
 	filter := bson.M{"cardId": cardID}
-	sort := options.Find().SetSort(bson.D{{"createdAt", 1}})
+	sort := options.Find().SetSort(bson.M{"createdAt": 1})
 	cur, err := wekan.db.Collection("activities").Find(ctx, filter, sort)
 	if err != nil {
 		return nil, UnexpectedMongoError{err}
