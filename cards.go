@@ -509,3 +509,35 @@ func (wekan *Wekan) UpdateCardDescription(ctx context.Context, cardID CardID, de
 	}
 	return nil
 }
+
+func (wekan *Wekan) EnsureMoveCardList(ctx context.Context, cardID CardID, listID ListID, userID UserID) error {
+	card, err := cardID.GetDocument(ctx, wekan)
+	if err != nil {
+		return err
+	}
+	// si la liste est déjà set, rien à faire
+	if card.ListID == listID {
+		return nil
+	}
+
+	// si la liste n'est pas dans cette board, on retourne une erreur
+	lists, err := wekan.SelectListsFromBoardID(ctx, card.BoardID)
+	listsIDs := mapSlice(lists, func(list List) ListID { return list.ID })
+	if !contains(listsIDs, listID) {
+		return ListNotFoundError{listID: listID}
+	}
+
+	// pas besoin de vérifier les stats, nous savons déjà que la liste est différente
+	_, err = wekan.db.Collection("cards").UpdateOne(ctx, bson.M{"_id": cardID}, bson.M{"$set": bson.M{"listId": listID}})
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+
+	// insertion de l'activité
+	activity, err := wekan.newActivityMoveCardFromMovedCard(ctx, card, userID)
+	if err != nil {
+		return err
+	}
+	_, err = wekan.insertActivity(ctx, activity)
+	return err
+}

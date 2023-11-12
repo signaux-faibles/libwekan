@@ -172,6 +172,14 @@ func (e NotImplemented) Error() string {
 	return "not implemented : " + e.method
 }
 
+type ListNotFoundError struct {
+	listID ListID
+}
+
+func (e ListNotFoundError) Error() string {
+	return fmt.Sprintf("la liste n'existe pas (ID: %s)", e.listID)
+}
+
 type CardNotFoundError struct {
 	cardID CardID
 }

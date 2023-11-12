@@ -418,3 +418,53 @@ func TestCards_UpdateCardDescription_WhenCardDoesntExists(t *testing.T) {
 	//THEN
 	ass.ErrorAs(err, &CardNotFoundError{})
 }
+
+func TestCards_MoveCard_whenEverythingsFine(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
+	card := createTestCard(t, createTestUser(t, "").ID, nil, nil, nil)
+	newList := BuildList(card.BoardID, t.Name()+"_list_test", 0)
+	err := wekan.InsertList(ctx, newList)
+	ass.NoError(err)
+
+	// WHEN
+	err = wekan.EnsureMoveCardList(ctx, card.ID, newList.ID, wekan.AdminID())
+	ass.NoError(err)
+	newCard, _ := card.ID.GetDocument(ctx, &wekan)
+	activities, _ := wekan.GetActivitiesFromCardID(ctx, card.ID)
+
+	// THEN
+	ass.Equal(newList.ID, newCard.ListID)
+	ass.Len(activities, 2) // createCard puis moveCard
+	ass.Equal(activities[1].OldListID, card.ListID)
+	ass.Equal(activities[1].ListID, newList.ID)
+}
+
+func TestCards_MoveCard_whenListDoesntExists(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
+	card := createTestCard(t, createTestUser(t, "").ID, nil, nil, nil)
+	notList := List{ID: ListID(t.Name() + "not a list")}
+
+	// WHEN
+	err := wekan.EnsureMoveCardList(ctx, card.ID, notList.ID, wekan.AdminID())
+	activities, _ := wekan.GetActivitiesFromCardID(ctx, card.ID)
+
+	// THEN
+	ass.ErrorAs(err, &ListNotFoundError{})
+	ass.Len(activities, 1) // createCard
+}
+
+func TestCards_MoveCard_whenCardDoesntMove(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
+	card := createTestCard(t, createTestUser(t, "").ID, nil, nil, nil)
+
+	// WHEN
+	err := wekan.EnsureMoveCardList(ctx, card.ID, card.ListID, wekan.AdminID())
+	activities, _ := wekan.GetActivitiesFromCardID(ctx, card.ID)
+
+	// THEN
+	ass.NoError(err)
+	ass.Len(activities, 1) // createCard
+}
