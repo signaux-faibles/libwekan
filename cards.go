@@ -203,6 +203,41 @@ func (wekan *Wekan) GetCardFromID(ctx context.Context, cardID CardID) (Card, err
 	return cards[0], nil
 }
 
+func (wekan *Wekan) GetCardWithCommentsFromID(ctx context.Context, cardID CardID) (CardWithComments, error) {
+	pipeline := Pipeline{
+		bson.M{
+			"$match": bson.M{
+				"_id": cardID,
+			},
+		},
+		bson.M{
+			"$project": bson.M{
+				"card": "$$ROOT",
+			},
+		},
+		bson.M{
+			"$lookup": bson.M{
+				"from":         "comments",
+				"localField":   "card._id",
+				"foreignField": "cardId",
+				"as":           "comments",
+			},
+		},
+	}
+	cards, err := wekan.SelectCardsWithCommentsFromPipeline(ctx, "cards", pipeline)
+	if err != nil {
+		return CardWithComments{}, UnexpectedMongoError{err}
+	}
+	if len(cards) == 0 {
+		return CardWithComments{}, CardNotFoundError{cardID}
+	}
+	if len(cards) > 1 {
+		return CardWithComments{}, UnexpectedMongoError{errors.New("erreur fatale, cette requête ne peut retourner qu'un objet")}
+	}
+
+	return cards[0], nil
+}
+
 func (wekan *Wekan) InsertCard(ctx context.Context, card Card) error {
 	if err := wekan.AssertPrivileged(ctx); err != nil {
 		return err
@@ -540,4 +575,30 @@ func (wekan *Wekan) EnsureMoveCardList(ctx context.Context, cardID CardID, listI
 	}
 	_, err = wekan.insertActivity(ctx, activity)
 	return err
+}
+
+func (wekan *Wekan) SetCardEndAt(ctx context.Context, cardID CardID, endAt *time.Time) error {
+	filter := bson.M{"_id": cardID}
+	update := bson.M{"$set": bson.M{"endAt": endAt}}
+	stats, err := wekan.db.Collection("cards").UpdateOne(ctx, filter, update)
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	if stats.MatchedCount == 0 {
+		return CardNotFoundError{cardID}
+	}
+	return nil
+}
+
+func (wekan *Wekan) SetCardStartAt(ctx context.Context, cardID CardID, startAt *time.Time) error {
+	filter := bson.M{"_id": cardID}
+	update := bson.M{"$set": bson.M{"startAt": startAt}}
+	stats, err := wekan.db.Collection("cards").UpdateOne(ctx, filter, update)
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	if stats.MatchedCount == 0 {
+		return CardNotFoundError{cardID}
+	}
+	return nil
 }
