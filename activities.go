@@ -2,10 +2,11 @@ package libwekan
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type ActivityID string
@@ -16,15 +17,17 @@ type Activity struct {
 	Type           string       `bson:"type,omitempty" json:"type,omitempty"`
 	MemberID       UserID       `bson:"memberId,omitempty" json:"memberId,omitempty"`
 	ActivityType   string       `bson:"activityType,omitempty" json:"activityType,omitempty"`
-	ActivityTypeID string       `bson:"activityTypeID,omitempty" json:"activityTypeID,omitempty"`
+	ActivityTypeID string       `bson:"activityTypeId,omitempty" json:"activityTypeId,omitempty"`
 	BoardID        BoardID      `bson:"boardId,omitempty" json:"boardId,omitempty"`
 	BoardLabelID   BoardLabelID `bson:"labelId,omitEmpty" json:"labelId,omitempty"`
 	CardTitle      string       `bson:"cardTitle,omitempty" json:"cardTitle,omitempty"`
 	ListID         ListID       `bson:"listId,omitempty" json:"listId,omitempty"`
+	OldListID      ListID       `bson:"oldListId,omitempty" json:"oldListId,omitempty"`
 	ListName       string       `bson:"listName,omitempty" json:"listName,omitempty"`
 	CardID         CardID       `bson:"cardId,omitempty" json:"cardId,omitempty"`
 	CommentID      CommentID    `bson:"commentId, omitempty"`
-	SwimlaneID     SwimlaneID   `bson:"swimlaneID,omitempty" json:"swimlaneID,omitempty"`
+	SwimlaneID     SwimlaneID   `bson:"swimlaneId,omitempty" json:"swimlaneId,omitempty"`
+	OldSwimlaneID  SwimlaneID   `bson:"oldSwimlaneId,omitempty" json:"oldSwimlaneId,omitempty"`
 	SwimlaneName   string       `bson:"swimlaneName,omitempty" json:"swimlaneName,omitempty"`
 	CreatedAt      time.Time    `bson:"createdAt" json:"createdAt,omitempty"`
 	ModifiedAt     time.Time    `bson:"modifiedAt" json:"modifiedAt,omitempty"`
@@ -124,6 +127,18 @@ func newActivityAddedLabel(userID UserID, boardLabelID BoardLabelID, boardID Boa
 	}
 }
 
+func (wekan *Wekan) newActivityCreateCardFromCard(ctx context.Context, card Card) (Activity, error) {
+	list, err := wekan.GetListFromID(ctx, card.ListID)
+	if err != nil {
+		return Activity{}, err
+	}
+	swimlane, err := wekan.GetSwimlaneFromID(ctx, card.SwimlaneID)
+	if err != nil {
+		return Activity{}, err
+	}
+	return newActivityCreateCard(card.UserID, list, card, swimlane), nil
+}
+
 func newActivityCreateCard(userID UserID, list List, card Card, swimlane Swimlane) Activity {
 	return Activity{
 		UserID:       userID,
@@ -135,6 +150,38 @@ func newActivityCreateCard(userID UserID, list List, card Card, swimlane Swimlan
 		CardTitle:    card.Title,
 		SwimlaneName: swimlane.Title,
 		SwimlaneID:   swimlane.ID,
+	}
+}
+
+func (wekan *Wekan) newActivityMoveCardFromMovedCard(ctx context.Context, oldCard Card, userID UserID) (Activity, error) {
+	newCard, err := oldCard.ID.GetDocument(ctx, wekan)
+	if err != nil {
+		return Activity{}, err
+	}
+	newList, err := newCard.ListID.GetDocument(ctx, wekan)
+	if err != nil {
+		return Activity{}, err
+	}
+	swimlane, err := oldCard.SwimlaneID.GetDocument(ctx, wekan)
+	if err != nil {
+		return Activity{}, err
+	}
+	return newActivityMoveCard(userID, oldCard, newList, swimlane), nil
+}
+
+func newActivityMoveCard(userID UserID, oldCard Card, newList List, swimlane Swimlane) Activity {
+	return Activity{
+		UserID:        userID,
+		ActivityType:  "moveCard",
+		BoardID:       oldCard.BoardID,
+		CardID:        oldCard.ID,
+		CardTitle:     oldCard.Title,
+		OldListID:     oldCard.ListID,
+		ListID:        newList.ID,
+		ListName:      newList.Title,
+		SwimlaneID:    swimlane.ID,
+		OldSwimlaneID: oldCard.SwimlaneID,
+		SwimlaneName:  swimlane.Title,
 	}
 }
 
@@ -150,22 +197,28 @@ func (wekan *Wekan) insertActivity(ctx context.Context, activity Activity) (Acti
 	return insertable, nil
 }
 
+func (wekan *Wekan) SelectActivitiesFromCardID(ctx context.Context, cardID CardID) ([]Activity, error) {
+	var activities []Activity
+	filter := bson.M{"cardId": cardID}
+	sort := options.Find().SetSort(bson.M{"createdAt": 1})
+	cur, err := wekan.db.Collection("activities").Find(ctx, filter, sort)
+	if err != nil {
+		return nil, UnexpectedMongoError{err}
+	}
+	err = cur.All(ctx, &activities)
+	if err != nil {
+		return nil, UnexpectedMongoError{err}
+	}
+	return activities, nil
+}
+
 func (wekan *Wekan) GetActivityFromID(ctx context.Context, activityID ActivityID) (Activity, error) {
 	var activity Activity
 	err := wekan.db.Collection("activities").FindOne(ctx, bson.M{"_id": activityID}).Decode(&activity)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return Activity{}, UnknownActivityError{string(activityID)}
+			return Activity{}, ActivityNotFoundError{string(activityID)}
 		}
-		return Activity{}, UnexpectedMongoError{err}
-	}
-	return activity, nil
-}
-
-func (wekan *Wekan) SelectActivityFromID(ctx context.Context, activityID ActivityID) (Activity, error) {
-	var activity Activity
-	err := wekan.db.Collection("activities").FindOne(ctx, bson.M{"_id": activityID}).Decode(&activity)
-	if err != nil {
 		return Activity{}, UnexpectedMongoError{err}
 	}
 	return activity, nil

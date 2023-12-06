@@ -87,7 +87,7 @@ func TestErrors_UpstreamDeadlineExceeded(t *testing.T) {
 	errs = append(errs, err)
 	_, err = badWekan.SelectActivitiesFromQuery(ctx, bson.M{})
 	errs = append(errs, err)
-	_, err = badWekan.SelectActivityFromID(ctx, "")
+	_, err = badWekan.GetActivityFromID(ctx, "")
 	errs = append(errs, err)
 	_, err = badWekan.SelectBoardsFromMemberID(ctx, "")
 	errs = append(errs, err)

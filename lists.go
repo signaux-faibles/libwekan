@@ -80,6 +80,10 @@ func (wekan *Wekan) GetListFromID(ctx context.Context, listID ListID) (List, err
 }
 
 func (wekan *Wekan) SelectListsFromBoardID(ctx context.Context, boardID BoardID) ([]List, error) {
+	err := boardID.Check(ctx, wekan)
+	if err != nil {
+		return nil, err
+	}
 	var lists []List
 	cur, err := wekan.db.Collection("lists").Find(ctx, bson.M{"boardId": boardID})
 	if err != nil {
