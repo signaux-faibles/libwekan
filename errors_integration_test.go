@@ -14,7 +14,7 @@ func TestErrors_UpstreamDeadlineExceeded(t *testing.T) {
 	badWekan := newTestBadWekan("notAWekanDB")
 	errs := []error{
 		badWekan.AddMemberToBoard(ctx, "", BoardMember{}), // 0
-		badWekan.AddMemberToCard(ctx, "", ""),
+		badWekan.AddMemberToCard(ctx, Card{}, User{}, User{}),
 		badWekan.AddLabelToCard(ctx, "", ""),
 		badWekan.AssertPrivileged(ctx),
 		badWekan.CheckDocuments(ctx, UserID("")),
@@ -35,7 +35,7 @@ func TestErrors_UpstreamDeadlineExceeded(t *testing.T) {
 		badWekan.InsertTrigger(ctx, Trigger{}),
 		badWekan.InsertUser(ctx, User{}),
 		badWekan.InsertUsers(ctx, Users{User{}}),
-		badWekan.RemoveMemberFromCard(ctx, "", ""),
+		badWekan.RemoveMemberFromCard(ctx, Card{}, User{}, User{}),
 		badWekan.RemoveRuleWithID(ctx, ""),
 		ActivityID("").Check(ctx, &badWekan),
 		BoardID("").Check(ctx, &badWekan),
@@ -107,9 +107,9 @@ func TestErrors_UpstreamDeadlineExceeded(t *testing.T) {
 	errs = append(errs, err)
 	_, err = badWekan.SelectRulesFromBoardID(ctx, "")
 	errs = append(errs, err)
-	_, err = badWekan.EnsureMemberInCard(ctx, "", "")
+	_, err = badWekan.EnsureMemberInCard(ctx, Card{}, User{}, User{})
 	errs = append(errs, err)
-	_, err = badWekan.EnsureMemberOutOfCard(ctx, "", "")
+	_, err = badWekan.EnsureMemberOutOfCard(ctx, Card{}, User{}, User{})
 	errs = append(errs, err)
 	_, err = badWekan.EnsureUserIsBoardAdmin(ctx, "", "")
 	errs = append(errs, err)

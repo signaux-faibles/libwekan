@@ -177,7 +177,7 @@ func TestWekan_AssertPrivileged(t *testing.T) {
 	errs := []error{
 		badAdminWekan.AssertPrivileged(ctx),
 		badAdminWekan.AddMemberToBoard(ctx, "", BoardMember{}),
-		badAdminWekan.AddMemberToCard(ctx, "", ""),
+		badAdminWekan.AddMemberToCard(ctx, Card{}, User{}, User{}),
 		badAdminWekan.AddLabelToCard(ctx, "", ""),
 		badAdminWekan.DisableBoardMember(ctx, "", ""),
 		badAdminWekan.DisableUser(ctx, User{}),
@@ -196,12 +196,12 @@ func TestWekan_AssertPrivileged(t *testing.T) {
 		badAdminWekan.InsertList(ctx, List{}),
 		badAdminWekan.InsertTrigger(ctx, Trigger{}),
 		badAdminWekan.InsertTemplates(ctx, UserTemplates{}),
-		badAdminWekan.RemoveMemberFromCard(ctx, "", ""),
+		badAdminWekan.RemoveMemberFromCard(ctx, Card{}, User{}, User{}),
 		badAdminWekan.RemoveRuleWithID(ctx, ""),
 	}
-	_, err := badAdminWekan.EnsureMemberInCard(ctx, "", "")
+	_, err := badAdminWekan.EnsureMemberInCard(ctx, Card{}, User{}, User{})
 	errs = append(errs, err)
-	_, err = badAdminWekan.EnsureMemberOutOfCard(ctx, "", "")
+	_, err = badAdminWekan.EnsureMemberOutOfCard(ctx, Card{}, User{}, User{})
 	errs = append(errs, err)
 	_, err = badAdminWekan.EnsureRuleAddTaskforceMemberExists(ctx, User{}, Board{}, BoardLabel{})
 	errs = append(errs, err)

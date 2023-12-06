@@ -246,10 +246,10 @@ func TestUsers_EnsureMemberOutOfCard(t *testing.T) {
 	member := createTestUser(t, "Member")
 	card := createTestCard(t, user.ID, &board.ID, &(swimlanes[0].ID), &(lists[0].ID))
 	wekan.AddMemberToBoard(ctx, board.ID, BoardMember{UserID: member.ID, IsActive: true})
-	wekan.AddMemberToCard(ctx, card.ID, member.ID)
+	wekan.AddMemberToCard(ctx, card, member, member)
 
 	// WHEN
-	modified, err := wekan.EnsureMemberOutOfCard(ctx, card.ID, member.ID)
+	modified, err := wekan.EnsureMemberOutOfCard(ctx, card, member, member)
 
 	// THEN
 	ass.True(modified)
@@ -268,7 +268,7 @@ func TestUsers_EnsureMemberOutOfCard_WhenUserIsNotBoardMember(t *testing.T) {
 	wekan.AddMemberToBoard(ctx, board.ID, BoardMember{UserID: member.ID, IsActive: true})
 
 	// WHEN
-	modified, err := wekan.EnsureMemberOutOfCard(ctx, card.ID, member.ID)
+	modified, err := wekan.EnsureMemberOutOfCard(ctx, card, member, member)
 
 	// THEN
 	ass.Nil(err)
@@ -286,7 +286,7 @@ func TestUsers_EnsureMemberInCard_WhenUserIsActiveBoardMember(t *testing.T) {
 	card := createTestCard(t, user.ID, &board.ID, &(swimlanes[0].ID), &(lists[0].ID))
 	wekan.AddMemberToBoard(ctx, board.ID, BoardMember{UserID: member.ID, IsActive: true})
 	// WHEN
-	modified, err := wekan.EnsureMemberInCard(ctx, card.ID, member.ID)
+	modified, err := wekan.EnsureMemberInCard(ctx, card, member, member)
 
 	// THEN
 	ass.Nil(err)
@@ -305,7 +305,7 @@ func TestUsers_EnsureMemberInCard_WhenUserIsInactiveBoardMember(t *testing.T) {
 	wekan.AddMemberToBoard(ctx, board.ID, BoardMember{UserID: member.ID, IsActive: false})
 
 	// WHEN
-	modified, err := wekan.EnsureMemberInCard(ctx, card.ID, member.ID)
+	modified, err := wekan.EnsureMemberInCard(ctx, card, member, member)
 
 	// THEN
 	ass.False(modified)
