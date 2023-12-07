@@ -466,6 +466,10 @@ func (wekan *Wekan) DisableUsers(ctx context.Context, users Users) error {
 	return nil
 }
 
+func (wekan *Wekan) RemoveSelfMemberFromCard(ctx context.Context, card Card, member User) error {
+	return wekan.RemoveMemberFromCard(ctx, card, member, member)
+}
+
 func (wekan *Wekan) RemoveMemberFromCard(ctx context.Context, card Card, user User, member User) error {
 	if err := wekan.AssertPrivileged(ctx); err != nil {
 		return err
@@ -503,6 +507,10 @@ func (wekan *Wekan) EnsureMemberOutOfCard(ctx context.Context, card Card, user U
 		return false, nil
 	}
 	return err == nil, err
+}
+
+func (wekan *Wekan) AddSelfMemberToCard(ctx context.Context, card Card, member User) error {
+	return wekan.AddMemberToCard(ctx, card, member, member)
 }
 
 func (wekan *Wekan) AddMemberToCard(ctx context.Context, card Card, user User, member User) error {
