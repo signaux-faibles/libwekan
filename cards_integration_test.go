@@ -115,7 +115,7 @@ func TestCards_SelectCardsFromMemberID(t *testing.T) {
 	member := createTestUser(t, "Member")
 	wekan.AddMemberToBoard(ctx, card.BoardID, BoardMember{UserID: member.ID, IsActive: true})
 	insertedMember, _ := wekan.GetUserFromID(ctx, member.ID)
-	wekan.AddMemberToCard(ctx, card.ID, member.ID)
+	wekan.AddMemberToCard(ctx, card, member, member)
 
 	// WHEN
 	insertedCard, _ := wekan.GetCardFromID(ctx, card.ID)
@@ -164,7 +164,7 @@ func TestCards_AddCardMembership_WhenBoardIsTheSame(t *testing.T) {
 	card := createTestCard(t, user.ID, &board.ID, &(swimlanes[0].ID), &(lists[0].ID))
 
 	// WHEN
-	err := wekan.AddMemberToCard(ctx, card.ID, member.ID)
+	err := wekan.AddMemberToCard(ctx, card, member, member)
 	ass.Nil(err)
 
 	// THEN
@@ -185,7 +185,7 @@ func TestCards_AddCardMembership_WhenBoardIsNotTheSame(t *testing.T) {
 	card := createTestCard(t, cardOwner.ID, &cardBoard.ID, &(cardSwimlanes[0].ID), &(cardLists[0].ID))
 
 	// WHEN
-	err := wekan.AddMemberToCard(ctx, card.ID, cardMember.ID)
+	err := wekan.AddMemberToCard(ctx, card, cardMember, cardMember)
 	ass.IsType(ForbiddenOperationError{}, err)
 
 	// THEN
@@ -202,10 +202,10 @@ func TestCards_RemoveMemberFromCard_WhenUserIsMember(t *testing.T) {
 	member := createTestUser(t, "Member")
 	wekan.AddMemberToBoard(ctx, board.ID, BoardMember{UserID: member.ID, IsActive: true})
 	card := createTestCard(t, user.ID, &board.ID, &(swimlanes[0].ID), &(lists[0].ID))
-	wekan.AddMemberToCard(ctx, card.ID, member.ID)
+	wekan.AddMemberToCard(ctx, card, member, member)
 
 	// WHEN
-	err := wekan.RemoveMemberFromCard(ctx, card.ID, member.ID)
+	err := wekan.RemoveMemberFromCard(ctx, card, member, member)
 	ass.Nil(err)
 
 	// Then
@@ -224,7 +224,7 @@ func TestCards_RemoveMemberFromCard_WhenUserIsNotMember(t *testing.T) {
 	card := createTestCard(t, user.ID, &board.ID, &(swimlanes[0].ID), &(lists[0].ID))
 
 	// WHEN
-	err := wekan.RemoveMemberFromCard(ctx, card.ID, member.ID)
+	err := wekan.RemoveMemberFromCard(ctx, card, member, member)
 
 	// Then
 	actualCard, _ := wekan.GetCardFromID(ctx, card.ID)

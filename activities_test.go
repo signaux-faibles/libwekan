@@ -77,6 +77,25 @@ func TestActivities_newActivityCardJoinMember(t *testing.T) {
 	ass.Equal(expected, activity)
 }
 
+func TestActivities_newActivityCardUnjoinMember(t *testing.T) {
+	ass := assert.New(t)
+	expected := Activity{
+		UserID:       "userID",
+		Username:     "username",
+		MemberID:     "memberID",
+		BoardID:      "boardID",
+		CardID:       "cardID",
+		ListID:       "listID",
+		SwimlaneID:   "swimlaneID",
+		ActivityType: "unjoinMember",
+	}
+	activity := newActivityCardUnjoinMember(
+		"userID", "username", "memberID", "boardID",
+		"listID", "cardID", "swimlaneID",
+	)
+	ass.Equal(expected, activity)
+}
+
 func TestActivities_newActivityAddComment(t *testing.T) {
 	ass := assert.New(t)
 	expected := Activity{

@@ -105,6 +105,19 @@ func newActivityCardJoinMember(userID UserID, username Username, memberID UserID
 	}
 }
 
+func newActivityCardUnjoinMember(userID UserID, username Username, memberID UserID, boardID BoardID, listID ListID, cardID CardID, swimlaneID SwimlaneID) Activity {
+	return Activity{
+		UserID:       userID,
+		Username:     username,
+		MemberID:     memberID,
+		BoardID:      boardID,
+		CardID:       cardID,
+		ListID:       listID,
+		SwimlaneID:   swimlaneID,
+		ActivityType: "unjoinMember",
+	}
+}
+
 func newActivityAddComment(userID UserID, boardID BoardID, cardID CardID, commentID CommentID, listID ListID, swimlaneID SwimlaneID) Activity {
 	return Activity{
 		UserID:       userID,
