@@ -250,8 +250,12 @@ func TestUsers_EnsureMemberOutOfCard(t *testing.T) {
 
 	// WHEN
 	modified, err := wekan.EnsureMemberOutOfCard(ctx, card, member, member)
+	ass.Nil(err)
+	activities, err := wekan.SelectActivitiesFromCardID(ctx, card.ID)
+	ass.Nil(err)
 
 	// THEN
+	ass.Len(activities, 3)
 	ass.True(modified)
 	ass.Nil(err)
 	actualCard, err := card.ID.GetDocument(ctx, &wekan)
@@ -269,8 +273,11 @@ func TestUsers_EnsureMemberOutOfCard_WhenUserIsNotBoardMember(t *testing.T) {
 
 	// WHEN
 	modified, err := wekan.EnsureMemberOutOfCard(ctx, card, member, member)
+	activities, errActivities := wekan.SelectActivitiesFromCardID(ctx, card.ID)
+	ass.Nil(errActivities)
 
 	// THEN
+	ass.Len(activities, 1)
 	ass.Nil(err)
 	ass.False(modified)
 	actualCard, err := card.ID.GetDocument(ctx, &wekan)
@@ -285,11 +292,15 @@ func TestUsers_EnsureMemberInCard_WhenUserIsActiveBoardMember(t *testing.T) {
 	member := createTestUser(t, "Member")
 	card := createTestCard(t, user.ID, &board.ID, &(swimlanes[0].ID), &(lists[0].ID))
 	wekan.AddMemberToBoard(ctx, board.ID, BoardMember{UserID: member.ID, IsActive: true})
+
 	// WHEN
 	modified, err := wekan.EnsureMemberInCard(ctx, card, member, member)
+	ass.Nil(err)
+	activities, err := wekan.SelectActivitiesFromCardID(ctx, card.ID)
+	ass.Nil(err)
 
 	// THEN
-	ass.Nil(err)
+	ass.Len(activities, 2)
 	ass.True(modified)
 	actualCard, _ := card.ID.GetDocument(ctx, &wekan)
 	ass.Contains(actualCard.Members, member.ID)
@@ -306,8 +317,11 @@ func TestUsers_EnsureMemberInCard_WhenUserIsInactiveBoardMember(t *testing.T) {
 
 	// WHEN
 	modified, err := wekan.EnsureMemberInCard(ctx, card, member, member)
+	activities, errActivities := wekan.SelectActivitiesFromCardID(ctx, card.ID)
+	ass.Nil(errActivities)
 
 	// THEN
+	ass.Len(activities, 1)
 	ass.False(modified)
 	ass.ErrorIs(err, UserIsNotMemberError{member.ID})
 	actualCard, _ := card.ID.GetDocument(ctx, &wekan)
