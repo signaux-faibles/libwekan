@@ -501,6 +501,45 @@ func (wekan *Wekan) RemoveMemberFromCard(ctx context.Context, card Card, user Us
 	return nil
 }
 
+func (wekan *Wekan) RemoveAssigneeFromCard(ctx context.Context, card Card, user User, assignee User) error {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
+		return err
+	}
+	if err := wekan.CheckDocuments(ctx, card.ID, assignee.ID); err != nil {
+		return err
+	}
+
+	stats, err := wekan.db.Collection("cards").UpdateOne(ctx, bson.M{
+		"_id": card.ID,
+	}, bson.M{
+		"$pull": bson.M{
+			"assignees": assignee.ID,
+		},
+	})
+	if stats.ModifiedCount == 0 {
+		return NothingDoneError{}
+	}
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+
+	activity := newActivityCardUnjoinAssignee(user.ID, assignee.Username, assignee.ID, card.BoardID, card.ListID, card.ID, card.SwimlaneID)
+	_, err = wekan.insertActivity(ctx, activity)
+	if err != nil {
+		return UnexpectedMongoError{err: err}
+	}
+
+	return nil
+}
+
+func (wekan *Wekan) EnsureAssigneeOutOfCard(ctx context.Context, card Card, user User, assignee User) (bool, error) {
+	err := wekan.RemoveAssigneeFromCard(ctx, card, user, assignee)
+	if _, ok := err.(NothingDoneError); ok {
+		return false, nil
+	}
+	return err == nil, err
+}
+
 func (wekan *Wekan) EnsureMemberOutOfCard(ctx context.Context, card Card, user User, member User) (bool, error) {
 	err := wekan.RemoveMemberFromCard(ctx, card, user, member)
 	if _, ok := err.(NothingDoneError); ok {
