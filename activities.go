@@ -15,6 +15,7 @@ type Activity struct {
 	UserID         UserID       `bson:"userId,omitempty" json:"userId,omitempty"`
 	Username       Username     `bson:"username,omitempty" json:"username,omitempty"`
 	Type           string       `bson:"type,omitempty" json:"type,omitempty"`
+	AssigneeID     UserID       `bson:"assigneeId,omitempty" json:"assigneeId,omitempty"`
 	MemberID       UserID       `bson:"memberId,omitempty" json:"memberId,omitempty"`
 	ActivityType   string       `bson:"activityType,omitempty" json:"activityType,omitempty"`
 	ActivityTypeID string       `bson:"activityTypeId,omitempty" json:"activityTypeId,omitempty"`
@@ -105,6 +106,19 @@ func newActivityCardJoinMember(userID UserID, username Username, memberID UserID
 	}
 }
 
+func newActivityCardJoinAssignee(userID UserID, username Username, memberID UserID, boardID BoardID, listID ListID, cardID CardID, swimlaneID SwimlaneID) Activity {
+	return Activity{
+		UserID:       userID,
+		Username:     username,
+		AssigneeID:   memberID,
+		BoardID:      boardID,
+		CardID:       cardID,
+		ListID:       listID,
+		SwimlaneID:   swimlaneID,
+		ActivityType: "joinAssignee",
+	}
+}
+
 func newActivityCardUnjoinMember(userID UserID, username Username, memberID UserID, boardID BoardID, listID ListID, cardID CardID, swimlaneID SwimlaneID) Activity {
 	return Activity{
 		UserID:       userID,
@@ -122,7 +136,7 @@ func newActivityCardUnjoinAssignee(userID UserID, username Username, assigneeID 
 	return Activity{
 		UserID:       userID,
 		Username:     username,
-		MemberID:     assigneeID,
+		AssigneeID:   assigneeID,
 		BoardID:      boardID,
 		CardID:       cardID,
 		ListID:       listID,

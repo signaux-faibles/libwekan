@@ -510,17 +510,18 @@ func (wekan *Wekan) RemoveAssigneeFromCard(ctx context.Context, card Card, user 
 	}
 
 	stats, err := wekan.db.Collection("cards").UpdateOne(ctx, bson.M{
-		"_id": card.ID,
+		"_id":       card.ID,
+		"assignees": bson.M{"$type": 4},
 	}, bson.M{
 		"$pull": bson.M{
 			"assignees": assignee.ID,
 		},
 	})
-	if stats.ModifiedCount == 0 {
-		return NothingDoneError{}
-	}
 	if err != nil {
 		return UnexpectedMongoError{err}
+	}
+	if stats.ModifiedCount == 0 {
+		return NothingDoneError{}
 	}
 
 	activity := newActivityCardUnjoinAssignee(user.ID, assignee.Username, assignee.ID, card.BoardID, card.ListID, card.ID, card.SwimlaneID)
@@ -550,6 +551,62 @@ func (wekan *Wekan) EnsureMemberOutOfCard(ctx context.Context, card Card, user U
 
 func (wekan *Wekan) AddSelfMemberToCard(ctx context.Context, card Card, member User) error {
 	return wekan.AddMemberToCard(ctx, card, member, member)
+}
+
+func (wekan *Wekan) AddAssigneeToCard(ctx context.Context, card Card, user User, assignee User) error {
+	if err := wekan.AssertPrivileged(ctx); err != nil {
+		return err
+	}
+	board, err := wekan.GetBoardFromID(ctx, card.BoardID)
+	if err != nil {
+		return err
+	}
+
+	if !board.UserIsActiveMember(assignee) {
+		return ForbiddenOperationError{
+			UserIsNotMemberError{assignee.ID},
+		}
+	}
+
+	if !board.UserIsActiveMember(user) {
+		return ForbiddenOperationError{
+			UserIsNotMemberError{user.ID},
+		}
+	}
+
+	_, err = wekan.db.Collection("cards").UpdateOne(ctx, bson.M{
+		"_id":       card.ID,
+		"assignees": nil,
+	}, bson.M{
+		"$set": bson.M{"assignees": bson.A{}},
+	})
+
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+
+	stats, err := wekan.db.Collection("cards").UpdateOne(ctx, bson.M{
+		"_id": card.ID,
+	}, bson.M{
+		"$addToSet": bson.M{
+			"assignees": assignee.ID,
+		},
+	})
+
+	if err != nil {
+		return UnexpectedMongoError{err}
+	}
+	if stats.ModifiedCount == 0 {
+		return NothingDoneError{}
+	}
+
+	activity := newActivityCardJoinAssignee(user.ID, assignee.Username, assignee.ID, card.BoardID, card.ListID, card.ID, card.SwimlaneID)
+	_, err = wekan.insertActivity(ctx, activity)
+	if err != nil {
+		return UnexpectedMongoError{err: err}
+	}
+
+	return nil
 }
 
 func (wekan *Wekan) AddMemberToCard(ctx context.Context, card Card, user User, member User) error {

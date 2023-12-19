@@ -262,6 +262,60 @@ func TestUsers_EnsureMemberOutOfCard(t *testing.T) {
 	ass.NotContains(actualCard.Members, member.ID)
 }
 
+func TestUsers_EnsureAssigneeOutOfCard(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
+	board, swimlanes, lists := createTestBoard(t, "", 1, 1)
+	user := createTestUser(t, "User")
+	assignee := createTestUser(t, "assignee")
+	card := createTestCard(t, user.ID, &board.ID, &(swimlanes[0].ID), &(lists[0].ID))
+	err := wekan.AddMemberToBoard(ctx, board.ID, BoardMember{UserID: assignee.ID, IsActive: true})
+	ass.NoError(err)
+
+	err = wekan.AddAssigneeToCard(ctx, card, assignee, assignee)
+	ass.NoError(err)
+
+	// WHEN
+	modified, err := wekan.EnsureAssigneeOutOfCard(ctx, card, assignee, assignee)
+	ass.Nil(err)
+	activities, err := wekan.SelectActivitiesFromCardID(ctx, card.ID)
+	ass.Nil(err)
+
+	// THEN
+	ass.Len(activities, 3)
+	ass.True(modified)
+	ass.Nil(err)
+	actualCard, err := card.ID.GetDocument(ctx, &wekan)
+	ass.NotContains(actualCard.Members, assignee.ID)
+}
+
+func TestUsers_EnsureAssigneeOutOfCard_WhenAssigneesPropertyExists(t *testing.T) {
+	ass := assert.New(t)
+	// GIVEN
+	board, swimlanes, lists := createTestBoard(t, "", 1, 1)
+	user := createTestUser(t, "User")
+	assignee := createTestUser(t, "assignee")
+	card := createTestCard(t, user.ID, &board.ID, &(swimlanes[0].ID), &(lists[0].ID))
+	err := wekan.AddMemberToBoard(ctx, board.ID, BoardMember{UserID: assignee.ID, IsActive: true})
+	ass.NoError(err)
+	err = wekan.AddAssigneeToCard(ctx, card, assignee, assignee)
+	ass.NoError(err)
+	_, err = wekan.EnsureAssigneeOutOfCard(ctx, card, assignee, assignee)
+	ass.NoError(err)
+
+	// WHEN
+	err = wekan.AddAssigneeToCard(ctx, card, assignee, assignee)
+	ass.NoError(err)
+	activities, err := wekan.SelectActivitiesFromCardID(ctx, card.ID)
+	ass.Nil(err)
+
+	// THEN
+	ass.Len(activities, 4)
+	ass.Nil(err)
+	actualCard, err := card.ID.GetDocument(ctx, &wekan)
+	ass.NotContains(actualCard.Members, assignee.ID)
+}
+
 func TestUsers_EnsureMemberOutOfCard_WhenUserIsNotBoardMember(t *testing.T) {
 	ass := assert.New(t)
 	// GIVEN
